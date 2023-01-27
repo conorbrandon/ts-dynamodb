@@ -8,6 +8,14 @@
   "author": {
     "name": "Conor Brandon"
   },
+  "homepage": "https://github.com/conorbrandon/ts-dynamodb",
+  "bugs": {
+    "url": "https://github.com/conorbrandon/ts-dynamodb/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/conorbrandon/ts-dynamodb"
+  },
   "keywords": [
     "dynamodb",
     "typescript",
