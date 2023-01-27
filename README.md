@@ -18,6 +18,7 @@
   - [createStrict*Item](#createstrictitem)
   - [updateSimpleSET](#updatesimpleset)
     - [createStrictUpdateSimpleSET](#createstrictupdatesimpleset)
+  - [queryAll and scanAll]()
 - [Troubleshooting](#troubleshooting)
 - [Opinionated decisions](#opinionated-decisions)
   - [TsDdbSet<...> and unknowable DynamoDBSets](#tsddbset-and-unknowable-dynamodbsets)
@@ -427,6 +428,10 @@ type u = typeof updatedUser;
 #### createStrictUpdateSimpleSET
 
 There is also a strict version of `updateSimpleSET`, because why not. It follows the same curried pattern described in [createStrict*Item](#createstrictitem).
+
+### `queryAll` and `scanAll`
+
+Pretty self explanatory, simply returns an array containing all `Items` returned in a `query` or `scan` of the entire table.
 
 ## Helper types
 
