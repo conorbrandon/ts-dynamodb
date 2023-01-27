@@ -1,0 +1,6 @@
+node_modules
+.env
+scratch*
+.vscode
+dist
+.DS_Store
