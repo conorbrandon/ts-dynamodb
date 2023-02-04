@@ -11,17 +11,19 @@ export type QueryInput<
   IndexName extends string,
   KCE extends string,
   PE extends string,
+  FE extends string,
   EANs extends string,
   EAVs extends string,
   EAN extends Record<EANs, string>, // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
   EAV extends Record<EAVs, any>,
-> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression'> & {
+> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression'> & {
   TableName: TN;
   IndexName?: IndexName;
-  KeyConditionExpression?: `${KCE}${PE}` extends UseAllExpressionAttributesInString<EAN, EAV> ? KCE : `Error ❌ unused EANs or EAVs in the KCE and/or PE: ${FilterUnusedEANOrVs<`${KCE}${PE}`, OnlyStrings<keyof EAN | keyof EAV>>}`;
+  KeyConditionExpression?: `${KCE}${PE}${FE}` extends UseAllExpressionAttributesInString<EAN, EAV> ? KCE : `Error ❌ unused EANs or EAVs in the KCE and/or PE: ${FilterUnusedEANOrVs<`${KCE}${PE}`, OnlyStrings<keyof EAN | keyof EAV>>}`;
   ExpressionAttributeNames?: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
   ExpressionAttributeValues?: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
   ProjectionExpression?: PE; // from what it seems, putting the Error condition on the KCE is sufficient. This is because the either the KCE or KCs are required (DDB will yell at you if you don't include either, and I can't be bothered with legacy parameters, the current ones are hard enough lol)
+  FilterExpression?: FE;
 };
 
 /** 

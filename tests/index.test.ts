@@ -485,13 +485,16 @@ describe('query', () => {
       IndexName: CiCdTable.indices["datum-index"].name,
       KeyConditionExpression: `#datum = :datum and begins_with(datumStr, :datumStr)`,
       ExpressionAttributeNames: {
-        '#datum': 'datum'
+        '#datum': 'datum',
+        '#hashKey': 'hashKey'
       },
       ExpressionAttributeValues: {
         ':datum': 0,
-        ':datumStr': 'datum_'
+        ':datumStr': 'datum_',
+        ':hashKey': '---'
       },
-      // ProjectionExpression: 'thebig.data.myTuple[1], finaler, datum, rangeKey, hashKey, datumStr'
+      ProjectionExpression: 'thebig.data.myTuple[1], finaler, datum, rangeKey, #hashKey, datumStr',
+      FilterExpression: '#hashKey = :hashKey'
     } as const);
     console.log('datumQueried:', myInspect(datumQueried.Items));
   });

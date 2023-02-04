@@ -18,7 +18,7 @@
   - [createStrict*Item](#createstrictitem)
   - [updateSimpleSET](#updatesimpleset)
     - [createStrictUpdateSimpleSET](#createstrictupdatesimpleset)
-  - [queryAll and scanAll]()
+  - [queryAll and scanAll](#queryall-and-scanall)
 - [Troubleshooting](#troubleshooting)
 - [Opinionated decisions](#opinionated-decisions)
   - [TsDdbSet<...> and unknowable DynamoDBSets](#tsddbset-and-unknowable-dynamodbsets)
@@ -30,7 +30,7 @@
 
 ## Introduction
 
-`ts-dynamodb` provides intelligent type inference on top of the familiar DynamoDB DocumentClient interface. The goal is to not have to learn a new API, write schemas in Javascript objects, or change anything about your existing queries.
+`ts-dynamodb` provides intelligent type inference on top of the familiar DynamoDB DocumentClient interface. The goal is to not have to learn a new API or rewrite your existing queries.
 
 After the initial table setup, simply assert your existing DocumentClient as a `TypesafeDocumentClientRawv2` and get correct types all throughout your project.
 
@@ -38,7 +38,7 @@ Since this package _currently_ only supports the `aws-sdk`, and I get tired of w
 
 Please note, legacy parameters are not supported at all. `ConditionExpression` and `FilterExpression` support is limited. `DocumentClient.ConverterOptions` are also currently not supported - I'm hoping to add support for the `convertEmptyValues` and `wrapNumbers` options soon.
 
-I welcome bug reports, suggestions, or comments! Please file an issue if you are inclined.
+I welcome bug reports, suggestions, or comments! Please submit an issue if you are inclined.
 
 ## Installation
 

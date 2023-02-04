@@ -242,13 +242,15 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     TN extends TableName<TS>,
     KCE extends string,
     PE extends string,
+    FE extends string,
     KCEEAs extends ExtractEAsFromString<KCE>,
     PEEAs extends ExtractEAsFromString<PE>,
-    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'], any>,
+    FEEAs extends ExtractEAsFromString<FE>,
+    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
   >(
-    params: QueryInput<TN, IndexName, KCE, PE, KCEEAs['ean'] | PEEAs['ean'], KCEEAs['eav'], EAN, EAV>,
+    params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>,
     callback?: TypesafeCallback<
       QueryOutput<
         TableItem<TS, TN>,
@@ -661,12 +663,14 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     KCE extends string,
     PE extends string,
+    FE extends string,
     KCEEAs extends ExtractEAsFromString<KCE>,
     PEEAs extends ExtractEAsFromString<PE>,
-    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'], any>,
+    FEEAs extends ExtractEAsFromString<FE>,
+    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: QueryInput<TN, IndexName, KCE, PE, KCEEAs['ean'] | PEEAs['ean'], KCEEAs['eav'], EAN, EAV>) {
+  >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
 
     const res = await this.client.query(params).promise();
     return res as unknown as QueryOutput<
@@ -690,12 +694,14 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     KCE extends string,
     PE extends string,
+    FE extends string,
     KCEEAs extends ExtractEAsFromString<KCE>,
     PEEAs extends ExtractEAsFromString<PE>,
-    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'], any>,
+    FEEAs extends ExtractEAsFromString<FE>,
+    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: QueryInput<TN, IndexName, KCE, PE, KCEEAs['ean'] | PEEAs['ean'], KCEEAs['eav'], EAN, EAV>) {
+  >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
 
     const items: unknown[] = [];
     do {
