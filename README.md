@@ -16,9 +16,11 @@
   - [scan](#scan)
 - [TypesafeDocumentClientv2](#typesafedocumentclientv2)
   - [createStrict*Item](#createstrictitem)
+    - [createStrict*Item additional features](#createstrictitem-additional-features)
   - [updateSimpleSET](#updatesimpleset)
     - [createStrictUpdateSimpleSET](#createstrictupdatesimpleset)
   - [queryAll and scanAll](#queryall-and-scanall)
+  - [queryItem](#queryitem)
 - [Troubleshooting](#troubleshooting)
 - [Opinionated decisions](#opinionated-decisions)
   - [TsDdbSet<...> and unknowable DynamoDBSets](#tsddbset-and-unknowable-dynamodbsets)
@@ -469,6 +471,10 @@ There is also a strict version of `updateSimpleSET`, because why not. It follows
 ### `queryAll` and `scanAll`
 
 Pretty self explanatory, simply returns an array containing all `Items` returned in a `query` or `scan` of the entire table.
+
+### `queryItem`
+
+Simply returns the first element of the `Items` returned in a single `query` operation (or `undefined` if `Items` was empty).
 
 ## Helper types
 

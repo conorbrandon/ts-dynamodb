@@ -61,3 +61,35 @@ export type QueryOutput<
       PE
     >[]) extends infer Res ? Res : never;
 }) extends infer Res2 ? Res2 : never;
+
+export type QueryItemOutput<
+  TableItem extends object,
+  PartitionKeyField extends string, // used to validate the LSI key
+  SortKeyField extends string, // used to pick from TypesUnion when the LSI projection type is keys-only or attributes
+  EAN extends AnyExpressionAttributeNames,
+  EAV extends ExpressionAttributeValues,
+  TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
+  KCE extends string,
+  PE extends string
+> = (
+  IsNever<TableIndex> extends true
+  ? ProjectNonIndexQuery<
+    KCE,
+    EAN,
+    EAV,
+    PartitionKeyField,
+    SortKeyField,
+    TableItem,
+    PE
+  >
+  : ProjectQuery<
+    KCE,
+    EAN,
+    EAV,
+    TableIndex,
+    TableItem,
+    PartitionKeyField,
+    SortKeyField,
+    PE
+  >
+) extends infer Res ? Res : never;

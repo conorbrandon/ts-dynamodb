@@ -1,9 +1,10 @@
 import { CiCdTable, CiCdTableType, MyTable, Table3 } from "./lib/tables";
-import { CICDSmaller, otherZodID, Type3Zod, A, B } from "./lib/types";
+import { CICDSmaller, otherZodID, Type3Zod, A, B, CICDBigger, CICDMini } from "./lib/types";
 import { myInspect, tsDdb, tsDdbRaw } from "./lib/lib";
 import { TypesafeDocumentClientv2 } from "../src/lib";
 import { z } from "zod";
 import { expectTypeOf } from 'expect-type';
+import { TSDdbSet } from "../src/type-helpers/sets/utils";
 
 jest.setTimeout(100_000);
 
@@ -809,6 +810,26 @@ describe('queryAll and scanAll', () => {
     console.log(items.forEach(console.log));
   });
 
+});
+test('queryItem', async () => {
+  const ciCds = await tsDdb.queryItem({
+    TableName: CiCdTable.name,
+    KeyConditionExpression: 'hashKey=:hashKey',
+    ExpressionAttributeValues: {
+      ':hashKey': '---'
+    }
+  } as const);
+  expectTypeOf<typeof ciCds>().toEqualTypeOf<undefined | TSDdbSet<CICDBigger> | TSDdbSet<CICDSmaller> | TSDdbSet<CICDMini>>();
+
+  const miniItem = await tsDdb.queryItem({
+    TableName: CiCdTable.name,
+    KeyConditionExpression: 'hashKey=:hashKey AND rangeKey=:rangeKey',
+    ExpressionAttributeValues: {
+      ':hashKey': '---',
+      ':rangeKey': 'mini-cicd'
+    }
+  } as const);
+  expectTypeOf<typeof miniItem>().toEqualTypeOf<undefined | TSDdbSet<CICDMini>>();
 });
 
 test('zod CRUD', async () => {

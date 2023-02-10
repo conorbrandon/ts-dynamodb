@@ -8,7 +8,7 @@ import { DeepReadonly, DeepWriteable, GetAllKeys, PickAcrossUnionOfRecords, Valu
 import { ProjectUpdateExpression } from "./type-helpers/UE/output";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames } from "./dynamodb-types";
-import { QueryInput, QueryOutput } from "./defs-override/query";
+import { QueryInput, QueryItemOutput, QueryOutput } from "./defs-override/query";
 import { DeepSimplifyObject, NoUndefined } from "./type-helpers/utils";
 import { ExtractEAsFromString } from "./type-helpers/extract-EAs";
 import { TSDdbSet } from "./type-helpers/sets/utils";
@@ -756,6 +756,38 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       KCE,
       PE
     >['Items']>;
+
+  };
+
+  async queryItem<
+    TN extends TableName<TS>,
+    KCE extends string,
+    PE extends string,
+    FE extends string,
+    KCEEAs extends ExtractEAsFromString<KCE>,
+    PEEAs extends ExtractEAsFromString<PE>,
+    FEEAs extends ExtractEAsFromString<FE>,
+    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
+    IndexName extends TableIndexName<TS, TN> = never
+  >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
+
+    const { Items = [] } = await this.client.query(params).promise();
+    const Item = Items[0];
+    if (!Item) {
+      return undefined;
+    }
+    return Item as unknown as QueryItemOutput<
+      TableItem<TS, TN>,
+      TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
+      // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
+      NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
+      EAN,
+      EAV,
+      TableIndex<TS, TN, IndexName>,
+      KCE,
+      PE
+    >;
 
   };
 
