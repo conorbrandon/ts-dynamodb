@@ -179,6 +179,73 @@ describe('createStrict*', () => {
     });
   });
 
+  describe('createStrict* with Key only as a parameter and item/attributesOnly', () => {
+
+    test('putType3Zod attributesOnly', async () => {
+
+      const putType3Zod = tsDdb.createStrictPutItem(Table3.name, true)<Type3Zod>();
+      const putItem = await putType3Zod({
+        Item,
+        ConditionExpression: 'threeID <> :zero',
+        ExpressionAttributeValues: {
+          ':zero': 0
+        },
+        ReturnValues: 'ALL_OLD'
+      } as const);
+      console.log('puttedZod:', myInspect(putItem));
+
+      expect(putItem).toStrictEqual(undefined);
+
+    });
+
+    test('getType3Zod itemOnly', async () => {
+
+      const getType3Zod = tsDdb.createStrictGetItem(Table3.name, true)<Type3Zod>();
+      const gotItem = await getType3Zod({
+        threeID: 0,
+        otherID
+      });
+      console.log('gotZod:', myInspect(gotItem));
+
+      expect(gotItem).toStrictEqual(Item);
+      expectTypeOf<typeof gotItem>().toEqualTypeOf<Type3Zod | undefined>();
+
+    });
+
+    test('updateType3Zod attributesOnly', async () => {
+
+      const updateType3Zod = tsDdb.createStrictUpdateItem(Table3.name, true)<Type3Zod>();
+      const updatedItem = await updateType3Zod({
+        Key: {
+          threeID: 0,
+          otherID
+        },
+        UpdateExpression: 'SET zod = :zod',
+        ExpressionAttributeValues: {
+          ':zod': updateObj,
+        },
+        ReturnValues: 'UPDATED_NEW'
+      } as const);
+      console.log('updatedZod:', myInspect(updatedItem));
+
+      expect(updatedItem).toStrictEqual({ zod: updateObj });
+
+    });
+
+    test('deleteType3Zod attributesOnly', async () => {
+
+      const deleteType3Zod = tsDdb.createStrictDeleteItem(Table3.name, true)<Type3Zod>();
+      const deletedItem = await deleteType3Zod({
+        threeID: 0,
+        otherID
+      });
+      console.log('deletedZod:', myInspect(deletedItem));
+
+      expect(deletedItem).toStrictEqual(undefined);
+
+    });
+  });
+
   test('updateSimpleSETCICDSmaller', async () => {
 
     const Key = {

@@ -196,10 +196,34 @@ const table3: DynamoDB.CreateTableInput = {
   ]
 };
 
+const keyinkeyTable: DynamoDB.CreateTableInput = {
+  TableName: 'keyinkey',
+  AttributeDefinitions: [
+    {
+      AttributeName: "Key",
+      AttributeType: "S"
+    },
+    {
+      AttributeName: "key",
+      AttributeType: "S"
+    }
+  ],
+  KeySchema: [
+    {
+      AttributeName: "Key",
+      KeyType: "HASH"
+    },
+    {
+      AttributeName: "key",
+      KeyType: "RANGE"
+    }
+  ],
+  ProvisionedThroughput
+};
 
 (async () => {
   console.info('Setting up local DynamoDB tables');
-  const tables = [myTable, cicdTable, table3];
+  const tables = [myTable, cicdTable, table3, keyinkeyTable];
   const existingTables = (await ddb.listTables().promise()).TableNames ?? [];
   let createPromises: Promise<string>[] = [];
   for (const table of tables) {

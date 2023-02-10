@@ -380,7 +380,44 @@ type u = typeof user;
 //   ^? type u = TSDdbSet<User, false> | undefined
 ```
 
-Everything else about the `createStrict*Item` methods is the same as described in the [TypesafeDocumentClientRawv2](#typesafedocumentclientrawv2) section.
+Everything else about the `createStrict*Item` methods is the same as described in the [TypesafeDocumentClientRawv2](#typesafedocumentclientrawv2) section, except you don't have to pass the `TableName` property in the parameters object. (i.e., all expressions are supported and are checked for missing `ExpressionAttribute`s).
+
+#### createStrict*Item additional features
+
+The following features are independent of one another and the use of one does not preclude the use of the other.
+
+##### Item/Attributes only
+
+When creating the curried function, you can optionally pass a second `boolean` parameter after the `TableName` argument. If equal to `true`, only the `Item` (for `get`) or `Attributes` (for `put`, `update`, and `delete`) are returned instead of an `aws-sdk` "`PromiseResult`". (For example, for `get`, you lose the ability to access the `ConsumedCapacity` and `$response` attributes in the response, but don't have to deconstruct `Item` out of the response.) Here's an example using `delete`:
+
+```ts
+// note the second parameter to createStrictDeleteItem is now `true`, which returns the `Attributes` directly!
+const deleteUser = tsDdb.createStrictDeleteItem(MyTable.name, true)<User>();
+const user = await deleteUser({
+  Key: {
+    hashKey: userID,
+    rangeKey: 'user'
+  },
+  ReturnValues: 'ALL_OLD'
+});
+type u = typeof user;
+//   ^? type u = TSDdbSet<User, false> | undefined
+```
+
+##### Provide only the Key for `get` and `delete`
+
+`createStrictGetItem` and `createStrictDeleteItem` allow passing only the `Key` object as a parameter instead of `{ Key: { ...your key here... } }`. You lose the ability to provide any other parameters, such as a `ProjectionExpression`, `ConditionExpression`, or `ReturnValues`, but it simplifies the parameters slightly because you don't need a top-level `"Key"` property in the params. Thus, the preceeding example could be simplified to:
+
+```ts
+const user = await deleteUser({
+    hashKey: userID,
+    rangeKey: 'user'
+  });
+type u = typeof user;
+//   ^? type u = undefined
+```
+
+There is one exception: if the `Key` of the item type includes a property named `"Key"`, you must pass the traditional params object. (This is because there is a simple check, `if ("Key" in params)`, that determines whether the params are the traditional kind, or simply the `Key` object itself.) This is enforced through a helper type, so you won't run into runtime errors because one of the keys to your table is simply named `"Key"`.
 
 ### updateSimpleSET
 

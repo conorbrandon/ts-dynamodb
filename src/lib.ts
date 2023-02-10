@@ -3,7 +3,7 @@ import { DeleteInput, DeleteOutput, StrictDeleteItemInput } from "./defs-overrid
 import { GetInput, StrictGetItemInput, GetOutput } from "./defs-override/get";
 import { PutInput, PutOutput, StrictPutItemInput } from "./defs-override/put";
 import { ExtraConditions, StrictUpdateItemInput, StrictUpdateSimpleSETInput, UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput } from "./defs-override/update";
-import { ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
+import { DoesKeyHaveAPropertyCalledKey, ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
 import { DeepReadonly, DeepWriteable, GetAllKeys, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
 import { ProjectUpdateExpression } from "./type-helpers/UE/output";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
@@ -385,9 +385,14 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         GAK extends GetAllKeys<TypeOfItem>,
         EANs extends ExtractEAsFromString<PE>['ean'],
         EAN extends Record<EANs, GAK>
-      >(params: StrictGetItemInput<Key, PE, EANs, GAK, EAN>): Promise<IO extends true ? GetOutput<PE, TypeOfItem, EAN>['Item'] : TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>> => {
+      >(params: StrictGetItemInput<Key, PE, EANs, GAK, EAN> | DoesKeyHaveAPropertyCalledKey<Key>): Promise<IO extends true ? GetOutput<PE, TypeOfItem, EAN>['Item'] : TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>> => {
 
-        const res = await this.client.get({ TableName, ...params }).promise();
+        let res;
+        if ("Key" in params) {
+          res = await this.client.get({ TableName, ...params }).promise();
+        } else {
+          res = await this.client.get({ TableName, Key: params }).promise();
+        }
         if (itemOnly) {
           return res.Item as any;
         }
@@ -673,9 +678,14 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         EAN extends Record<EAs['ean'], GAK>,
         EAV extends Record<EAs['eav'], any>,
         RN extends PutAndDeleteReturnValues = 'NONE'
-      >(params: StrictDeleteItemInput<Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN>): Promise<AO extends true ? DeleteOutput<TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>> => {
+      >(params: StrictDeleteItemInput<Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN> | DoesKeyHaveAPropertyCalledKey<Key>): Promise<AO extends true ? DeleteOutput<TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>> => {
 
-        const res = await this.client.delete({ TableName, ...params }).promise();
+        let res;
+        if ("Key" in params) {
+          res = await this.client.delete({ TableName, ...params }).promise();
+        } else {
+          res = await this.client.delete({ TableName, Key: params }).promise();
+        }
         if (attributesOnly) {
           return res.Attributes as any;
         }
