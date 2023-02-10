@@ -100,6 +100,85 @@ describe('createStrict*', () => {
 
   });
 
+  describe('createStrict* with item/attributesOnly', () => {
+
+    test('putType3Zod attributesOnly', async () => {
+
+      const putType3Zod = tsDdb.createStrictPutItem(Table3.name, true)<Type3Zod>();
+      const putItem = await putType3Zod({
+        Item,
+        ConditionExpression: 'threeID <> :zero',
+        ExpressionAttributeValues: {
+          ':zero': 0
+        },
+        ReturnValues: 'ALL_OLD'
+      } as const);
+      console.log('puttedZod:', myInspect(putItem));
+
+      expect(putItem).toStrictEqual(undefined);
+
+    });
+
+    test('getType3Zod itemOnly', async () => {
+
+      const getType3Zod = tsDdb.createStrictGetItem(Table3.name, true)<Type3Zod>();
+      const gotItem = await getType3Zod({
+        Key: {
+          threeID: 0,
+          otherID
+        },
+        ProjectionExpression: '#threeID, zod',
+        ExpressionAttributeNames: {
+          '#threeID': 'threeID'
+        }
+      } as const);
+      console.log('gotZod:', myInspect(gotItem));
+
+      expect(gotItem).toStrictEqual({ threeID: Item.threeID, zod: Item.zod });
+
+    });
+
+    test('updateType3Zod attributesOnly', async () => {
+
+      const updateType3Zod = tsDdb.createStrictUpdateItem(Table3.name, true)<Type3Zod>();
+      const updatedItem = await updateType3Zod({
+        Key: {
+          threeID: 0,
+          otherID
+        },
+        UpdateExpression: 'SET zod = :zod',
+        ExpressionAttributeValues: {
+          ':zod': updateObj,
+        },
+        ReturnValues: 'UPDATED_NEW'
+      } as const);
+      console.log('updatedZod:', myInspect(updatedItem));
+
+      expect(updatedItem).toStrictEqual({ zod: updateObj });
+
+    });
+
+    test('deleteType3Zod attributesOnly', async () => {
+
+      const deleteType3Zod = tsDdb.createStrictDeleteItem(Table3.name, true)<Type3Zod>();
+      const deletedItem = await deleteType3Zod({
+        Key: {
+          threeID: 0,
+          otherID
+        },
+        ConditionExpression: 'threeID = :zero',
+        ExpressionAttributeValues: {
+          ':zero': 0
+        },
+        ReturnValues: 'ALL_OLD'
+      } as const);
+      console.log('deletedZod:', myInspect(deletedItem));
+
+      expect(deletedItem).toStrictEqual({ ...Item, zod: updateObj });
+
+    });
+  });
+
   test('updateSimpleSETCICDSmaller', async () => {
 
     const Key = {

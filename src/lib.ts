@@ -1,4 +1,4 @@
-import { TypesafeCallback, TypesafeRequest } from "./defs-override/defs-helpers";
+import { TypesafePromiseResult, TypesafeCallback, TypesafeRequest } from "./defs-override/defs-helpers";
 import { DeleteInput, DeleteOutput, StrictDeleteItemInput } from "./defs-override/delete";
 import { GetInput, StrictGetItemInput, GetOutput } from "./defs-override/get";
 import { PutInput, PutOutput, StrictPutItemInput } from "./defs-override/put";
@@ -366,16 +366,18 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: GetInput<TN, Key, PE, EANs, GAK, EAN>) {
 
     const res = await this.client.get(params).promise();
-    return res as unknown as GetOutput<PE, TypeOfItem, EAN>;
+    return res as unknown as TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>;
 
   };
 
   /** 
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only get a certain type of `Item`. 
    * 
+   * Pass optional `itemOnly` equal `true` to bypass the metadata DynamoDB returns and get the `Item` back directly.
+   * 
    * Note: the currying is necessary to be able to use a dynamic `TableName` determined at runtime and work around the TS limitation on partial inference of generic parameters.
    */
-  createStrictGetItem<TN extends TableName<TS>>(TableName: TN) {
+  createStrictGetItem<TN extends TableName<TS>, IO extends boolean = false>(TableName: TN, itemOnly?: IO) {
     return <TypeOfItem extends TableItem<TS, TN> = never>() =>
       async <
         Key extends TableItemKey<TS, TN, TypeOfItem>,
@@ -383,10 +385,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         GAK extends GetAllKeys<TypeOfItem>,
         EANs extends ExtractEAsFromString<PE>['ean'],
         EAN extends Record<EANs, GAK>
-      >(params: StrictGetItemInput<Key, PE, EANs, GAK, EAN>) => {
+      >(params: StrictGetItemInput<Key, PE, EANs, GAK, EAN>): Promise<IO extends true ? GetOutput<PE, TypeOfItem, EAN>['Item'] : TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>> => {
 
         const res = await this.client.get({ TableName, ...params }).promise();
-        return res as unknown as GetOutput<PE, TypeOfItem, EAN>;
+        if (itemOnly) {
+          return res.Item as any;
+        }
+        return res as any;
 
       };
   };
@@ -405,16 +410,18 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: PutInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, EAV, RN>) {
 
     const res = await this.client.put(params).promise();
-    return res as unknown as PutOutput<TypeOfItem, RN>;
+    return res as unknown as TypesafePromiseResult<PutOutput<TypeOfItem, RN>>;
 
   };
 
   /**
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only put a certain type of `Item`. 
    * 
+   * Pass optional `attributesOnly` equal `true` to bypass the metadata DynamoDB returns and get the `Attributes` back directly.
+   * 
    * Note: the currying is necessary to be able to use a dynamic `TableName` determined at runtime and work around the TS limitation on partial inference of generic parameters.
    */
-  createStrictPutItem<TN extends TableName<TS>>(TableName: TN) {
+  createStrictPutItem<TN extends TableName<TS>, AO extends boolean = false>(TableName: TN, attributesOnly?: AO) {
     return <TypeOfItem extends TableItem<TS, TN> = never>() =>
       async <
         Item extends TypeOfItem,
@@ -424,10 +431,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         EAN extends Record<EAs['ean'], GAK>,
         EAV extends Record<EAs['eav'], any>,
         RN extends PutAndDeleteReturnValues = 'NONE'
-      >(params: StrictPutItemInput<Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, EAV, RN>) => {
+      >(params: StrictPutItemInput<Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, EAV, RN>): Promise<AO extends true ? PutOutput<TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<PutOutput<TypeOfItem, RN>>> => {
 
         const res = await this.client.put({ TableName, ...params }).promise();
-        return res as unknown as PutOutput<TypeOfItem, RN>;
+        if (attributesOnly) {
+          return res.Attributes as any;
+        }
+        return res as any;
 
       }
   };
@@ -447,16 +457,18 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: UpdateInput<TN, Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV, RN>) {
 
     const res = await this.client.update(params).promise();
-    return res as unknown as UpdateOutput<TypeOfItem, UE, EAN, RN>;
+    return res as unknown as TypesafePromiseResult<UpdateOutput<TypeOfItem, UE, EAN, RN>>;
 
   };
 
   /**
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only update a certain type of `Item`. 
    * 
+   * Pass optional `attributesOnly` equal `true` to bypass the metadata DynamoDB returns and get the `Attributes` back directly.
+   * 
    * Note: the currying is necessary to be able to use a dynamic `TableName` determined at runtime and work around the TS limitation on partial inference of generic parameters.
    */
-  createStrictUpdateItem<TN extends TableName<TS>>(TableName: TN) {
+  createStrictUpdateItem<TN extends TableName<TS>, AO extends boolean = false>(TableName: TN, attributesOnly?: AO) {
     return <TypeOfItem extends TableItem<TS, TN> = never>() =>
       async<
         Key extends TableItemKey<TS, TN, TypeOfItem>,
@@ -468,10 +480,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
         EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>,
         RN extends UpdateReturnValues = 'NONE'
-      >(params: StrictUpdateItemInput<Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV, RN>) => {
+      >(params: StrictUpdateItemInput<Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV, RN>): Promise<AO extends true ? UpdateOutput<TypeOfItem, UE, EAN, RN>['Attributes'] : TypesafePromiseResult<UpdateOutput<TypeOfItem, UE, EAN, RN>>> => {
 
         const res = await this.client.update({ TableName, ...params }).promise();
-        return res as unknown as UpdateOutput<TypeOfItem, UE, EAN, RN>;
+        if (attributesOnly) {
+          return res.Attributes as any;
+        }
+        return res as any;
 
       }
   };
@@ -567,7 +582,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       console.log(_logParams.message ?? '', 'update params:', this.inspect(finalParams));
     }
     const res = await this.client.update(finalParams).promise();
-    return res as unknown as UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>;
+    return res as unknown as TypesafePromiseResult<UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>>;
 
   };
 
@@ -575,6 +590,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * Similar to `updateSimpleSet`, but only allow updating one type of Item.
    * 
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only update a certain type of `Item`. 
+   * 
+   * Pass optional `attributesOnly` equal `true` to bypass the metadata DynamoDB returns and get the `Attributes` back directly.
    * 
    * Note: the currying is necessary to be able to use a dynamic `TableName` determined at runtime and work around the TS limitation on partial inference of generic parameters.
    *
@@ -584,7 +601,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * await updateUser({ Key: { p0: '' as UserID, s0: 'user' }, Item: { role: 'admin' } });
    * ```
    */
-  createStrictUpdateSimpleSET<TN extends TableName<TS>>(TableName: TN) {
+  createStrictUpdateSimpleSET<TN extends TableName<TS>, AO extends boolean = false>(TableName: TN, attributesOnly?: AO) {
     return <TypeOfItem extends TableItem<TS, TN> = never>() =>
       async<
         Key extends TableItemKey<TS, TN, TypeOfItem>,
@@ -596,7 +613,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         EAN extends Record<ASEAs['ean'], GAK>,
         EAV extends Record<ASEAs['eav'], any>,
         RN extends UpdateReturnValues = 'NONE'
-      >({ Key, Item, ReturnValues, extraConditions, _logParams }: StrictUpdateSimpleSETInput<Key, Partial<NoKeysTypeOfItem>, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, EAV, RN>) => {
+      >({ Key, Item, ReturnValues, extraConditions, _logParams }: StrictUpdateSimpleSETInput<Key, Partial<NoKeysTypeOfItem>, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, EAV, RN>): Promise<AO extends true ? UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>>> => {
 
         const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
         const finalParams = {
@@ -609,7 +626,10 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
           console.log(_logParams.message ?? '', 'update params:', this.inspect(finalParams));
         }
         const res = await this.client.update(finalParams).promise();
-        return res as unknown as UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>;
+        if (attributesOnly) {
+          return res.Attributes as any;
+        }
+        return res as any;
       }
   };
 
@@ -626,12 +646,14 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: DeleteInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN>) {
 
     const res = await this.client.delete(params).promise();
-    return res as unknown as DeleteOutput<TypeOfItem, RN>;
+    return res as unknown as TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>;
 
   };
 
   /**
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only delete a certain type of `Item`. 
+   * 
+   * Pass optional `attributesOnly` equal `true` to bypass the metadata DynamoDB returns and get the `Attributes` back directly.
    * 
    * Note: the currying is necessary to be able to use a dynamic `TableName` determined at runtime and work around the TS limitation on partial inference of generic parameters.
    * 
@@ -641,7 +663,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * await deleteUser({ Key: { p0: UserID, s0: 'user' } });
    * ```
    */
-  createStrictDeleteItem<TN extends TableName<TS>>(TableName: TN) {
+  createStrictDeleteItem<TN extends TableName<TS>, AO extends boolean = false>(TableName: TN, attributesOnly?: AO) {
     return <TypeOfItem extends TableItem<TS, TN> = never>() =>
       async<
         Key extends TableItemKey<TS, TN, TypeOfItem>,
@@ -651,10 +673,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         EAN extends Record<EAs['ean'], GAK>,
         EAV extends Record<EAs['eav'], any>,
         RN extends PutAndDeleteReturnValues = 'NONE'
-      >(params: StrictDeleteItemInput<Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN>) => {
+      >(params: StrictDeleteItemInput<Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN>): Promise<AO extends true ? DeleteOutput<TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>> => {
 
         const res = await this.client.delete({ TableName, ...params }).promise();
-        return res as unknown as DeleteOutput<TypeOfItem, RN>;
+        if (attributesOnly) {
+          return res.Attributes as any;
+        }
+        return res as any;
 
       }
   };
@@ -673,7 +698,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
 
     const res = await this.client.query(params).promise();
-    return res as unknown as QueryOutput<
+    return res as unknown as TypesafePromiseResult<QueryOutput<
       TableItem<TS, TN>,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
@@ -683,7 +708,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       TableIndex<TS, TN, IndexName>,
       KCE,
       PE
-    >;
+    >>;
 
   };
 
@@ -736,7 +761,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: ScanInput<TN, IndexName, FE, PE, FEEAs['ean'] | PEEAs['ean'], FEEAs['eav'], EAN, EAV>) {
 
     const res = await this.client.scan(params).promise();
-    return res as unknown as ScanOutput<
+    return res as unknown as TypesafePromiseResult<ScanOutput<
       TableItem<TS, TN>,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
@@ -744,7 +769,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       EAN,
       TableIndex<TS, TN, IndexName>,
       PE
-    >;
+    >>;
 
   };
 
