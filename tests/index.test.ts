@@ -1,8 +1,9 @@
 import { CiCdTable, CiCdTableType, MyTable, Table3 } from "./lib/tables";
-import { CICDSmaller, otherZodID, Type3Zod } from "./lib/types";
-import { myInspect, tsDdb } from "./lib/lib";
+import { CICDSmaller, otherZodID, Type3Zod, A, B } from "./lib/types";
+import { myInspect, tsDdb, tsDdbRaw } from "./lib/lib";
 import { TypesafeDocumentClientv2 } from "../src/lib";
 import { z } from "zod";
+import { expectTypeOf } from 'expect-type';
 
 jest.setTimeout(100_000);
 
@@ -486,14 +487,15 @@ describe('query', () => {
       KeyConditionExpression: `#datum = :datum and begins_with(datumStr, :datumStr)`,
       ExpressionAttributeNames: {
         '#datum': 'datum',
-        '#hashKey': 'hashKey'
+        '#hashKey': 'hashKey',
+        '#data': 'data'
       },
       ExpressionAttributeValues: {
         ':datum': 0,
         ':datumStr': 'datum_',
         ':hashKey': '---'
       },
-      ProjectionExpression: 'thebig.data.myTuple[1], finaler, datum, rangeKey, #hashKey, datumStr',
+      ProjectionExpression: 'thebig.#data.myTuple[1], datum, rangeKey, #hashKey, datumStr',
       FilterExpression: '#hashKey = :hashKey'
     } as const);
     console.log('datumQueried:', myInspect(datumQueried.Items));
@@ -724,4 +726,130 @@ test('zod CRUD', async () => {
   });
   console.log('zodDeleted:', myInspect(zodDeleted.Attributes));
 
+});
+
+test('Awaited and Promise.all', async () => {
+  const putPromise = tsDdbRaw.put({
+    TableName: Table3.name,
+    Item: {
+      threeID: 0,
+      otherID,
+      zod: {
+        thing: 'random',
+        more: {
+          more: 'mas'
+        }
+      }
+    },
+    ConditionExpression: 'threeID <> :zero',
+    ExpressionAttributeValues: {
+      ':zero': 0
+    },
+    ReturnValues: 'ALL_OLD'
+  } as const).promise();
+  type Put = Awaited<typeof putPromise>['Attributes'];
+  expectTypeOf<Put>().toEqualTypeOf<Type3Zod | undefined>();
+
+  await putPromise;
+
+  const getPromise = ((threeID: number, otherID: z.infer<typeof otherZodID>) => tsDdbRaw.get({
+    TableName: Table3.name,
+    Key: {
+      threeID,
+      otherID
+    },
+    ProjectionExpression: '#threeID, otherID, zod.more.more',
+    ExpressionAttributeNames: {
+      '#threeID': 'threeID'
+    }
+  } as const).promise())(0, otherID);
+  type Get = Awaited<typeof getPromise>['Item'];
+  expectTypeOf<Get>().toEqualTypeOf<{
+    zod: {
+      more: {
+        more: "mas" | "zodIsGoodZodIsGreat";
+      };
+    };
+    threeID: number;
+    otherID: string & z.BRAND<"otherID">;
+  } | undefined>();
+
+
+  const updatePromise = tsDdbRaw.update({
+    TableName: Table3.name,
+    Key: {
+      threeID: 0,
+      otherID
+    },
+    UpdateExpression: 'SET zod.thing = :thing',
+    ExpressionAttributeValues: {
+      ':thing': 'stringz',
+    },
+    ReturnValues: 'UPDATED_NEW'
+  } as const).promise();
+  type Update = Awaited<typeof updatePromise>['Attributes'];
+  expectTypeOf<Update>().toEqualTypeOf<{
+    zod: {
+      thing: "random" | "stringz";
+    };
+  } | undefined>();
+
+
+  const deletePromise = tsDdbRaw.delete({
+    TableName: Table3.name,
+    Key: {
+      threeID: 0,
+      otherID
+    },
+    ReturnValues: 'ALL_OLD'
+  }).promise();
+  type Delete = Awaited<typeof deletePromise>['Attributes'];
+  expectTypeOf<Delete>().toEqualTypeOf<Type3Zod | undefined>();
+
+
+  const queryPromise = tsDdbRaw.query({
+    TableName: MyTable.name,
+    KeyConditionExpression: 'p0 = :p0',
+    ExpressionAttributeValues: {
+      ':p0': '---',
+    }
+  } as const).promise();
+  type Query = Awaited<typeof queryPromise>['Items'];
+  expectTypeOf<Query>().toEqualTypeOf<(A | B)[] | undefined>();
+
+
+  const scanPromise = tsDdbRaw.scan({
+    TableName: CiCdTable.name,
+    IndexName: CiCdTable.indices["datumStr-index"].name
+  }).promise();
+  type Scan = Awaited<typeof scanPromise>['Items'];
+  expectTypeOf<Scan>().toEqualTypeOf<({
+    hashKey: `${string}-${string}-${string}-${string}`;
+    rangeKey: "small-cicd";
+    datumStr?: `datum_${string}` | `blah_${number}` | undefined;
+  } | {
+    hashKey: `${string}-${string}-${string}-${string}`;
+    rangeKey: "big-cicd";
+  } | {
+    hashKey: `${string}-${string}-${string}-${string}`;
+    rangeKey: "mini-cicd";
+    datumStr: `blah_${number}` | undefined;
+  })[] | undefined>();
+
+
+  const [
+    // purPromise is awaited above, must be done first,
+    { Item: _got },
+    { Attributes: _updated },
+    { Attributes: _deleted },
+    { Items: _queried },
+    { Items: _scanned }
+  ] = await Promise.all([
+    //
+    getPromise,
+    updatePromise,
+    deletePromise,
+    queryPromise,
+    scanPromise
+  ]);
 });

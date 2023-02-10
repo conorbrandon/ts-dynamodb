@@ -39,25 +39,25 @@ export type QueryOutput<
   TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
   KCE extends string,
   PE extends string
-> = Omit<DocumentClient.QueryOutput, 'Items'> & {
-  Items?: IsNever<TableIndex> extends true
-  ? ProjectNonIndexQuery<
-    KCE,
-    EAN,
-    EAV,
-    PartitionKeyField,
-    SortKeyField,
-    TableItem,
-    PE
-  >[]
-  : ProjectQuery<
-    KCE,
-    EAN,
-    EAV,
-    TableIndex,
-    TableItem,
-    PartitionKeyField,
-    SortKeyField,
-    PE
-  >[];
-};
+> = (Omit<DocumentClient.QueryOutput, 'Items'> & {
+  Items?: (IsNever<TableIndex> extends true
+    ? ProjectNonIndexQuery<
+      KCE,
+      EAN,
+      EAV,
+      PartitionKeyField,
+      SortKeyField,
+      TableItem,
+      PE
+    >[]
+    : ProjectQuery<
+      KCE,
+      EAN,
+      EAV,
+      TableIndex,
+      TableItem,
+      PartitionKeyField,
+      SortKeyField,
+      PE
+    >[]) extends infer Res ? Res : never;
+}) extends infer Res2 ? Res2 : never;

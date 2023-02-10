@@ -132,13 +132,13 @@ export type UpdateOutput<
   UE extends string,
   EAN extends AnyExpressionAttributeNames,
   RN extends UpdateReturnValues,
-> = Omit<DocumentClient.UpdateItemOutput, 'Attributes'> & {
+> = (Omit<DocumentClient.UpdateItemOutput, 'Attributes'> & {
   Attributes?: UpdateOutputHelper<GenericT, UE, EAN, RN> extends infer Res ? Res : never;
-};
+}) extends infer Res2 ? Res2 : never;
 export type UpdateSimpleSETOutput<
   Item extends object,
   TypeOfItem extends object,
   RN extends UpdateReturnValues
-> = Omit<DocumentClient.UpdateItemOutput, 'Attributes'> & {
+> = (Omit<DocumentClient.UpdateItemOutput, 'Attributes'> & {
   Attributes?: UpdateSimpleSETOutputHelper<Item, TypeOfItem, RN> extends infer Res ? Res : never;
-};
+}) extends infer Res2 ? Res2 : never;

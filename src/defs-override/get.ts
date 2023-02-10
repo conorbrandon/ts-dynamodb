@@ -51,11 +51,8 @@ export type GetOutput<
   PE extends string,
   TypeOfItem extends object,
   EAN extends AnyExpressionAttributeNames
-> =
-  Omit<DocumentClient.GetItemOutput, 'Item'> & {
-    Item?: (
-      string extends PE
-      ? TSDdbSet<TypeOfItem>
-      : ProjectProjectionExpression<TypeOfItem, PE, EAN> extends infer Res ? Res : never
-    )
-  };
+> = (Omit<DocumentClient.GetItemOutput, 'Item'> & {
+  Item?: (string extends PE
+    ? TSDdbSet<TypeOfItem>
+    : ProjectProjectionExpression<TypeOfItem, PE, EAN>) extends infer Res ? Res : never;
+}) extends infer Res2 ? Res2 : never;

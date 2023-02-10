@@ -69,8 +69,8 @@ export type StrictDeleteItemInput<
 export type DeleteOutput<
   TypeOfItem extends object,
   RN extends PutAndDeleteReturnValues
-> = Omit<DocumentClient.DeleteItemOutput, 'Attributes'> & {
+> = (Omit<DocumentClient.DeleteItemOutput, 'Attributes'> & {
   Attributes?: PutAndDeleteOutputHelper<
     TypeOfItem, RN
-  >;
-};
+  > extends infer Res ? Res : never;
+}) extends infer Res2 ? Res2 : never;

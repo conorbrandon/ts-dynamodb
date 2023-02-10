@@ -31,19 +31,19 @@ export type ScanOutput<
   EAN extends AnyExpressionAttributeNames,
   TableIndex extends IndexFromValue,
   PE extends string
-> = Omit<DocumentClient.ScanOutput, 'Items'> & {
-  Items?: IsNever<TableIndex> extends true
-  ? ProjectNonIndexScan<
-    TableItem,
-    EAN,
-    PE
-  >[]
-  : ProjectScan<
-    TableItem,
-    TableIndex,
-    PartitionKeyField,
-    SortKeyField,
-    EAN,
-    PE
-  >[]
-};
+> = (Omit<DocumentClient.ScanOutput, 'Items'> & {
+  Items?: (IsNever<TableIndex> extends true
+    ? ProjectNonIndexScan<
+      TableItem,
+      EAN,
+      PE
+    >[]
+    : ProjectScan<
+      TableItem,
+      TableIndex,
+      PartitionKeyField,
+      SortKeyField,
+      EAN,
+      PE
+    >[]) extends infer Res ? Res : never;
+}) extends infer Res2 ? Res2 : never;
