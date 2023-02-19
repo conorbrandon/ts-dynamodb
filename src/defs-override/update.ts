@@ -6,6 +6,7 @@ import { DeepWriteable, NotEmptyWithMessage } from "../type-helpers/record";
 import { FilterUnusedEANOrVs, UseAllExpressionAttributesInString } from "../type-helpers/string";
 import { IsUEValid, UEIsValid } from "../type-helpers/UE/ue-lib";
 import { OnlyStrings } from "../type-helpers/utils";
+import { _LogParams } from "./defs-helpers";
 
 export type UpdateInput<
   TN extends string,
@@ -107,12 +108,11 @@ export type UpdateSimpleSETInput<
   */
   extraConditions?: ExtraConditions<AS, EANs, EAVs, GAK, EAN, EAV>;
   /**
-   * 
    * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `simpleUpdateSET` creates the parameters for you, you may wish to log exactly what was going into your DB (or debug conflicting names with the `extraConditions` option).
    * Make sure to set `log` to `true`!
    * Optionally also log a custom `message`.
    */
-  _logParams?: { log: boolean, message?: string };
+  _logParams?: _LogParams;
 };
 export type StrictUpdateSimpleSETInput<
   Key extends object,

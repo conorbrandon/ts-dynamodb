@@ -1,5 +1,5 @@
-import { CiCdTable, CiCdTableType, MyTable, Table3 } from "./lib/tables";
-import { CICDSmaller, otherZodID, Type3Zod, A, B, CICDBigger, CICDMini } from "./lib/types";
+import { CiCdTable, CiCdTableType, MyTable, MyTableType, Table3 } from "./lib/tables";
+import { CICDSmaller, otherZodID, Type3Zod, A, B, CICDBigger, CICDMini, Type3a } from "./lib/types";
 import { myInspect, tsDdb, tsDdbRaw } from "./lib/lib";
 import { TypesafeDocumentClientv2 } from "../src/lib";
 import { z } from "zod";
@@ -962,18 +962,6 @@ test('Awaited and Promise.all', async () => {
   } | undefined>();
 
 
-  const deletePromise = tsDdbRaw.delete({
-    TableName: Table3.name,
-    Key: {
-      threeID: 0,
-      otherID
-    },
-    ReturnValues: 'ALL_OLD'
-  }).promise();
-  type Delete = Awaited<typeof deletePromise>['Attributes'];
-  expectTypeOf<Delete>().toEqualTypeOf<Type3Zod | undefined>();
-
-
   const queryPromise = tsDdbRaw.query({
     TableName: MyTable.name,
     KeyConditionExpression: 'p0 = :p0',
@@ -1005,18 +993,375 @@ test('Awaited and Promise.all', async () => {
 
 
   const [
-    // purPromise is awaited above, must be done first,
+    // putPromise is awaited above, must be done first,
     { Item: _got },
     { Attributes: _updated },
-    { Attributes: _deleted },
     { Items: _queried },
     { Items: _scanned }
   ] = await Promise.all([
     //
     getPromise,
     updatePromise,
-    deletePromise,
     queryPromise,
     scanPromise
+  ]);
+
+
+  const deletePromise = tsDdbRaw.delete({
+    TableName: Table3.name,
+    Key: {
+      threeID: 0,
+      otherID
+    },
+    ReturnValues: 'ALL_OLD'
+  }).promise();
+  type Delete = Awaited<typeof deletePromise>['Attributes'];
+  expectTypeOf<Delete>().toEqualTypeOf<Type3Zod | undefined>();
+  await deletePromise;
+});
+
+test('getPE', async () => {
+  const Item: A = {
+    p0: '---',
+    s0: 'a',
+    obj: {
+      prop1: ['hi', 'bye'],
+      prop2: 99,
+      prop3: {
+        ' ': 0
+      }
+    },
+    prop1: ['0', '1']
+  };
+  await tsDdb.put({
+    TableName: MyTable.name,
+    Item
+  } as const);
+
+  const getA = async <PE extends string>(Key: TypesafeDocumentClientv2.GetTableItemKey<MyTableType, A>, pe?: PE) => {
+    const { Item: got } = await tsDdb.getPE({
+      TableName: MyTable.name,
+      Key,
+      _logParams: {
+        log: true
+      }
+    }, pe);
+    return got;
+  };
+  const gotA = await getA({
+    p0: '---',
+    s0: 'a'
+  }, 'obj.prop1[1], prop1[1], prop2, obj.prop2, obj.prop3');
+  console.log(myInspect(gotA));
+  expectTypeOf<typeof gotA>().toEqualTypeOf<{
+    prop1: string[] | undefined;
+    obj: {
+      prop3: {
+        [x: string]: number;
+      };
+      prop2: number;
+      prop1: string[] | undefined;
+    };
+    prop2?: undefined;
+  } | undefined>();
+
+
+  const Item2: CICDSmaller = {
+    hashKey: '---',
+    rangeKey: 'small-cicd',
+    datum: 5,
+    map: { hi: { exists: 0 }, howdy: { hola: 7 } },
+    prop: [
+      {
+        weird: {
+          wack: { even: 'string', odd: 0 },
+          peculiar: ["💯", null]
+        },
+        strange: ["this is the end!"]
+      },
+      "funky",
+      "last"
+    ],
+    final: 'const',
+    nest: [null, [true, false]],
+    pure: [[0], [1], [2]],
+    rest: [true, [{ x: 0, y: false }], [{ x: 1, y: true }]],
+    finaler: 1_000,
+    thebig: {
+      hashKey: "---",
+      rangeKey: 'big-cicd',
+      data: {
+        myRestArray: [5, "1", { moo: 'moo', boo: 44 }],
+        relatedItems: [{ hi: 'hello', bye: 0 }, 99],
+        myTuple: [{ tup1: null }, { tup2: 'string', myBinarySet: tsDdb.createBinarySet([Buffer.from("ABC")]) },],
+        bar: 'bar',
+        foo: 0,
+        price: undefined,
+        quantity: 78,
+        myStringSet: tsDdb.createStringSet(["hi", "hello"])
+      }
+    },
+    myNumberSet: tsDdb.createNumberSet([1]),
+  };
+  await tsDdb.put({
+    TableName: CiCdTable.name,
+    Item: Item2
+  });
+  const getCICDSmaller = async <PE extends string>(Key: TypesafeDocumentClientv2.GetTableItemKey<CiCdTableType, CICDSmaller>, pe?: PE) => {
+    return (await tsDdb.getPE({
+      TableName: CiCdTable.name,
+      Key,
+      _logParams: {
+        log: true
+      }
+    }, pe)).Item;
+  };
+  const pe = `
+thebig.data.myRestArray[2].moo,
+rest[2][0].x,
+thebig.hashKey,
+prop[0].weird.peculiar[1],
+thebig.data.finale,
+finaler,
+hashKey,
+nest[1][1],
+prop[0].strange,
+pure[0][0],
+final,
+thebig.data.relatedItems[0].bye,
+prop[0].weird.wack.even,
+thebig.data.relatedItems[100],
+datum,
+rest[0],
+prop[2],
+nest[1][0],
+map.howdy.hola,
+thebig.data.price,
+thebig.rangeKey,
+rangeKey,
+doh,
+thebig.data.relatedItems[1].hi,
+thebig.data.foo,
+map.hi.exists,
+thebig.data.bar,
+thebig.data.quantity,
+thebig.data.baz,
+prop[0].weird.peculiar[0],
+thebig.data.myRestArray[1].boo,
+thebig.data.product,
+thebig.data.myRestArray[0],
+map.hi.hello,
+prop[1],
+thebig.data.myTuple[1].tup2,
+thebig.data.final,
+thebig.data.myTuple[0],
+datumStr,
+myNumberSet,
+thebig.data.myStringSet`; // thebig.data.myTuple[1].myBinarySet
+  const gotCICDSmaller = await getCICDSmaller({
+    hashKey: '---',
+    rangeKey: 'small-cicd'
+  }, pe);
+  console.log(myInspect(gotCICDSmaller));
+
+  const expectation = {
+    datum: 5,
+    rangeKey: 'small-cicd',
+    rest: [true, [{ x: 1 }]],
+    hashKey: '---',
+    thebig: {
+      rangeKey: 'big-cicd',
+      data: {
+        bar: 'bar',
+        quantity: 78,
+        myTuple: [{ tup1: null }, { tup2: 'string' }],
+        myStringSet: {
+          wrapperName: 'Set',
+          values: ['hello', 'hi'],
+          type: 'String'
+        },
+        foo: 0,
+        myRestArray: [5, { moo: 'moo' }],
+        relatedItems: [{ bye: 0 }]
+      },
+      hashKey: '---'
+    },
+    finaler: 1000,
+    prop: [
+      {
+        weird: { wack: { even: 'string' }, peculiar: ['💯', null] },
+        strange: ['this is the end!']
+      },
+      'funky',
+      'last'
+    ],
+    final: 'const',
+    nest: [[true, false]],
+    pure: [[0]],
+    map: { howdy: { hola: 7 }, hi: { exists: 0 } },
+    myNumberSet: { wrapperName: 'Set', values: [1], type: 'Number' }
+  };
+  expect(gotCICDSmaller).toEqual(expectation);
+});
+
+test('queryPE', async () => {
+  const wooItems: Type3a[] = [
+    {
+      threeID: 0,
+      otherID: `other_a-b-c-d`,
+      boo: null,
+      woo: 'hi',
+      hoo: `999000`,
+      nowItExists: []
+    },
+    {
+      threeID: 0,
+      otherID: `other_d-c-b-a`,
+      boo: null,
+      woo: 'hi',
+      nowItExists: []
+    }
+  ];
+  // these woo items are used for scanPE test also!!!
+  await Promise.all(wooItems.map(Item => tsDdb.put({ TableName: Table3.name, Item })));
+  const queryType3Woo = async <PE extends string>(threeID: number, woo: string, pe?: PE) => {
+    const { Items } = await tsDdb.queryPE({
+      TableName: Table3.name,
+      KeyConditionExpression: `threeID = :threeID AND #woo = :woo`,
+      IndexName: Table3.indices["woo-index"].name,
+      ExpressionAttributeNames: {
+        '#woo': 'woo',
+        '#otherID': 'otherID'
+      },
+      ExpressionAttributeValues: {
+        ':threeID': threeID,
+        ":woo": woo
+      },
+      _logParams: {
+        log: true
+      },
+      FilterExpression: 'attribute_exists(#otherID)'
+    } as const, pe);
+    return Items ?? [];
+  };
+  const woos = await queryType3Woo(0, 'hi', 'woo, hoo, boo');
+  console.log(myInspect(woos));
+  expectTypeOf<typeof woos>().toEqualTypeOf<{
+    hoo?: `999${number}` | undefined;
+    woo: string;
+    boo: null;
+  }[]>();
+
+
+  const queryAllType3Woo = async <PE extends string>(threeID: number, woo: string, pe?: PE) => {
+    return await tsDdb.queryAllPE({
+      TableName: Table3.name,
+      KeyConditionExpression: `threeID = :threeID AND #woo = :woo`,
+      IndexName: Table3.indices["woo-index"].name,
+      ExpressionAttributeNames: {
+        '#woo': 'woo',
+        '#otherID': 'otherID'
+      },
+      ExpressionAttributeValues: {
+        ':threeID': threeID,
+        ":woo": woo
+      },
+      _logParams: {
+        log: true
+      },
+      FilterExpression: 'attribute_exists(#otherID)'
+    } as const, pe);
+  };
+  const woosAll = await queryAllType3Woo(0, 'hi', 'otherID, threeID');
+  console.log(myInspect(woosAll));
+
+  const constructQueryParams = (threeID: number, woo: string) => {
+    return {
+      TableName: Table3.name,
+      KeyConditionExpression: `threeID = :threeID AND #woo = :woo`,
+      IndexName: Table3.indices["woo-index"].name,
+      ExpressionAttributeNames: {
+        '#woo': 'woo',
+        '#otherID': 'otherID'
+      },
+      ExpressionAttributeValues: {
+        ':threeID': threeID,
+        ":woo": woo
+      },
+      _logParams: {
+        log: true
+      },
+      FilterExpression: 'attribute_exists(#otherID)'
+    } as const;
+  }
+  const queryItemType3Woo = async <PE extends string>(threeID: number, woo: string, pe?: PE) => {
+    return await tsDdb.queryItemPE(constructQueryParams(threeID, woo), pe);
+  };
+  const woosItem = await queryItemType3Woo(0, 'hi', 'nowItExists');
+  console.log(myInspect(woosItem));
+
+  expect([...woos, ...woosAll, woosItem]).toEqual([
+    {
+      boo: null,
+      woo: 'hi',
+      hoo: '999000'
+    },
+    {
+      boo: null,
+      woo: 'hi'
+    },
+    {
+      otherID: 'other_a-b-c-d',
+      threeID: 0
+    },
+    {
+      otherID: 'other_d-c-b-a',
+      threeID: 0
+    },
+    {
+      nowItExists: []
+    }
+  ]);
+});
+test('scanPE', async () => {
+  const _scanType3Woo = async <PE2 extends string>(pe2?: PE2) => {
+    const { Items = [] } = await tsDdb.scanPE({
+      TableName: Table3.name,
+      IndexName: Table3.indices["woo-index"].name,
+      FilterExpression: 'attribute_exists(#woo)',
+      ExpressionAttributeNames: {
+        '#woo': 'woo'
+      },
+      _logParams: {
+        log: true,
+        message: 'scanning for type 3 woo!'
+      },
+      Limit: 1
+    }, pe2);
+    return Items;
+  };
+  const scanType3Woo = async <PE extends string>(pe?: PE) => {
+    return await _scanType3Woo(pe);
+  };
+  const woos = await scanType3Woo();
+
+  const all = await tsDdb.scanAllPE({
+    TableName: Table3.name
+  }, 'nowItExists,otherID') ?? [];
+
+  expect([...woos, ...all]).toEqual([
+    {
+      threeID: 0,
+      otherID: `other_a-b-c-d`,
+      woo: 'hi',
+    },
+    {
+      otherID: 'other_a-b-c-d',
+      nowItExists: []
+    },
+    {
+      otherID: 'other_d-c-b-a',
+      nowItExists: []
+    }
   ]);
 });

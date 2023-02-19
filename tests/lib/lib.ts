@@ -14,5 +14,6 @@ export const tsDdb = new TypesafeDocumentClientv2<MyTableType | CiCdTableType | 
   new AWS.DynamoDB.DocumentClient({
     region: 'local',
     endpoint: 'http://localhost:8001'
-  })
+  }),
+  { depth: null, colors: true }
 );

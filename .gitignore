@@ -4,3 +4,4 @@ scratch*
 .vscode
 dist
 .DS_Store
+coverage*

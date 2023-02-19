@@ -5,6 +5,7 @@ import { NotEmptyWithMessage } from "../type-helpers/record";
 import { TSDdbSet } from "../type-helpers/sets/utils";
 import { FilterUnusedEANOrVs, UseAllExpressionAttributeNamesInString } from "../type-helpers/string";
 import { OnlyStrings } from "../type-helpers/utils";
+import { _LogParams } from "./defs-helpers";
 
 export type GetInput<
   TN extends string,
@@ -46,6 +47,20 @@ export type StrictGetItemInput<
       ExpressionAttributeNames?: undefined;
     }
   );
+
+export type GetPEInput<
+  TN extends string,
+  Key extends object
+> = Omit<DocumentClient.GetItemInput, 'TableName' | 'Key' | 'ProjectionExpression' | 'ExpressionAttributeNames'> & {
+  TableName: TN;
+  Key: Key;
+  /**
+   * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `getPE` creates the parameters for you, you may wish to log exactly what was going into your DB.
+   * Make sure to set `log` to `true`!
+   * Optionally also log a custom `message`.
+   */
+  _logParams?: _LogParams;
+};
 
 export type GetOutput<
   PE extends string,

@@ -360,7 +360,7 @@ Return the actual type of `Attributes` when using `ReturnValues = 'ALL_OLD'`.
 
 With the non-types only client, everything about the core methods still applies from the a [TypesafeDocumentClientRawv2](#typesafedocumentclientrawv2) section. In exchange for not having to use `.promise()`, the `callback` parameter of the raw client is not supported.
 
-### createStrict*Item
+### `createStrict*Item`
 
 To abstract away a tiny bit of overhead (for the caller), `TypesafeDocumentClientv2` adds some additional "`createStrict[Put|Get|Update|Delete]Item`" methods. The syntax for these is slightly wonky (my apologies), but it's to workaround Typescript's current lack of [partial type inference](https://github.com/microsoft/TypeScript/issues/26242).
 
@@ -384,7 +384,7 @@ type u = typeof user;
 
 Everything else about the `createStrict*Item` methods is the same as described in the [TypesafeDocumentClientRawv2](#typesafedocumentclientrawv2) section, except you don't have to pass the `TableName` property in the parameters object. (i.e., all expressions are supported and are checked for missing `ExpressionAttribute`s).
 
-#### createStrict*Item additional features
+#### `createStrict*Item` additional features
 
 The following features are independent of one another and the use of one does not preclude the use of the other.
 
@@ -421,7 +421,7 @@ type u = typeof user;
 
 There is one exception: if the `Key` of the item type includes a property named `"Key"`, you must pass the traditional params object. (This is because there is a simple check, `if ("Key" in params)`, that determines whether the params are the traditional kind, or simply the `Key` object itself.) This is enforced through a helper type, so you won't run into runtime errors because one of the keys to your table is simply named `"Key"`.
 
-### updateSimpleSET
+### `updateSimpleSET`
 
 A common operation is to update an object with new top level properties, such as updating a User's role, i.e. `type User = { ..., role: 'admin' | 'user' };`.
 
@@ -464,17 +464,48 @@ type u = typeof updatedUser;
 //   ^? type u2 = {  role: "user" | "admin";  lastLogin: number;} | undefined
 ```
 
-#### createStrictUpdateSimpleSET
+#### `createStrictUpdateSimpleSET`
 
 There is also a strict version of `updateSimpleSET`, because why not. It follows the same curried pattern described in [createStrict*Item](#createstrictitem).
 
 ### `queryAll` and `scanAll`
 
-Pretty self explanatory, simply returns an array containing all `Items` returned in a `query` or `scan` of the entire table.
+Simply returns an array containing all `Items` returned in a `query` or `scan` of the entire table.
 
 ### `queryItem`
 
 Simply returns the first element of the `Items` returned in a single `query` operation (or `undefined` if `Items` was empty).
+
+### `*PE` methods
+
+While the `createStrict*Item` methods slightly simplify the operation for the caller, sometimes you want to be able to _completely_ abstract away the creation of complex parameters (especially helpful for `query`). However, you may still want to provide the caller with the __option__ of passing a `ProjectionExpression` if they only require certain item attributes.
+
+`TypesafeDocumentClientv2` provides modified versions of `get`, `query`, `queryAll`, `queryItem`, `scan`, and `scanAll` with this functionality. Each produces the same output as it's regular version, simply append `PE` to the method name. The syntax for passing input params is slightly different however. Each of the `*PE` methods does not permit passing the `ProjectionExpression` directly in the params object. Instead, call the method with the normal params, minus `ProjectionExpression`, in the first parameter and then pass the actual `ProjectionExpression` in the second parameter. 
+
+`ExpressionAttributeNames` are added to the `ProjectionExpression` automatically and for `query` and `scan` operations, spread onto any existing `ExpressionAttributeNames` you use for `KeyConditionExpression`s, `FilterExpression`s, etc...
+
+Here's a motivating example: say you want a function that queries for items with a timestamp less than or equal to a certain timestamp, but the caller may not need all the attributes of those items.
+
+```ts
+const queryThingsLessThanOrEqualToK2 = async <PE extends string>(k1: string, k2: number, pe?: PE) => {
+    return (await tsDdb.queryPE({
+        TableName: MyTable.name,
+        KeyConditionExpression: 'k1 = :k1 AND k2 <= :k2',
+        ExpressionAttributeValues: { ':k1': k1, ':k2': k2 },
+        _logParams: {
+            log: true,
+            message: `getting Things before ${k2} with attributes ${pe || 'all'}`
+        }
+    }, pe)).Items; // pass the ProjectionExpression in the _second_ parameter!
+};
+const k1IDsBeforeYesterday = await queryThingsLessThanOrEqualToK2('blah', Date.now() - ONE_DAY_MS, 'k1');
+// typeof k1IDsBeforeYesterday = { k1: string }[];
+const ThingsBeforeYesterday = await queryThingsLessThanOrEqualToK2('blah', Date.now() - ONE_DAY_MS);
+// typeof ThingsBeforeYesterday = Thing[];
+```
+
+You'll notice something about the example. When `*PE` methods are _used within other functions_ (the motivation behind these methods existing in the first place), the `ProjectionExpression` must be a generic type parameter that `extends string`. This is so the `ProjectionExpression` can be "stored" as its literal value and not widened to type `string`. Without this, the `*PE` method will behave as if no `ProjectionExpression` was passed at all (because its been widened to `string`).
+  - It doesn't matter how many functions the caller needs to go through before the `ProjectionExpression` is actually passed to a `*PE` method, as long as each of those intermediate functions also "stores" the PE generic.
 
 ## Helper types
 
