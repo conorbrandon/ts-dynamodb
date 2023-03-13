@@ -1,2 +1,2 @@
 import { TableFromValue, Table, TypesafeDocumentClientRawv2, TypesafeDocumentClientv2 } from "./lib";
-export { TableFromValue, Table, TypesafeDocumentClientRawv2, TypesafeDocumentClientv2 };
+export { type TableFromValue, type Table, type TypesafeDocumentClientRawv2, TypesafeDocumentClientv2 };
