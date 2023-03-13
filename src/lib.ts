@@ -1131,7 +1131,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   }
 
   private myInspect(object: any) {
-    return inspect(object, this.inspectOptions);
+    return inspect(object, this.inspectOptions ?? {});
   }
 
 };

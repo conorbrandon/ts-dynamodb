@@ -32,6 +32,7 @@ export type DeepSimplifyObject<T> =
   : T;
 
 export type IsNever<T> = [T] extends [never] ? true : false;
+export type IsAny<T> = 0 extends (1 & T) ? true : false;
 
 export type ArrayContainsNever<Arr extends any[]> =
   Arr extends [infer start, ...infer rest]
