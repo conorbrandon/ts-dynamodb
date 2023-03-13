@@ -1365,3 +1365,217 @@ test('scanPE', async () => {
     }
   ]);
 });
+
+test('get with string PE', async () => {
+  const get = async <PE extends string | undefined = undefined>(ProjectionExpression?: PE) => {
+    const { Item: got } = await tsDdb.getPE({
+      TableName: Table3.name,
+      Key: {
+        threeID: 0,
+        otherID
+      }
+    }, ProjectionExpression);
+    return got;
+  };
+
+  const gotStr = await get('' as string);
+  expectTypeOf<typeof gotStr>().toEqualTypeOf<{
+    threeID?: number | undefined;
+    otherID?: (string & z.BRAND<"otherID">) | undefined;
+    zod?: {
+      thing?: "random" | "stringz" | undefined;
+      more?: {
+        more?: "mas" | "zodIsGoodZodIsGreat" | undefined;
+      } | undefined;
+    } | undefined;
+  } | undefined>();
+
+  const gotZod = await get('zod');
+  expectTypeOf<typeof gotZod>().toEqualTypeOf<Pick<Type3Zod, 'zod'> | undefined>();
+
+  const gotAll = await get();
+  expectTypeOf<typeof gotAll>().toEqualTypeOf<Type3Zod | undefined>();
+});
+test('query with string PE', async () => {
+  const query = async <PE extends string | undefined = undefined>(ProjectionExpression?: PE) => {
+    const { Items } = await tsDdb.queryPE({
+      TableName: Table3.name,
+      KeyConditionExpression: 'threeID = :threeID AND otherID = :otherID',
+      ExpressionAttributeValues: {
+        ':threeID': 0,
+        ':otherID': otherID
+      }
+    }, ProjectionExpression);
+    return Items ?? [];
+  };
+
+  const queriedStr = await query('' as string);
+  expectTypeOf<typeof queriedStr>().toBeArray();
+  expectTypeOf<(typeof queriedStr)[number]>().toEqualTypeOf<{
+    threeID?: number | undefined;
+    otherID?: (string & z.BRAND<"otherID">) | undefined;
+    zod?: {
+      thing?: "random" | "stringz" | undefined;
+      more?: {
+        more?: "mas" | "zodIsGoodZodIsGreat" | undefined;
+      } | undefined;
+    } | undefined;
+  }>();
+
+  const queriedZod = await query('zod');
+  expectTypeOf<(typeof queriedZod)[number]>().toEqualTypeOf<Pick<Type3Zod, 'zod'>>();
+
+  const queriedAll = await query();
+  expectTypeOf<(typeof queriedAll)[number]>().toEqualTypeOf<Type3Zod>();
+});
+test('queryAll with string PE', async () => {
+  const queryAll = async <PE extends string | undefined = undefined>(ProjectionExpression?: PE) => {
+    const Items = await tsDdb.queryAllPE({
+      TableName: Table3.name,
+      KeyConditionExpression: 'threeID = :threeID AND otherID = :otherID',
+      ExpressionAttributeValues: {
+        ':threeID': 0,
+        ':otherID': otherID
+      }
+    }, ProjectionExpression);
+    return Items;
+  };
+
+  const queriedStr = await queryAll('' as string);
+  expectTypeOf<typeof queriedStr>().toBeArray();
+  expectTypeOf<(typeof queriedStr)[number]>().toEqualTypeOf<{
+    threeID?: number | undefined;
+    otherID?: (string & z.BRAND<"otherID">) | undefined;
+    zod?: {
+      thing?: "random" | "stringz" | undefined;
+      more?: {
+        more?: "mas" | "zodIsGoodZodIsGreat" | undefined;
+      } | undefined;
+    } | undefined;
+  }>();
+
+  const queriedZod = await queryAll('zod');
+  expectTypeOf<(typeof queriedZod)[number]>().toEqualTypeOf<Pick<Type3Zod, 'zod'>>();
+
+  const queriedAll = await queryAll();
+  expectTypeOf<(typeof queriedAll)[number]>().toEqualTypeOf<Type3Zod>();
+});
+test('queryItem with string PE', async () => {
+  const queryItem = async <PE extends string | undefined = undefined>(ProjectionExpression?: PE) => {
+    const Item = await tsDdb.queryItemPE({
+      TableName: Table3.name,
+      KeyConditionExpression: 'threeID = :threeID AND otherID = :otherID',
+      ExpressionAttributeValues: {
+        ':threeID': 0,
+        ':otherID': otherID
+      }
+    }, ProjectionExpression);
+    return Item;
+  };
+
+  const queriedStr = await queryItem('' as string);
+  expectTypeOf<typeof queriedStr>().toEqualTypeOf<{
+    threeID?: number | undefined;
+    otherID?: (string & z.BRAND<"otherID">) | undefined;
+    zod?: {
+      thing?: "random" | "stringz" | undefined;
+      more?: {
+        more?: "mas" | "zodIsGoodZodIsGreat" | undefined;
+      } | undefined;
+    } | undefined;
+  } | undefined>();
+
+  const queriedZod = await queryItem('zod');
+  expectTypeOf<typeof queriedZod>().toEqualTypeOf<Pick<Type3Zod, 'zod'> | undefined>();
+
+  const queriedAll = await queryItem();
+  expectTypeOf<typeof queriedAll>().toEqualTypeOf<Type3Zod | undefined>();
+});
+test('scan with string PE', async () => {
+  const scan = async <PE extends string | undefined = undefined>(ProjectionExpression?: PE) => {
+    const { Items = [] } = await tsDdb.scanPE({
+      TableName: Table3.name,
+      IndexName: Table3.indices["woo-index"].name
+    }, ProjectionExpression);
+    return Items;
+  };
+
+  const scannedStr = await scan('' as string);
+  expectTypeOf<(typeof scannedStr)[number]>().toEqualTypeOf<{
+    otherID?: string & z.BRAND<"otherID">;
+    threeID?: number;
+  } | {
+    otherID?: `other_${string}-${string}-${string}-${string}`;
+    threeID?: number;
+    woo?: string;
+  } | {
+    otherID?: `id_${number}`;
+    threeID?: number;
+  }>();
+
+  const scannedOtherID = await scan('otherID');
+  expectTypeOf<(typeof scannedOtherID)[number]>().toEqualTypeOf<{
+    otherID: `other_${string}-${string}-${string}-${string}`;
+  } | {
+    otherID: `id_${number}`;
+  } | {
+    otherID: string & z.BRAND<"otherID">;
+  }>();
+
+  const scannedAll = await scan();
+  expectTypeOf<(typeof scannedAll)[number]>().toEqualTypeOf<{
+    woo: string;
+    threeID: number;
+    otherID: `other_${string}-${string}-${string}-${string}`;
+  } | {
+    threeID: number;
+    otherID: `id_${number}`;
+  } | {
+    threeID: number;
+    otherID: string & z.BRAND<"otherID">;
+  }>();
+});
+test('scanAll with string PE', async () => {
+  const scanAll = async <PE extends string | undefined = undefined>(ProjectionExpression?: PE) => {
+    const Items = await tsDdb.scanAllPE({
+      TableName: Table3.name,
+      IndexName: Table3.indices["woo-index"].name
+    }, ProjectionExpression);
+    return Items;
+  };
+
+  const scannedStr = await scanAll('' as string);
+  expectTypeOf<(typeof scannedStr)[number]>().toEqualTypeOf<{
+    otherID?: string & z.BRAND<"otherID">;
+    threeID?: number;
+  } | {
+    otherID?: `other_${string}-${string}-${string}-${string}`;
+    threeID?: number;
+    woo?: string;
+  } | {
+    otherID?: `id_${number}`;
+    threeID?: number;
+  }>();
+
+  const scannedOtherID = await scanAll('otherID');
+  expectTypeOf<(typeof scannedOtherID)[number]>().toEqualTypeOf<{
+    otherID: `other_${string}-${string}-${string}-${string}`;
+  } | {
+    otherID: `id_${number}`;
+  } | {
+    otherID: string & z.BRAND<"otherID">;
+  }>();
+
+  const scannedAll = await scanAll();
+  expectTypeOf<(typeof scannedAll)[number]>().toEqualTypeOf<{
+    woo: string;
+    threeID: number;
+    otherID: `other_${string}-${string}-${string}-${string}`;
+  } | {
+    threeID: number;
+    otherID: `id_${number}`;
+  } | {
+    threeID: number;
+    otherID: string & z.BRAND<"otherID">;
+  }>();
+});

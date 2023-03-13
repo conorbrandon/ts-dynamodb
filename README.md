@@ -487,14 +487,14 @@ While the `createStrict*Item` methods slightly simplify the operation for the ca
 Here's a motivating example: say you want a function that queries for items with a timestamp less than or equal to a certain timestamp, but the caller may not need all the attributes of those items.
 
 ```ts
-const queryThingsLessThanOrEqualToK2 = async <PE extends string>(k1: string, k2: number, pe?: PE) => {
+const queryThingsLessThanOrEqualToK2 = async <PE extends string | undefined = undefined>(k1: string, k2: number, pe?: PE) => {
     return (await tsDdb.queryPE({
         TableName: MyTable.name,
         KeyConditionExpression: 'k1 = :k1 AND k2 <= :k2',
         ExpressionAttributeValues: { ':k1': k1, ':k2': k2 },
         _logParams: {
             log: true,
-            message: `getting Things before ${k2} with attributes ${pe || 'all'}`
+            message: `getting Things before ${k2} with attributes: ${pe || 'all'}`
         }
     }, pe)).Items; // pass the ProjectionExpression in the _second_ parameter!
 };
@@ -504,8 +504,12 @@ const ThingsBeforeYesterday = await queryThingsLessThanOrEqualToK2('blah', Date.
 // typeof ThingsBeforeYesterday = Thing[];
 ```
 
-You'll notice something about the example. When `*PE` methods are _used within other functions_ (the motivation behind these methods existing in the first place), the `ProjectionExpression` must be a generic type parameter that `extends string`. This is so the `ProjectionExpression` can be "stored" as its literal value and not widened to type `string`. Without this, the `*PE` method will behave as if no `ProjectionExpression` was passed at all (because its been widened to `string`).
-  - It doesn't matter how many functions the caller needs to go through before the `ProjectionExpression` is actually passed to a `*PE` method, as long as each of those intermediate functions also "stores" the PE generic.
+You'll notice something about the example. When `*PE` methods are _used within other functions_ (the motivation behind these methods existing in the first place), the `ProjectionExpression` must be a generic type parameter that `extends string | undefined`, and defaults to `undefined`. This is so the `ProjectionExpression` can be "stored" as its literal value and not widened to type `string`. Without this, the `*PE` method will behave as if no `ProjectionExpression` was passed at all, but the type of Item returned will be a deep `Partial`. If the generic only extends `string` and it is not provided, the same occurs. If the generic extends `string | undefined = undefined`, the method is able to distinguish between an omitted `ProjectionExpression` and a `string` `ProjectionExpression` and will return either:
+1. If a `ProjectionExpression` is _not_ provided, the Item is returned as is.
+2. If a `ProjectionExpression` is provided, but it's the wide type `string`, a deep `Partial` of the Item is returned.
+3. If a `ProjectionExpression` is provided and it's a literal string (i.e. `"hashKey"`), only the fields in the `ProjectionExpression` are returned.
+
+- It doesn't matter how many functions the caller needs to go through before the `ProjectionExpression` is actually passed to a `*PE` method, as long as each of those intermediate functions also "stores" the PE generic.
 
 ## Helper types
 

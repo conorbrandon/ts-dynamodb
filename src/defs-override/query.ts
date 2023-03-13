@@ -2,7 +2,7 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../dynamodb-types";
 import { IndexFromValue } from "../lib";
 import { ProjectNonIndexQuery, ProjectQuery } from "../type-helpers/query/common";
-import { NotEmptyWithMessage } from "../type-helpers/record";
+import { DeepPartial, NotEmptyWithMessage } from "../type-helpers/record";
 import { FilterUnusedEANOrVs, UseAllExpressionAttributesInString } from "../type-helpers/string";
 import { IsNever, OnlyStrings } from "../type-helpers/utils";
 import { _LogParams } from "./defs-helpers";
@@ -85,6 +85,91 @@ export type QueryOutput<
       PE
     >[]) extends infer Res ? Res : never;
 }) extends infer Res2 ? Res2 : never;
+export type QueryPEOutput<
+  TableItem extends object,
+  PartitionKeyField extends string, // used to validate the LSI key
+  SortKeyField extends string, // used to pick from TypesUnion when the LSI projection type is keys-only or attributes
+  EAN extends AnyExpressionAttributeNames,
+  EAV extends ExpressionAttributeValues,
+  TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
+  KCE extends string,
+  PE extends string | undefined
+> = (Omit<DocumentClient.QueryOutput, 'Items'> & {
+  Items?: (
+    undefined extends PE
+    ? (
+      IsNever<TableIndex> extends true
+      ? ProjectNonIndexQuery<
+        KCE,
+        EAN,
+        EAV,
+        PartitionKeyField,
+        SortKeyField,
+        TableItem,
+        string
+      >[]
+      : ProjectQuery<
+        KCE,
+        EAN,
+        EAV,
+        TableIndex,
+        TableItem,
+        PartitionKeyField,
+        SortKeyField,
+        string
+      >[]
+    )
+    : string extends PE
+    ? (
+      DeepPartial<
+        IsNever<TableIndex> extends true
+        ? ProjectNonIndexQuery<
+          KCE,
+          EAN,
+          EAV,
+          PartitionKeyField,
+          SortKeyField,
+          TableItem,
+          string
+        >[]
+        : ProjectQuery<
+          KCE,
+          EAN,
+          EAV,
+          TableIndex,
+          TableItem,
+          PartitionKeyField,
+          SortKeyField,
+          string
+        >[]
+      >
+    )
+    : PE extends string
+    ? (
+      IsNever<TableIndex> extends true
+      ? ProjectNonIndexQuery<
+        KCE,
+        EAN,
+        EAV,
+        PartitionKeyField,
+        SortKeyField,
+        TableItem,
+        PE
+      >[]
+      : ProjectQuery<
+        KCE,
+        EAN,
+        EAV,
+        TableIndex,
+        TableItem,
+        PartitionKeyField,
+        SortKeyField,
+        PE
+      >[]
+    )
+    : never
+  ) extends infer Res ? Res : never;
+}) extends infer Res2 ? Res2 : never;
 
 export type QueryItemOutput<
   TableItem extends object,
@@ -116,4 +201,87 @@ export type QueryItemOutput<
     SortKeyField,
     PE
   >
+) extends infer Res ? Res : never;
+export type QueryItemPEOutput<
+  TableItem extends object,
+  PartitionKeyField extends string, // used to validate the LSI key
+  SortKeyField extends string, // used to pick from TypesUnion when the LSI projection type is keys-only or attributes
+  EAN extends AnyExpressionAttributeNames,
+  EAV extends ExpressionAttributeValues,
+  TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
+  KCE extends string,
+  PE extends string | undefined
+> = (
+  undefined extends PE
+  ? (
+    IsNever<TableIndex> extends true
+    ? ProjectNonIndexQuery<
+      KCE,
+      EAN,
+      EAV,
+      PartitionKeyField,
+      SortKeyField,
+      TableItem,
+      string
+    >
+    : ProjectQuery<
+      KCE,
+      EAN,
+      EAV,
+      TableIndex,
+      TableItem,
+      PartitionKeyField,
+      SortKeyField,
+      string
+    >
+  )
+  : string extends PE
+  ? (
+    DeepPartial<
+      IsNever<TableIndex> extends true
+      ? ProjectNonIndexQuery<
+        KCE,
+        EAN,
+        EAV,
+        PartitionKeyField,
+        SortKeyField,
+        TableItem,
+        string
+      >
+      : ProjectQuery<
+        KCE,
+        EAN,
+        EAV,
+        TableIndex,
+        TableItem,
+        PartitionKeyField,
+        SortKeyField,
+        string
+      >
+    >
+  )
+  : PE extends string
+  ? (
+    IsNever<TableIndex> extends true
+    ? ProjectNonIndexQuery<
+      KCE,
+      EAN,
+      EAV,
+      PartitionKeyField,
+      SortKeyField,
+      TableItem,
+      PE
+    >
+    : ProjectQuery<
+      KCE,
+      EAN,
+      EAV,
+      TableIndex,
+      TableItem,
+      PartitionKeyField,
+      SortKeyField,
+      PE
+    >
+  )
+  : never
 ) extends infer Res ? Res : never;

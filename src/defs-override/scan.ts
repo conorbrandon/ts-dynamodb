@@ -1,7 +1,7 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames } from "../dynamodb-types";
 import { IndexFromValue } from "../lib";
-import { NotEmptyWithMessage } from "../type-helpers/record";
+import { DeepPartial, NotEmptyWithMessage } from "../type-helpers/record";
 import { ProjectNonIndexScan, ProjectScan } from "../type-helpers/scan/common";
 import { FilterUnusedEANOrVs, UseAllExpressionAttributesInString } from "../type-helpers/string";
 import { IsNever, OnlyStrings } from "../type-helpers/utils";
@@ -68,4 +68,69 @@ export type ScanOutput<
       EAN,
       PE
     >[]) extends infer Res ? Res : never;
+}) extends infer Res2 ? Res2 : never;
+export type ScanPEOutput<
+  TableItem extends object,
+  PartitionKeyField extends string,
+  SortKeyField extends string,
+  EAN extends AnyExpressionAttributeNames,
+  TableIndex extends IndexFromValue,
+  PE extends string | undefined
+> = (Omit<DocumentClient.ScanOutput, 'Items'> & {
+  Items?: (
+    undefined extends PE
+    ? (
+      IsNever<TableIndex> extends true
+      ? ProjectNonIndexScan<
+        TableItem,
+        EAN,
+        string
+      >[]
+      : ProjectScan<
+        TableItem,
+        TableIndex,
+        PartitionKeyField,
+        SortKeyField,
+        EAN,
+        string
+      >[]
+    )
+    : string extends PE
+    ? (
+      DeepPartial<
+        IsNever<TableIndex> extends true
+        ? ProjectNonIndexScan<
+          TableItem,
+          EAN,
+          string
+        >[]
+        : ProjectScan<
+          TableItem,
+          TableIndex,
+          PartitionKeyField,
+          SortKeyField,
+          EAN,
+          string
+        >[]
+      >
+    )
+    : PE extends string
+    ? (
+      IsNever<TableIndex> extends true
+      ? ProjectNonIndexScan<
+        TableItem,
+        EAN,
+        PE
+      >[]
+      : ProjectScan<
+        TableItem,
+        TableIndex,
+        PartitionKeyField,
+        SortKeyField,
+        EAN,
+        PE
+      >[]
+    )
+    : never
+  ) extends infer Res ? Res : never;
 }) extends infer Res2 ? Res2 : never;

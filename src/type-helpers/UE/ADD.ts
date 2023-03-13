@@ -79,8 +79,12 @@ export type IsUEValidForADD<
     : (
       AddTuple extends "ERROR" // this happens in the case there was an ADD clause to parse, but it wasn't well formatted
       ? 0
-      : ValidateAdderTuples<AddTuple, T, EAN, EAV> extends true
+      : ValidateAdderTuples<AddTuple, T, EAN, EAV> extends infer validated
+      ? IsNever<validated> extends true
+      ? 0
+      : validated extends true
       ? 1
+      : 0
       : 0
     )
   )

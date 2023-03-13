@@ -1,4 +1,5 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
+import { NativeJSBinaryTypes } from '../dynamodb-types';
 import { NoUndefined } from './utils';
 
 /** Take a union of object types and pick Fields from each type, producing another union.
@@ -122,6 +123,16 @@ export type DeepWriteable<T> = T extends number | string ? T : { -readonly [P in
  * (with the appropriate branded types check)
  */
 export type DeepReadonly<T> = T extends number | string ? T : { readonly [P in keyof T]: DeepReadonly<T[P]> };
+
+/** Makes all properties in object optional, stopping short of mapping over branded types, binary types, and DDB and normal JS Sets */
+export type DeepPartial<T> =
+  T extends number | string | NativeJSBinaryTypes | Set<any> | ReadonlySet<any>
+  ? T
+  : T extends DocumentClient.DynamoDbSet
+  ? { [K in keyof T]: T[K] }
+  : T extends any[] | ReadonlyArray<any>
+  ? { [K in keyof T]: DeepPartial<T[K]> }
+  : { [K in keyof T]?: DeepPartial<T[K]> };
 
 export type ForceRecordToEAN<T extends Record<string, string>> =
   { [P in keyof T & string as `${P extends `#${string}` ? P : `#${P}`}`]: T[P] };

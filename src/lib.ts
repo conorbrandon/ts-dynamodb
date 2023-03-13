@@ -1,6 +1,6 @@
 import { TypesafePromiseResult, TypesafeCallback, TypesafeRequest, _LogParams } from "./defs-override/defs-helpers";
 import { DeleteInput, DeleteOutput, StrictDeleteItemInput } from "./defs-override/delete";
-import { GetInput, StrictGetItemInput, GetOutput, GetPEInput } from "./defs-override/get";
+import { GetInput, StrictGetItemInput, GetOutput, GetPEInput, GetPEOutput } from "./defs-override/get";
 import { PutInput, PutOutput, StrictPutItemInput } from "./defs-override/put";
 import { ExtraConditions, StrictUpdateItemInput, StrictUpdateSimpleSETInput, UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput } from "./defs-override/update";
 import { DoesKeyHaveAPropertyCalledKey, ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
@@ -8,11 +8,11 @@ import { DeepReadonly, DeepWriteable, GetAllKeys, PickAcrossUnionOfRecords, Valu
 import { ProjectUpdateExpression } from "./type-helpers/UE/output";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames } from "./dynamodb-types";
-import { QueryInput, QueryItemOutput, QueryOutput, QueryPEInput } from "./defs-override/query";
+import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
 import { DeepSimplifyObject, NoUndefined } from "./type-helpers/utils";
 import { ExtractEAsFromString } from "./type-helpers/extract-EAs";
 import { TSDdbSet } from "./type-helpers/sets/utils";
-import { ScanInput, ScanOutput, ScanPEInput } from "./defs-override/scan";
+import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
 import { inspect, InspectOptions } from 'util';
 
 export type ProjectAllIndex = {
@@ -392,7 +392,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   /**
    * You may wish to abstract away the creation of params for the caller, but still allow passing a custom `ProjectionExpression`.
    * 
-   * With `getPE`, you call the function with the `TableName` and `Key` params in the first parameter, and then pass an optional `ProjectionExpression` (without `ExpressionAttributeNames`) in the second parameter. If using `getPE` within another function, the `ProjectionExpression` ___must___ be generic. (This is so it isn't widened to type `string`. If the PE is of type `string`, the type returned is the entire `Item`. This is the behavior when passing no `ProjectionExpression`.) Please see the example.
+   * With `getPE`, you call the function with the `TableName` and `Key` params in the first parameter, and then pass an optional `ProjectionExpression` (without `ExpressionAttributeNames`) in the second parameter. If using `getPE` within another function, the `ProjectionExpression` ___must___ be generic. (This is so it isn't widened to type `string`. If the PE is of type `string`, the type returned is a DeepPartial of the entire `Item`. When passing no `ProjectionExpression`, the Item is not transformed with DeepPartial. For the best results, the generic parameter should default to `undefined`.) Please see the example.
    * 
    * ⚠️⚠️⚠️ To reiterate, `ProjectionExpression` should not contain any `ExpressionAttributeNames`. The `ProjectionExpression` is parsed and `ExpressionAttributeNames` are added automatically. 💡 If any of your attributes contain spaces, newlines, or tabs, this method will not work.
    * 
@@ -400,7 +400,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * @example
    * ```ts
-   const getThing = async <PE extends string>(Key: TypesafeDocumentClientv2.GetTableItemKey<MyTableType, Thing>, pe?: PE) => {
+   const getThing = async <PE extends string | undefined = undefined>(Key: TypesafeDocumentClientv2.GetTableItemKey<MyTableType, Thing>, pe?: PE) => {
       return (await tsDdb.getPE({
           TableName: MyTable.name,
           Key,
@@ -416,11 +416,11 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    PE extends string
+    PE extends string | undefined = undefined
   >(params: GetPEInput<TN, Key>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const res = await this.client.get(p).promise();
-    return res as unknown as TypesafePromiseResult<GetOutput<PE, TypeOfItem, {}>>;
+    return res as unknown as TypesafePromiseResult<GetPEOutput<PE, TypeOfItem, {}>>;
   };
 
   async put<
@@ -691,7 +691,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   /**
    * You may wish to abstract away the creation of params for the caller, but still allow passing a custom `ProjectionExpression`.
    * 
-   * With `queryPE`, you call the function with the query params in the first parameter, minus `ProjectionExpression`, and then pass an optional `ProjectionExpression` (without `ExpressionAttributeNames`) in the second parameter. If using `queryPE` within another function, the `ProjectionExpression` ___must___ be generic. (This is so it isn't widened to type `string`. If the PE is of type `string`, the types returned are the entire `Items`. This is the behavior when passing no `ProjectionExpression`.) Please see the example.
+   * With `queryPE`, you call the function with the query params in the first parameter, minus `ProjectionExpression`, and then pass an optional `ProjectionExpression` (without `ExpressionAttributeNames`) in the second parameter. If using `queryPE` within another function, the `ProjectionExpression` ___must___ be generic. (This is so it isn't widened to type `string`. If the PE is of type `string`, the types returned are a DeepPartial of the entire `Items`. When passing no `ProjectionExpression`, the Items are not transformed with DeepPartial. For the best results, the generic parameter should default to `undefined`.) Please see the example.
    * 
    * ⚠️⚠️⚠️ To reiterate, `ProjectionExpression` should not contain any `ExpressionAttributeNames`. The `ProjectionExpression` is parsed and `ExpressionAttributeNames` are added automatically. 💡 If any of your attributes contain spaces, newlines, or tabs, this method will not work.
    * 
@@ -699,7 +699,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * @example
    * ```ts
-   const queryThingsLessThanOrEqualToK2 = async <PE extends string>(k1: string, k2: number, pe?: PE) => {
+   const queryThingsLessThanOrEqualToK2 = async <PE extends string | undefined = undefined>(k1: string, k2: number, pe?: PE) => {
       return (await tsDdb.queryPE({
           TableName: MyTable.name,
           KeyConditionExpression: 'k1 = :k1 AND k2 <= :k2',
@@ -720,12 +720,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     FEEAs extends ExtractEAsFromString<FE>,
     EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
     EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
-    PE extends string,
+    PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const res = await this.client.query(p).promise();
-    return res as unknown as TypesafePromiseResult<QueryOutput<
+    return res as unknown as TypesafePromiseResult<QueryPEOutput<
       TableItem<TS, TN>,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
@@ -771,7 +771,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   /**
    * You may wish to abstract away the creation of params for the caller, but still allow passing a custom `ProjectionExpression`.
    * 
-   * With `queryAllPE`, you call the function with the query params in the first parameter, minus `ProjectionExpression`, and then pass an optional `ProjectionExpression` (without `ExpressionAttributeNames`) in the second parameter. If using `queryAllPE` within another function, the `ProjectionExpression` ___must___ be generic. (This is so it isn't widened to type `string`. If the PE is of type `string`, the types returned are the entire `Items`. This is the behavior when passing no `ProjectionExpression`.) Please see the example.
+   * With `queryAllPE`, you call the function with the query params in the first parameter, minus `ProjectionExpression`, and then pass an optional `ProjectionExpression` (without `ExpressionAttributeNames`) in the second parameter. If using `queryAllPE` within another function, the `ProjectionExpression` ___must___ be generic. (This is so it isn't widened to type `string`. If the PE is of type `string`, the types returned are a DeepPartial of the entire `Items`. When passing no `ProjectionExpression`, the Items are not transformed with DeepPartial. For the best results, the generic parameter should default to `undefined`.) Please see the example.
    * 
    * Convenience method to query the entire table. Does not return `ConsumedCapacity`, `Count`, etc..., simply an array of all Items.
    * 
@@ -781,7 +781,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * @example
    * ```ts
-   const queryAllThingsLessThanOrEqualToK2 = async <PE extends string>(k1: string, k2: number, pe?: PE) => {
+   const queryAllThingsLessThanOrEqualToK2 = async <PE extends string | undefined = undefined>(k1: string, k2: number, pe?: PE) => {
       return await tsDdb.queryAllPE({
           TableName: MyTable.name,
           KeyConditionExpression: 'k1 = :k1 AND k2 <= :k2',
@@ -802,12 +802,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     FEEAs extends ExtractEAsFromString<FE>,
     EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
     EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
-    PE extends string,
+    PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const items: unknown[] = await this.whileLastEvaluatedKey({ method: 'query', params: p });
-    return items as unknown as NoUndefined<QueryOutput<
+    return items as unknown as NoUndefined<QueryPEOutput<
       TableItem<TS, TN>,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
@@ -856,7 +856,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   /**
    * You may wish to abstract away the creation of params for the caller, but still allow passing a custom `ProjectionExpression`.
    * 
-   * With `queryItemPE`, you call the function with the query params in the first parameter, minus `ProjectionExpression`, and then pass an optional `ProjectionExpression` (without `ExpressionAttributeNames`) in the second parameter. If using `queryItemPE` within another function, the `ProjectionExpression` ___must___ be generic. (This is so it isn't widened to type `string`. If the PE is of type `string`, the types returned are the entire `Items`. This is the behavior when passing no `ProjectionExpression`.) Please see the example.
+   * With `queryItemPE`, you call the function with the query params in the first parameter, minus `ProjectionExpression`, and then pass an optional `ProjectionExpression` (without `ExpressionAttributeNames`) in the second parameter. If using `queryItemPE` within another function, the `ProjectionExpression` ___must___ be generic. (This is so it isn't widened to type `string`. If the PE is of type `string`, the types returned are a DeepPartial of the entire `Items`. When passing no `ProjectionExpression`, the Items are not transformed with DeepPartial. For the best results, the generic parameter should default to `undefined`.) Please see the example.
    * 
    * Convenience method to query for the first Item returned in the Items array in a single query operation. Does not return `ConsumedCapacity`, `Count`, etc....
    * 
@@ -866,7 +866,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * @example
    * ```ts
-   const queryTheFirstThingLessThanOrEqualToK2 = async <PE extends string>(k1: string, k2: number, pe?: PE) => {
+   const queryTheFirstThingLessThanOrEqualToK2 = async <PE extends string | undefined = undefined>(k1: string, k2: number, pe?: PE) => {
       return await tsDdb.queryItemPE({
           TableName: MyTable.name,
           KeyConditionExpression: 'k1 = :k1 AND k2 <= :k2',
@@ -887,7 +887,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     FEEAs extends ExtractEAsFromString<FE>,
     EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
     EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
-    PE extends string,
+    PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
@@ -896,7 +896,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     if (!Item) {
       return undefined;
     }
-    return Item as unknown as QueryItemOutput<
+    return Item as unknown as QueryItemPEOutput<
       TableItem<TS, TN>,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
@@ -940,12 +940,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     FEEAs extends ExtractEAsFromString<FE>,
     EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
     EAV extends Record<FEEAs['eav'], any>,
-    PE extends string,
+    PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: ScanPEInput<TN, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const res = await this.client.scan(p).promise();
-    return res as unknown as TypesafePromiseResult<ScanOutput<
+    return res as unknown as TypesafePromiseResult<ScanPEOutput<
       TableItem<TS, TN>,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
@@ -994,12 +994,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     FEEAs extends ExtractEAsFromString<FE>,
     EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
     EAV extends Record<FEEAs['eav'], any>,
-    PE extends string,
+    PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: ScanPEInput<TN, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const items: unknown[] = await this.whileLastEvaluatedKey({ method: 'scan', params: p });
-    return items as unknown as NoUndefined<ScanOutput<
+    return items as unknown as NoUndefined<ScanPEOutput<
       TableItem<TS, TN>,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
