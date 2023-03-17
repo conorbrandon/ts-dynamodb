@@ -123,7 +123,7 @@ type _BreakUpValuePartOfSingleSetterTuple<ValuePart extends string> =
           ValuePart extends `:${string}`
           ? {
             eav: true;
-            key: ValuePart
+            key: ValuePart;
           }
           : (
             {

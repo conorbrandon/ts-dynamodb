@@ -130,7 +130,7 @@ export type DeepPartial<T> =
   ? T
   : T extends DocumentClient.DynamoDbSet
   ? { [K in keyof T]: T[K] }
-  : T extends any[] | ReadonlyArray<any>
+  : T extends any[] | readonly any[]
   ? { [K in keyof T]: DeepPartial<T[K]> }
   : { [K in keyof T]?: DeepPartial<T[K]> };
 

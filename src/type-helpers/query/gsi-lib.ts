@@ -7,7 +7,7 @@ import { BeginsWithExtractor, CommonExtractTypeForKCEKey, ExtractKeyFromKCE, Nar
 
 type ValidateGSIExtractedKey<ExtractedKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>, Index extends GSIIndexFromValue> =
   ExtractKeysOfGSIIndex<Index> extends infer gsiKeys extends string
-  ? keyof ExtractedKey extends gsiKeys  // validate that the extractedKey has at least one of the fields for the index defined on the table, and no additional fields not on the index, without caring about the values. (At least one, because we could be querying only the hashKey, and no more because if the index doesn't have a sortKey, and the KCE included one by mistake, that's invalid)
+  ? keyof ExtractedKey extends gsiKeys // validate that the extractedKey has at least one of the fields for the index defined on the table, and no additional fields not on the index, without caring about the values. (At least one, because we could be querying only the hashKey, and no more because if the index doesn't have a sortKey, and the KCE included one by mistake, that's invalid)
   ? (
     // NOTE: we could add that the EAVs were extracted validly, but we do that other places, notably with the AreAllEAVsUsed and in the other direction too, so they should be resolved except in the case of an exceptional bug. Plus, they're just typed as never, so it's not the end of the world, I'd rather leave that not as strict. Plust ddb itself will give us this for free
     // make sure we've only included valid DdbKeyValues in the Key

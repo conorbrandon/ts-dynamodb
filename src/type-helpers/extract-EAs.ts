@@ -37,4 +37,4 @@ type _ExtractEAsFromString<S extends string, Curr extends string = "", EANs exte
 // there is an invalid character there to add it to the EANs or EAVs union. 
 // Without this, if there is an ongoing Curr when the string terminates, it isn't added to the union!
 // I could fix this with some extra logic when constructing the final object, but this is easier.
-export type ExtractEAsFromString<S extends string> = _ExtractEAsFromString<`${S} `> extends infer E extends { ean: string, eav: string } ? E : never;
+export type ExtractEAsFromString<S extends string> = _ExtractEAsFromString<`${S} `> extends infer E extends { ean: string; eav: string } ? E : never;

@@ -1,0 +1,323 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2020": true,
+    "jest": true
+  },
+  "extends": [
+    // https://eslint.org/docs/latest/rules/
+    "eslint:recommended"
+  ],
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "overrides": [
+    {
+      // https://stackoverflow.com/questions/58510287/parseroptions-project-has-been-set-for-typescript-eslint-parser
+      "files": [
+        "*.ts"
+      ],
+      "extends": [
+        // https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/src/configs/eslint-recommended.ts
+        "plugin:@typescript-eslint/eslint-recommended",
+        // https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/src/configs/recommended.ts
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "parserOptions": {
+        "project": [
+          "./tsconfig.json"
+        ],
+        "ecmaVersion": 2020
+      },
+      /*
+        Typescript specific rules
+      */
+      "rules": {
+        // Let Typescript handle this instead
+        "@typescript-eslint/no-unused-vars": "off",
+        // Prefer T[] over Array<T>
+        "@typescript-eslint/array-type": [
+          "error",
+          {
+            "default": "array"
+          }
+        ],
+        // Prefer const thing = 5 as const; over const thing = <const>5;
+        // Prefer const obj: T = { ... }; over const obj = { ... } as T;
+        "@typescript-eslint/consistent-type-assertions": [
+          "error",
+          {
+            "assertionStyle": "as",
+            "objectLiteralTypeAssertions": "allow"
+          }
+        ],
+        // Note: you must disable the base rule as it can report incorrect errors
+        "default-param-last": [
+          "off"
+        ],
+        // Disallow default function params placed before non-default
+        "@typescript-eslint/default-param-last": [
+          "error"
+        ],
+        // Enforce the semicolon (preferred in Typescript) delimeter for members in type/interface definitions. 
+        // However, allow the last member in a single line definition to omit the delimeter
+        "@typescript-eslint/member-delimiter-style": [
+          "error",
+          {
+            "multiline": {
+              "delimiter": "semi",
+              "requireLast": true
+            },
+            "singleline": {
+              "delimiter": "semi",
+              "requireLast": false
+            },
+            "multilineDetection": "brackets"
+          }
+        ],
+        // Disallow non-null assertion operator in places where it could be confused with !==. More reading: https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-0.html#non-null-assertion-operator
+        "@typescript-eslint/no-confusing-non-null-assertion": [
+          "error"
+        ],
+        // Disallow duplicate values in enums, for example: enum E = { A: 0, B: 0 }
+        "@typescript-eslint/no-duplicate-enum-values": [
+          "error"
+        ],
+        // Disallow empty interfaces, except in the case where it extends 1 interface, for example: 
+        // interface EncryptedStrings { a: string; b: string }
+        // interface DecryptedStrings extends EncryptedStrings {}
+        "@typescript-eslint/no-empty-interface": [
+          "error",
+          {
+            "allowSingleExtends": true
+          }
+        ],
+        // Kinda have to use the any type in a library, unknown works too but it doesn't really matter
+        "@typescript-eslint/no-explicit-any": [
+          "off"
+        ],
+        // Note: you must disable the base rule as it can report incorrect errors
+        "no-loop-func": [
+          "off"
+        ],
+        // Disallow function declarations that contain unsafe references inside loop statements. This is only a problem when using var
+        "@typescript-eslint/no-loop-func": [
+          "warn"
+        ],
+        // Warn about instances of the following:
+        /* 
+          declare const someCondition: boolean;
+          if (someCondition === true) {} 
+        */
+        "@typescript-eslint/no-unnecessary-boolean-literal-compare": [
+          "warn"
+        ],
+        // Note: you must disable the base rule as it can report incorrect errors
+        "no-unused-expressions": [
+          "off"
+        ],
+        // An unused expression which has no effect on the state of the program indicates a logic error
+        "@typescript-eslint/no-unused-expressions": [
+          "error"
+        ],
+        // Warn about empty exports that don't change anything in a module file
+        "@typescript-eslint/no-useless-empty-export": [
+          "warn"
+        ],
+        // This rule detects when an as cast is doing the same job as a ! would, and suggests fixing the code to be an !
+        // IMO, this is a good thing to error because if there is a need to assert something as non-null (which is fine in a few select places), the non-null assertion operator is safer because it only removes null and undefined from the type, not any other union members
+        // When fixing this error, another warning will be created, but I'd rather leave the warning in rather than turn it off
+        "@typescript-eslint/non-nullable-type-assertion-style": [
+          "error"
+        ],
+        // Require each enum member value to be explicitly initialized. Changing the order of implicit enum values may cause errors
+        "@typescript-eslint/prefer-enum-initializers": [
+          "error"
+        ],
+        // Enforce .includes method over .indexOf method for strings and arrays
+        "@typescript-eslint/prefer-includes": [
+          "warn"
+        ],
+        // Prefer the nullish coalescing operator over logical chaining
+        // well, turns out this is a real PITA, there are a TON of valid reasons to use logical chaining
+        "@typescript-eslint/prefer-nullish-coalescing": [
+          "off"
+        ],
+        // Enforce using type parameter when calling Array#reduce instead of casting. This is a relatively unknown solution but a very elegant one
+        "@typescript-eslint/prefer-reduce-type-parameter": [
+          "error"
+        ],
+        // Enforce using .startsWith and .endsWith over other equivalent methods of checking substrings
+        "@typescript-eslint/prefer-string-starts-ends-with": [
+          "warn"
+        ],
+        // The @ts-expect-error directive operates in the same manner as @ts-ignore, but will error if the line it's meant to be suppressing doesn't actually contain an error, making it a lot safer
+        "@typescript-eslint/prefer-ts-expect-error": [
+          "warn"
+        ],
+        "@typescript-eslint/no-namespace": [
+          "warn",
+          {
+            "allowDeclarations": true
+          }
+        ],
+        // Require or disallow spacing between function identifiers and their invocations.
+        "@typescript-eslint/func-call-spacing": [
+          "warn"
+        ],
+        // Allow the generic function type to be used in type-helpers.ts functions
+        "@typescript-eslint/ban-types": [
+          "error",
+          {
+            "types": {
+              "{}": false
+            },
+            "extendDefaults": true
+          }
+        ]
+      }
+    }
+  ],
+  "rules": {
+    // Enforce return statements in callbacks of array methods. forEach() should be used if void is returned
+    "array-callback-return": [
+      "error",
+      {
+        "checkForEach": false
+      }
+    ],
+    // Using a single import statement per module will make the code clearer because you can see everything being imported from that module on one line
+    "no-duplicate-imports": [
+      "error"
+    ],
+    // Doing this is a little silly: if (x === x) {}
+    "no-self-compare": [
+      "error"
+    ],
+    // Error prone: if (foo) foo++; Explicit: if (foo) { foo++; }
+    "curly": [
+      "error"
+    ],
+    // Fall-through from the default case in a switch statement is almost always an error
+    "default-case-last": [
+      "warn"
+    ],
+    // Disallow default function params placed before non-default
+    "default-param-last": [
+      "error"
+    ],
+    // Require the use of === and !==
+    "eqeqeq": [
+      "error"
+    ],
+    // Disallow function declarations that contain unsafe references inside loop statements. This is only a problem when using var
+    "no-loop-func": [
+      "error"
+    ],
+    // An unused expression which has no effect on the state of the program indicates a logic error
+    "no-unused-expressions": [
+      "error"
+    ],
+    // Require using arrow functions for callbacks
+    "prefer-arrow-callback": [
+      "error"
+    ],
+    // Enforce consistent spacing after the // or /* in a comment
+    "spaced-comment": [
+      "error",
+      "always"
+    ],
+    // Prefer color === "red" instead of "red" === color, except in ranges, for example: 0 < x && x < 1
+    "yoda": [
+      "error",
+      "never",
+      {
+        "exceptRange": true
+      }
+    ],
+    "no-empty": [
+      "error",
+      {
+        "allowEmptyCatch": true
+      }
+    ],
+    /*
+      Formatting rules
+    */
+    "arrow-spacing": [
+      "error"
+    ],
+    "block-spacing": [
+      "error"
+    ],
+    "brace-style": [
+      "error"
+    ],
+    // some typescript syntax clashes with this, so there is a dedicated TS rule above
+    "func-call-spacing": [
+      "off"
+    ],
+    "indent": [
+      "error",
+      2,
+      {
+        "SwitchCase": 1
+      }
+    ],
+    "key-spacing": [
+      "error"
+    ],
+    "keyword-spacing": [
+      "error"
+    ],
+    "no-multi-spaces": [
+      "error"
+    ],
+    "no-trailing-spaces": [
+      "error",
+      {
+        "ignoreComments": true
+      }
+    ],
+    "object-property-newline": [
+      "error",
+      {
+        "allowAllPropertiesOnSameLine": true
+      }
+    ],
+    "operator-linebreak": [
+      "error",
+      "before"
+    ],
+    "rest-spread-spacing": [
+      "error"
+    ],
+    "semi": [
+      "error",
+      "always"
+    ],
+    "semi-spacing": [
+      "error",
+      {
+        "before": false,
+        "after": true
+      }
+    ],
+    "space-before-blocks": [
+      "error"
+    ],
+    "space-in-parens": [
+      "error",
+      "never"
+    ],
+    "space-infix-ops": [
+      "error"
+    ],
+    "template-curly-spacing": [
+      "error",
+      "never"
+    ]
+  }
+}

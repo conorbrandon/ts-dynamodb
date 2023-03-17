@@ -10,4 +10,4 @@ export type TypesafeRequest<Output> = Request<Output, AWSError>;
 /** Convenient helper type for the AWS PromiseResult type */
 export type TypesafePromiseResult<Output> = PromiseResult<Output, AWSError>;
 
-export type _LogParams = { log: boolean, message?: string };
+export type _LogParams = { log: boolean; message?: string };

@@ -310,7 +310,7 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     >
   >;
 
-};
+}
 
 /**
  * A more fully featured typesafe `DocumentClient` experience. Using a `DocumentClient` of your creation, replaces the core methods (`get`, `put`, `update`, `delete`, `query`, and `scan`) with promise-less versions. Because it takes a `DocumentClient` as input, you can use one `DocumentClient` instance to use the methods `TypesafeDocumentClient` (currently 👀) does not support, such as `transactGet/Write` and `batchGet/Write`.
@@ -358,7 +358,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: GetInput<TN, Key, PE, EANs, GAK, EAN>) {
     const res = await this.client.get(params).promise();
     return res as unknown as TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>;
-  };
+  }
 
   /** 
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only get a certain type of `Item`. 
@@ -387,7 +387,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         }
         return res as any;
       };
-  };
+  }
 
   /**
    * You may wish to abstract away the creation of params for the caller, but still allow passing a custom `ProjectionExpression`.
@@ -421,7 +421,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const res = await this.client.get(p).promise();
     return res as unknown as TypesafePromiseResult<GetPEOutput<PE, TypeOfItem, {}>>;
-  };
+  }
 
   async put<
     TN extends TableName<TS>,
@@ -437,7 +437,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: PutInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, EAV, RN>) {
     const res = await this.client.put(params).promise();
     return res as unknown as TypesafePromiseResult<PutOutput<TypeOfItem, RN>>;
-  };
+  }
 
   /**
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only put a certain type of `Item`. 
@@ -462,8 +462,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
           return res.Attributes as any;
         }
         return res as any;
-      }
-  };
+      };
+  }
 
   async update<
     TN extends TableName<TS>,
@@ -480,7 +480,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: UpdateInput<TN, Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV, RN>) {
     const res = await this.client.update(params).promise();
     return res as unknown as TypesafePromiseResult<UpdateOutput<TypeOfItem, UE, EAN, RN>>;
-  };
+  }
 
   /**
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only update a certain type of `Item`. 
@@ -507,8 +507,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
           return res.Attributes as any;
         }
         return res as any;
-      }
-  };
+      };
+  }
 
   /**
    * @summary
@@ -561,7 +561,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     }
     const res = await this.client.update(finalParams).promise();
     return res as unknown as TypesafePromiseResult<UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>>;
-  };
+  }
 
   /**
    * Similar to `updateSimpleSet`, but only allow updating one type of Item.
@@ -607,8 +607,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
           return res.Attributes as any;
         }
         return res as any;
-      }
-  };
+      };
+  }
 
   async delete<
     TN extends TableName<TS>,
@@ -623,7 +623,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: DeleteInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN>) {
     const res = await this.client.delete(params).promise();
     return res as unknown as TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>;
-  };
+  }
 
   /**
    * Provide a `TableName` parameter and call the function once, ___explicitly provide___ the `Item` generic and call the function a second time, and returns a function that can only delete a certain type of `Item`. 
@@ -659,8 +659,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
           return res.Attributes as any;
         }
         return res as any;
-      }
-  };
+      };
+  }
 
   async query<
     TN extends TableName<TS>,
@@ -686,7 +686,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       KCE,
       PE
     >>;
-  };
+  }
 
   /**
    * You may wish to abstract away the creation of params for the caller, but still allow passing a custom `ProjectionExpression`.
@@ -736,7 +736,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       KCE,
       PE
     >>;
-  };
+  }
 
   /**
    * Convenience method to query the entire table. Does not return `ConsumedCapacity`, `Count`, etc..., simply an array of all Items.
@@ -766,7 +766,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       PE
     >['Items']>;
 
-  };
+  }
 
   /**
    * You may wish to abstract away the creation of params for the caller, but still allow passing a custom `ProjectionExpression`.
@@ -818,7 +818,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       KCE,
       PE
     >['Items']>;
-  };
+  }
 
   /**
    * Convenience method to query for the first Item returned in the Items array in a single query operation. Does not return `ConsumedCapacity`, `Count`, etc....
@@ -851,7 +851,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       KCE,
       PE
     >;
-  };
+  }
 
   /**
    * You may wish to abstract away the creation of params for the caller, but still allow passing a custom `ProjectionExpression`.
@@ -907,7 +907,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       KCE,
       PE
     >;
-  };
+  }
 
   async scan<
     TN extends TableName<TS>,
@@ -929,7 +929,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       TableIndex<TS, TN, IndexName>,
       PE
     >>;
-  };
+  }
 
   /** 
    * Please see `queryPE` for details on this method. It works much the same way. 
@@ -955,7 +955,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       PE
     >>;
 
-  };
+  }
 
   /**
    * Convenience method to scan the entire table. Does not return `ConsumedCapacity`, `Count`, etc..., simply an array of all Items.
@@ -981,7 +981,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       PE
     >['Items']>;
 
-  };
+  }
 
   /**
    * Convenience method to scan the entire table. Does not return `ConsumedCapacity`, `Count`, etc..., simply an array of all Items.
@@ -1008,14 +1008,20 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       TableIndex<TS, TN, IndexName>,
       PE
     >['Items']>;
-  };
+  }
 
   /** Convenience helper to create and return a DynamoDB.DocumentClient.StringSet set */
-  createStringSet<L extends [string, ...string[]]>(list: L, options?: DocumentClient.CreateSetOptions) { return this.client.createSet(list, options) as DocumentClient.StringSet };
+  createStringSet<L extends [string, ...string[]]>(list: L, options?: DocumentClient.CreateSetOptions) {
+    return this.client.createSet(list, options) as DocumentClient.StringSet;
+  }
   /** Convenience helper to create and return a DynamoDB.DocumentClient.NumberSet set */
-  createNumberSet<L extends [number, ...number[]]>(list: L, options?: DocumentClient.CreateSetOptions) { return this.client.createSet(list, options) as DocumentClient.NumberSet };
+  createNumberSet<L extends [number, ...number[]]>(list: L, options?: DocumentClient.CreateSetOptions) {
+    return this.client.createSet(list, options) as DocumentClient.NumberSet;
+  }
   /** Convenience helper to create and return a DynamoDB.DocumentClient.BinarySet set */
-  createBinarySet<L extends [DocumentClient.binaryType, ...DocumentClient.binaryType[]]>(list: L, options?: DocumentClient.CreateSetOptions) { return this.client.createSet(list, options) as DocumentClient.BinarySet };
+  createBinarySet<L extends [DocumentClient.binaryType, ...DocumentClient.binaryType[]]>(list: L, options?: DocumentClient.CreateSetOptions) {
+    return this.client.createSet(list, options) as DocumentClient.BinarySet;
+  }
 
   private getUpdateSimpleSETParams(Key: Record<string, unknown>, Item: Record<string, unknown>, extraConditions?: ExtraConditions<any, any, any, any, any, any>) {
     const { ANDSuffix, extraExpressionAttributeNames, extraExpressionAttributeValues } = extraConditions ?? {};
@@ -1061,8 +1067,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     return [...map.entries()].reduce<Record<V, K>>((acc, [key, value]) => {
       acc[value] = key;
       return acc;
+      // eslint-disable-next-line @typescript-eslint/prefer-reduce-type-parameter
     }, {} as Record<V, K>);
-  };
+  }
 
   private parsePEConstructedParamsAndLog<RawParams extends { ExpressionAttributeNames?: AnyExpressionAttributeNames; _logParams?: _LogParams }>(params: RawParams, peRaw: string | undefined) {
     let p;
@@ -1134,9 +1141,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     return inspect(object, this.inspectOptions ?? {});
   }
 
-};
+}
 
-export namespace TypesafeDocumentClientv2 {
+export declare namespace TypesafeDocumentClientv2 {
 
   /**
    * For convenience, returns the Key type for an Item in a Table.

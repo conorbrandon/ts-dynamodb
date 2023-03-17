@@ -11,7 +11,7 @@ type ConstructSparseArray<Length extends `${number}`, Acc extends unknown[] = []
   Length extends keyof Acc
   ? Tail<Acc>
   : ConstructSparseArray<Length, [...Acc, unknown]>;
-type ConstructSparseArrayForRestArray<RestArrayType extends any[], Index extends `${number}`, ValueAtIndex extends any, IsRestElement extends boolean, Acc extends any[] = []> =
+type ConstructSparseArrayForRestArray<RestArrayType extends any[], Index extends `${number}`, ValueAtIndex, IsRestElement extends boolean, Acc extends any[] = []> =
   keyof RestArrayType & `${number}` extends never // if we have finally reached the rest element of the array
   ? (
     IsRestElement extends true // first check if the ValueAtIndex we want to create is a rest element
@@ -19,7 +19,7 @@ type ConstructSparseArrayForRestArray<RestArrayType extends any[], Index extends
       keyof Acc & Index extends never // if so, make sure the index doesn't already exist in the Acc, if it does, then it shouldn't have really been a rest element
       ? ( // yay, we can create the rest element at the last index, HOWEVER!!!,
         [...Acc, { _isRestElement: true; _val: ValueAtIndex }] // we don't want to actually create it as a rest element. This is because when we use ResolveRestElementUnionsInPickedMergedType<...<...>, ...>,
-      )                         // the rest element of KeysOfTuple automatically recreates the last element as a rest element!
+      )//                          the rest element of KeysOfTuple automatically recreates the last element as a rest element!
       : never // the IsRestElement and index parameter is lying!
     )
     : (
