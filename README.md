@@ -46,8 +46,10 @@ I welcome bug reports, suggestions, or comments! Please submit an issue if you a
 
 ### Prerequisites
 
-- `typescript@4.9.4` (currently only tested on latest TS version)
-- `strict` mode in `tsconfig.json` 
+- `typescript@^5.0.2` 
+  - NOTE: as of `ts-dynamodb` version `1.0.0`, this package makes use of [`const` type parameters](https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#const-type-parameters), which were introduced in TS `5.0`.
+  - if you are not able to upgrade yet, please use `ts-dynamodb` version `0.1.8`.
+- `strict` mode in `tsconfig.json`
 
 ```
 npm install ts-dynamodb
@@ -101,7 +103,7 @@ const { Item: userDetails } = await tsDdb.get({
     userID: '123' // string
   },
   ProjectionExpression: 'username, email, name'
-} as const);
+});
 /**
   typeof userDetails = {
     username: string;
@@ -126,7 +128,7 @@ const { Item: user } = await tsDdbRaw.get({
   Key: {
     userID: '123' // string
   },
-} as const).promise();
+}).promise();
 /**
   typeof user = TSDdbSet<DBUser, false> | undefined
  */
@@ -198,7 +200,7 @@ const { Item: user } = await tsDdb.get({
     rangeKey: 'user'
   },
   ProjectionExpression: 'hashKey, rangeKey, favoriteSites[0], numLogins[0]'
-} as const);
+});
 /**
   type user = {
     numLogins?: {     // oops, made an error, numLogins is not an array!
@@ -234,7 +236,7 @@ if (user) {
         ':now': updated // Try changing this to a string instead and see what happens
       },
       ReturnValues: 'UPDATED_NEW'
-    } as const);
+    });
     /**
       type updatedSite = {
         categories: string[] | undefined; // note categories is returned as undefined. It will be undefined if we removed the one and only element in the categories array
@@ -259,7 +261,7 @@ if (user) {
         ':now': updated
       },
       Limit: 1
-    } as const);
+    });
     const partialUser = partialUsers?.[0];
     if (partialUser) {
       console.log(`user '${partialUser.hashKey}' got a nasty suprise when they logged in at ${partialUser.lastLogin} and found they couldn't access their favorite site anymore 😕`);
@@ -279,6 +281,8 @@ if (user) {
 ## TypesafeDocumentClientRawv2
 
 `TypesafeDocumentClientRawv2` is the types-only DocumentClient. If you don't want to change anything about your existing queries, this is the way to go. The following examples use the [`examples`](./examples/gif/index.ts) types and the `TypesafeDocumentClientv2`, but everything still applies (just tack on a `.promise()` or use the callback parameter).
+
+(💡 As of `ts-dynamodb` version `1.0.0` and TS `5.0`, the `as const` annotations in the gifs are not required 😀)
 
 ### get
 
@@ -459,7 +463,7 @@ const { Attributes: updatedUserToAdmin } = await tsDdb.updateSimpleSET({
     log: true,
     message: 'hello world'
   }
-} as const);
+});
 type u = typeof updatedUser;
 //   ^? type u2 = {  role: "user" | "admin";  lastLogin: number;} | undefined
 ```
@@ -542,7 +546,7 @@ When using the raw client, you must assert these types yourself as the output fr
 
 ## Troubleshooting
 
-- Make sure to _always_ use `as const` for method params! For example, a string that is meant to be a constant in `update` `ExpressionAttributeValues` will be widened to simply `string` without it. This also may bite you for `put` and `query`.
+- As of `ts-dynamodb` version `1.0.0`, `as const` should no longer be required for params used directly in a method's arguments. Please still remember to add `as const` to any params declared _outside_ of the method's arguments however (for example, an `Item` for `put` if it is not explicitly annotated with the `Item`'s type, or `ExpressionAttributeValues` for `update`, etc...).
 - The `Key`s of the `Item` types in a table _must_ be a discriminated union. If two objects have the same `Key`, you may get errors, especially for `put` and `update`.
 - `update` increment/decrement and number `ADD`
   - The values you try to increment or decrement using `SET` or number values you try to `ADD` must be `number`s or a branded type intersected with `number`. If you have a value that is a constant number, it cannot be modified. By constant, I mean something like `num` in `type a = { num: 7 }`. So `SET num = num + num` will not work.

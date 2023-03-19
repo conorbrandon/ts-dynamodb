@@ -1,5 +1,5 @@
 import { Join } from "../string";
-import { DeepSimplifyObject, IsNever, NoUndefined } from "../utils";
+import { DeepSimplifyObject, IsNever, NoUndefined, Primitive } from "../utils";
 import { ExtractAddTuplesFromUE } from "./ADD";
 import { ExtractPropsToRemoveFromUE } from "./REMOVE";
 import { ExtractSetterPartOfUE, ExtractSetterTuplesLookAhead } from "./SET";
@@ -18,7 +18,7 @@ type RemoveUndefinedFromUEType<T extends object> = {
     tk extends DocumentClient.DynamoDbSet
     ? tk
     : NoUndefined<tk> extends infer noUndef
-    ? noUndef extends string | number // as always, filter out cheeky branded types
+    ? noUndef extends Primitive // as always, filter out cheeky branded types
     ? noUndef
     : noUndef extends object
     ? RemoveUndefinedFromUEType<noUndef>

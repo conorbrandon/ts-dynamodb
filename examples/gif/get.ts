@@ -8,7 +8,7 @@ const { Item } = await tsDdb.get({
     hashKey: userID,
     rangeKey: 'user'
   }
-} as const);
+});
 
 type u = typeof Item;
 //   ^?

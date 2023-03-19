@@ -1,6 +1,6 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Tail } from "../record";
-import { DeepSimplifyObject, KeysOfTuple, NoArrays, NoUndefined, OnlyArrays } from "../utils";
+import { DeepSimplifyObject, KeysOfTuple, NoArrays, NoUndefined, OnlyArrays, Primitive } from "../utils";
 
 type ExtractRestElementOfArray<Arr extends any[]> =
   keyof Arr & `${number}` extends never // if the rest array doesn't have `${number}` indices anymore, we've reached the rest element
@@ -129,7 +129,7 @@ type _AddUndefinedToObjectsWithOnlyUndefinedPropertiesAndUnknownToSparseArrays<T
     ? (
       {
         [L in keyof onlyArrs]: onlyArrs[L] extends infer el
-        ? el extends string | number // branded types!
+        ? el extends Primitive // branded types!
         ? el
         : el extends object
         ? _AddUndefinedToObjectsWithOnlyUndefinedPropertiesAndUnknownToSparseArrays<el>

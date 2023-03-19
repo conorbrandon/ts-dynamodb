@@ -13,7 +13,7 @@ type DBUser = {
 
 // Step 2: create a readonly table object
 // satisfies is not necessary, but may provide some type hints if adding indices
-// Make sure to add `as const` to tables and _all_ input objects.
+// Make sure to add `as const` to tables.
 export const UserTable = {
   name: `users`
 } as const satisfies TableFromValue;
@@ -41,7 +41,7 @@ const { Item: userDetails } = await tsDdb.get({
     userID: '123' // string
   },
   ProjectionExpression: 'username, email, name'
-} as const);
+});
 /**
   typeof userDetails = {
     username: string;
@@ -61,7 +61,7 @@ const { Item: user } = await tsDdbRaw.get({
   Key: {
     userID: '123' // string
   },
-} as const).promise();
+}).promise();
 /**
   typeof user = TSDdbSet<DBUser, false> | undefined
  */

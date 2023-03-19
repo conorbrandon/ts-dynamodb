@@ -15,6 +15,6 @@ const { Attributes } = await tsDdb.delete({
     ':zero': 0
   },
   ReturnValues: 'NONE'
-} as const);
+});
 type u = typeof Attributes;
 //   ^?

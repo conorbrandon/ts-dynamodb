@@ -14,7 +14,7 @@ const { Attributes } = await tsDdb.update({
     ':empty': []
   },
   ReturnValues: 'UPDATED_OLD'
-} as const);
+});
 type u = typeof Attributes;
 //   ^?
 
@@ -39,6 +39,6 @@ const { Attributes: updatedUser } = await tsDdb.updateSimpleSET({
     log: true,
     message: 'hello world'
   }
-} as const);
+});
 type u2 = typeof updatedUser;
 //   ^?

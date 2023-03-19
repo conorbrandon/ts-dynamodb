@@ -17,6 +17,6 @@ const { Attributes } = await tsDdb.put({
   TableName: MyTable.name,
   Item: user,
   ReturnValues: 'ALL_OLD'
-} as const);
+});
 type u = typeof Attributes;
 //   ^?

@@ -13,7 +13,7 @@ const { Items } = await tsDdb.query({
     ':userID': userID,
     ':five': Date.now() - (5 * 60000)
   }
-} as const);
+});
 type u = typeof Items;
 //   ^?
 

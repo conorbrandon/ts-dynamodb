@@ -62,7 +62,7 @@ const { Item: user } = await tsDdb.get({
     rangeKey: 'user'
   },
   ProjectionExpression: 'hashKey, rangeKey, favoriteSites[0], numLogins[0]'
-} as const);
+});
 /**
   type user = {
     numLogins?: {     // oops, made an error, numLogins is not an array!
@@ -98,7 +98,7 @@ if (user) {
         ':now': updated // Try changing this to a string instead and see what happens
       },
       ReturnValues: 'UPDATED_NEW'
-    } as const);
+    });
     /**
       type updatedSite = {
         categories: string[] | undefined; // note categories is returned as undefined. It will be undefined if we removed the one and only element in the categories array
@@ -123,7 +123,7 @@ if (user) {
         ':now': updated
       },
       Limit: 1
-    } as const);
+    });
     const partialUser = partialUsers?.[0];
     if (partialUser) {
       console.log(`user '${partialUser.hashKey}' got a nasty suprise when they logged in at ${partialUser.lastLogin} and found they couldn't access their favorite site anymore 😕`);

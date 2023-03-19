@@ -12,8 +12,9 @@ const otherID = otherZodID.parse('otherID');
 
 describe('createStrict*', () => {
 
+  const threeID = Math.random();
   const Item = {
-    threeID: 0,
+    threeID,
     otherID,
     zod: {
       thing: 'random',
@@ -30,10 +31,10 @@ describe('createStrict*', () => {
       Item,
       ConditionExpression: 'threeID <> :zero',
       ExpressionAttributeValues: {
-        ':zero': 0
+        ':zero': threeID
       },
       ReturnValues: 'ALL_OLD'
-    } as const);
+    });
     console.log('puttedZod:', myInspect(putItem.Attributes));
 
     expect(putItem.Attributes).toStrictEqual(undefined);
@@ -45,14 +46,14 @@ describe('createStrict*', () => {
     const getType3Zod = tsDdb.createStrictGetItem(Table3.name)<Type3Zod>();
     const gotItem = await getType3Zod({
       Key: {
-        threeID: 0,
+        threeID,
         otherID
       },
       ProjectionExpression: '#threeID, zod',
       ExpressionAttributeNames: {
         '#threeID': 'threeID'
       }
-    } as const);
+    });
     console.log('gotZod:', myInspect(gotItem.Item));
 
     expect(gotItem.Item).toStrictEqual({ threeID: Item.threeID, zod: Item.zod });
@@ -74,7 +75,7 @@ describe('createStrict*', () => {
         ':zod': updateObj,
       },
       ReturnValues: 'UPDATED_NEW'
-    } as const);
+    });
     console.log('updatedZod:', myInspect(updatedItem.Attributes));
 
     expect(updatedItem.Attributes).toStrictEqual({ zod: updateObj });
@@ -86,15 +87,15 @@ describe('createStrict*', () => {
     const deleteType3Zod = tsDdb.createStrictDeleteItem(Table3.name)<Type3Zod>();
     const deletedItem = await deleteType3Zod({
       Key: {
-        threeID: 0,
+        threeID,
         otherID
       },
       ConditionExpression: 'threeID = :zero',
       ExpressionAttributeValues: {
-        ':zero': 0
+        ':zero': threeID
       },
       ReturnValues: 'ALL_OLD'
-    } as const);
+    });
     console.log('deletedZod:', myInspect(deletedItem.Attributes));
 
     expect(deletedItem.Attributes).toStrictEqual({ ...Item, zod: updateObj });
@@ -108,12 +109,12 @@ describe('createStrict*', () => {
       const putType3Zod = tsDdb.createStrictPutItem(Table3.name, true)<Type3Zod>();
       const putItem = await putType3Zod({
         Item,
-        ConditionExpression: 'threeID <> :zero',
+        ConditionExpression: 'threeID <> :threeID',
         ExpressionAttributeValues: {
-          ':zero': 0
+          ':threeID': threeID
         },
         ReturnValues: 'ALL_OLD'
-      } as const);
+      });
       console.log('puttedZod:', myInspect(putItem));
 
       expect(putItem).toStrictEqual(undefined);
@@ -125,14 +126,14 @@ describe('createStrict*', () => {
       const getType3Zod = tsDdb.createStrictGetItem(Table3.name, true)<Type3Zod>();
       const gotItem = await getType3Zod({
         Key: {
-          threeID: 0,
+          threeID,
           otherID
         },
         ProjectionExpression: '#threeID, zod',
         ExpressionAttributeNames: {
           '#threeID': 'threeID'
         }
-      } as const);
+      });
       console.log('gotZod:', myInspect(gotItem));
 
       expect(gotItem).toStrictEqual({ threeID: Item.threeID, zod: Item.zod });
@@ -144,7 +145,7 @@ describe('createStrict*', () => {
       const updateType3Zod = tsDdb.createStrictUpdateItem(Table3.name, true)<Type3Zod>();
       const updatedItem = await updateType3Zod({
         Key: {
-          threeID: 0,
+          threeID,
           otherID
         },
         UpdateExpression: 'SET zod = :zod',
@@ -152,7 +153,7 @@ describe('createStrict*', () => {
           ':zod': updateObj,
         },
         ReturnValues: 'UPDATED_NEW'
-      } as const);
+      });
       console.log('updatedZod:', myInspect(updatedItem));
 
       expect(updatedItem).toStrictEqual({ zod: updateObj });
@@ -164,15 +165,15 @@ describe('createStrict*', () => {
       const deleteType3Zod = tsDdb.createStrictDeleteItem(Table3.name, true)<Type3Zod>();
       const deletedItem = await deleteType3Zod({
         Key: {
-          threeID: 0,
+          threeID,
           otherID
         },
-        ConditionExpression: 'threeID = :zero',
+        ConditionExpression: 'threeID = :threeID',
         ExpressionAttributeValues: {
-          ':zero': 0
+          ':threeID': threeID
         },
         ReturnValues: 'ALL_OLD'
-      } as const);
+      });
       console.log('deletedZod:', myInspect(deletedItem));
 
       expect(deletedItem).toStrictEqual({ ...Item, zod: updateObj });
@@ -187,12 +188,15 @@ describe('createStrict*', () => {
       const putType3Zod = tsDdb.createStrictPutItem(Table3.name, true)<Type3Zod>();
       const putItem = await putType3Zod({
         Item,
-        ConditionExpression: 'threeID <> :zero',
+        ConditionExpression: '#threeID <> :threeID',
         ExpressionAttributeValues: {
-          ':zero': 0
+          ':threeID': threeID
+        },
+        ExpressionAttributeNames: {
+          '#threeID': 'threeID'
         },
         ReturnValues: 'ALL_OLD'
-      } as const);
+      });
       console.log('puttedZod:', myInspect(putItem));
 
       expect(putItem).toStrictEqual(undefined);
@@ -203,7 +207,7 @@ describe('createStrict*', () => {
 
       const getType3Zod = tsDdb.createStrictGetItem(Table3.name, true)<Type3Zod>();
       const gotItem = await getType3Zod({
-        threeID: 0,
+        threeID,
         otherID
       });
       console.log('gotZod:', myInspect(gotItem));
@@ -218,7 +222,7 @@ describe('createStrict*', () => {
       const updateType3Zod = tsDdb.createStrictUpdateItem(Table3.name, true)<Type3Zod>();
       const updatedItem = await updateType3Zod({
         Key: {
-          threeID: 0,
+          threeID,
           otherID
         },
         UpdateExpression: 'SET zod = :zod',
@@ -226,7 +230,7 @@ describe('createStrict*', () => {
           ':zod': updateObj,
         },
         ReturnValues: 'UPDATED_NEW'
-      } as const);
+      });
       console.log('updatedZod:', myInspect(updatedItem));
 
       expect(updatedItem).toStrictEqual({ zod: updateObj });
@@ -237,7 +241,7 @@ describe('createStrict*', () => {
 
       const deleteType3Zod = tsDdb.createStrictDeleteItem(Table3.name, true)<Type3Zod>();
       const deletedItem = await deleteType3Zod({
-        threeID: 0,
+        threeID,
         otherID
       });
       console.log('deletedZod:', myInspect(deletedItem));
@@ -316,7 +320,7 @@ describe('createStrict*', () => {
         log: true,
         message: 'hi mom!'
       }
-    } as const);
+    });
     console.log('simpleUpdated:', myInspect(simpleUpdated));
 
     expect(simpleUpdated?.thebig?.data?.myStringSet.type).toStrictEqual('String');
@@ -409,7 +413,7 @@ describe('CICDSmaller CRUD', () => {
         ':a': 'a'
       },
       ReturnValues: 'ALL_OLD'
-    } as const);
+    });
     if (putted) {
       console.log('putted:', myInspect(putted));
     }
@@ -480,7 +484,7 @@ thebig.#data.myTuple[0],
 thebig.#data.myStringSet,
 thebig.#data.myTuple[1].myBinarySet,
 myWackySet.nonsense`
-    } as const);
+    });
     if (got) {
       console.log({ ConsumedCapacity });
       console.log('got:', myInspect(got));
@@ -593,7 +597,7 @@ thebig.#d.myStringSet :stringSet`,
         AND                   
         #rangeKey=:smallCiCd`,
       ReturnValues: 'UPDATED_NEW'
-    } as const);
+    });
     if (updated) {
       console.log("updated:", myInspect(updated));
     }
@@ -616,7 +620,7 @@ thebig.#d.myStringSet :stringSet`,
         ':datum': 10
       },
       ReturnValues: 'ALL_OLD'
-    } as const);
+    });
     if (deleted) {
       console.log('deleted:', myInspect(deleted));
     }
@@ -644,7 +648,7 @@ describe('query', () => {
       },
       ProjectionExpression: 'thebig.#data.myTuple[1], datum, rangeKey, #hashKey, datumStr',
       FilterExpression: '#hashKey = :hashKey'
-    } as const);
+    });
     console.log('datumQueried:', myInspect(datumQueried.Items));
   });
 
@@ -658,7 +662,7 @@ describe('query', () => {
         ':datumStr': 'datum_12345'
       },
       // ProjectionExpression: 'datumStr, hashKey, datum' // excluding the rangeKey
-    } as const);
+    });
     console.log('datumStrQueried:', myInspect(datumStrQueried.Items));
 
   });
@@ -675,7 +679,7 @@ describe('query', () => {
         ':g': 1
       },
       // ProjectionExpression: 'rangeKey, finaler'
-    } as const);
+    });
     console.log('datumAllQueried:', myInspect(datumAllQueried.Items));
 
   });
@@ -690,7 +694,7 @@ describe('query', () => {
         ':rangeKey': 'small-cicd'
       },
       // ProjectionExpression: 'datum, prop[1], prop[0].weird.peculiar[1], prop[0].strange'
-    } as const);
+    });
     console.log('baseTableQueried:', myInspect(baseTableQueried.Items));
 
   });
@@ -708,7 +712,7 @@ describe('query', () => {
         ':begins': hoo
       },
       // ProjectionExpression: 'nowItExists[0]'
-    } as const);
+    });
     console.log('table3HooQueried:', myInspect(table3HooQueried.Items));
 
   });
@@ -727,7 +731,7 @@ describe('query', () => {
         '#n': 'nowItExists'
       },
       ProjectionExpression: '#n[0]'
-    } as const);
+    });
     console.log('table3WooQueried:', myInspect(table3WooQueried.Items));
 
   });
@@ -743,7 +747,7 @@ describe('query', () => {
         ':begins': 'other_'
       },
       // ProjectionExpression: 'nowItExists[0]'
-    } as const);
+    });
     console.log('table3BaseQueried:', myInspect(table3BaseQueried.Items));
 
   });
@@ -757,7 +761,7 @@ describe('query', () => {
         ':threeID': 0,
         ':other': 'id_0'
       }
-    } as const);
+    });
     console.log('table3BaseQueried2:', myInspect(table3BaseQueried2.Items));
 
   });
@@ -779,7 +783,12 @@ test('scan', async () => {
   });
   const t = scannedItemst?.[0];
   if (t && 'thebig' in t && t.thebig?.data) {
-    t.thebig.data.myStringSet;
+    const { myStringSet } = t.thebig.data;
+    expectTypeOf<typeof myStringSet>().toEqualTypeOf<{
+      wrapperName: "Set";
+      type: "String";
+      values: string[];
+    } | undefined>();
   }
 
   const { Items: scannedItems2 } = await tsDdb.scan({
@@ -798,7 +807,7 @@ describe('queryAll and scanAll', () => {
       ExpressionAttributeValues: {
         ':hashKey': '---'
       }
-    } as const);
+    });
     console.log('lets make sure items is actually an array', items.pop());
   });
 
@@ -818,7 +827,7 @@ test('queryItem', async () => {
     ExpressionAttributeValues: {
       ':hashKey': '---'
     }
-  } as const);
+  });
   expectTypeOf<typeof ciCds>().toEqualTypeOf<undefined | TSDdbSet<CICDBigger> | TSDdbSet<CICDSmaller> | TSDdbSet<CICDMini>>();
 
   const miniItem = await tsDdb.queryItem({
@@ -828,7 +837,7 @@ test('queryItem', async () => {
       ':hashKey': '---',
       ':rangeKey': 'mini-cicd'
     }
-  } as const);
+  });
   expectTypeOf<typeof miniItem>().toEqualTypeOf<undefined | TSDdbSet<CICDMini>>();
 });
 
@@ -852,7 +861,7 @@ test('zod CRUD', async () => {
       ':zero': 0
     },
     ReturnValues: 'ALL_OLD'
-  } as const);
+  });
   console.log('zodPut:', myInspect(zodPut.Attributes));
 
   const zodGot = await (async (threeID: number, otherID: z.infer<typeof otherZodID>) => await tsDdb.get({
@@ -865,7 +874,7 @@ test('zod CRUD', async () => {
     ExpressionAttributeNames: {
       '#threeID': 'threeID'
     }
-  } as const))(0, otherID);
+  }))(0, otherID);
   console.log('zodGot:', myInspect(zodGot.Item));
 
   const updateObj = { thing: 'stringz', more: { more: 'zodIsGoodZodIsGreat' } } as const;
@@ -880,7 +889,7 @@ test('zod CRUD', async () => {
       ':zod': updateObj,
     },
     ReturnValues: 'UPDATED_NEW'
-  } as const);
+  });
   console.log('zodUpdated:', zodUpdated.Attributes);
 
   const zodDeleted = await tsDdb.delete({
@@ -913,7 +922,7 @@ test('Awaited and Promise.all', async () => {
       ':zero': 0
     },
     ReturnValues: 'ALL_OLD'
-  } as const).promise();
+  }).promise();
   type Put = Awaited<typeof putPromise>['Attributes'];
   expectTypeOf<Put>().toEqualTypeOf<Type3Zod | undefined>();
 
@@ -929,7 +938,7 @@ test('Awaited and Promise.all', async () => {
     ExpressionAttributeNames: {
       '#threeID': 'threeID'
     }
-  } as const).promise())(0, otherID);
+  }).promise())(0, otherID);
   type Get = Awaited<typeof getPromise>['Item'];
   expectTypeOf<Get>().toEqualTypeOf<{
     zod: {
@@ -953,7 +962,7 @@ test('Awaited and Promise.all', async () => {
       ':thing': 'stringz',
     },
     ReturnValues: 'UPDATED_NEW'
-  } as const).promise();
+  }).promise();
   type Update = Awaited<typeof updatePromise>['Attributes'];
   expectTypeOf<Update>().toEqualTypeOf<{
     zod: {
@@ -968,7 +977,7 @@ test('Awaited and Promise.all', async () => {
     ExpressionAttributeValues: {
       ':p0': '---',
     }
-  } as const).promise();
+  }).promise();
   type Query = Awaited<typeof queryPromise>['Items'];
   expectTypeOf<Query>().toEqualTypeOf<(A | B)[] | undefined>();
 
@@ -994,10 +1003,10 @@ test('Awaited and Promise.all', async () => {
 
   const [
     // putPromise is awaited above, must be done first,
-    { Item: _got },
-    { Attributes: _updated },
-    { Items: _queried },
-    { Items: _scanned }
+    _got,
+    _updated,
+    _queried,
+    _scanned
   ] = await Promise.all([
     //
     getPromise,
@@ -1036,7 +1045,7 @@ test('getPE', async () => {
   await tsDdb.put({
     TableName: MyTable.name,
     Item
-  } as const);
+  });
 
   const getA = async <PE extends string>(Key: TypesafeDocumentClientv2.GetTableItemKey<MyTableType, A>, pe?: PE) => {
     const { Item: got } = await tsDdb.getPE({
@@ -1241,7 +1250,7 @@ test('queryPE', async () => {
         log: true
       },
       FilterExpression: 'attribute_exists(#otherID)'
-    } as const, pe);
+    }, pe);
     return Items ?? [];
   };
   const woos = await queryType3Woo(0, 'hi', 'woo, hoo, boo');
@@ -1270,7 +1279,7 @@ test('queryPE', async () => {
         log: true
       },
       FilterExpression: 'attribute_exists(#otherID)'
-    } as const, pe);
+    }, pe);
   };
   const woosAll = await queryAllType3Woo(0, 'hi', 'otherID, threeID');
   console.log(myInspect(woosAll));

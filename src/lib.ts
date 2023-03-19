@@ -154,9 +154,10 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     PE extends string,
     GAK extends GetAllKeys<TypeOfItem>,
     EANs extends ExtractEAsFromString<PE>['ean'],
-    EAN extends Record<EANs, GAK>
+    const EAN extends Record<EANs, GAK>,
+    const DummyEAN extends undefined
   >(
-    params: GetInput<TN, Key, PE, EANs, GAK, EAN>,
+    params: GetInput<TN, Key, PE, EANs, GAK, EAN, DummyEAN>,
     callback?: TypesafeCallback<
       GetOutput<
         PE, TypeOfItem, EAN
@@ -175,11 +176,13 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     CE extends string,
     EAs extends ExtractEAsFromString<CE>,
     GAK extends GetAllKeys<TypeOfItem>,
-    EAN extends Record<EAs['ean'], GAK>,
-    EAV extends Record<EAs['eav'], any>,
+    const EAN extends Record<EAs['ean'], GAK>,
+    const DummyEAN extends undefined,
+    const EAV extends Record<EAs['eav'], any>,
+    const DummyEAV extends undefined,
     RN extends PutAndDeleteReturnValues = 'NONE'
   >(
-    params: PutInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, EAV, RN>,
+    params: PutInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, DummyEAN, EAV, DummyEAV, RN>,
     callback?: TypesafeCallback<
       PutOutput<
         TypeOfItem, RN
@@ -199,8 +202,8 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     UEEAs extends ExtractEAsFromString<UE>,
     CEEAs extends ExtractEAsFromString<CE>,
     GAK extends GetAllKeys<TypeOfItem>,
-    EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
-    EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>,
+    const EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
+    const EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>,
     RN extends UpdateReturnValues = 'NONE'
   >(
     params: UpdateInput<TN, Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV, RN>,
@@ -223,11 +226,13 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     CE extends string,
     EAs extends ExtractEAsFromString<CE>,
     GAK extends GetAllKeys<TypeOfItem>,
-    EAN extends Record<EAs['ean'], GAK>,
-    EAV extends Record<EAs['eav'], any>,
+    const EAN extends Record<EAs['ean'], GAK>,
+    const DummyEAN extends undefined,
+    const EAV extends Record<EAs['eav'], any>,
+    const DummyEAV extends undefined,
     RN extends PutAndDeleteReturnValues = 'NONE'
   >(
-    params: DeleteInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN>,
+    params: DeleteInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>,
     callback?: TypesafeCallback<
       DeleteOutput<
         TypeOfItem, RN
@@ -246,8 +251,8 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     KCEEAs extends ExtractEAsFromString<KCE>,
     PEEAs extends ExtractEAsFromString<PE>,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
+    const EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
   >(
     params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>,
@@ -283,8 +288,8 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     PE extends string,
     FEEAs extends ExtractEAsFromString<FE>,
     PEEAs extends ExtractEAsFromString<PE>,
-    EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
   >(
     params: ScanInput<TN, IndexName, FE, PE, FEEAs['ean'] | PEEAs['ean'], FEEAs['eav'], EAN, EAV>,
@@ -354,8 +359,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     PE extends string,
     GAK extends GetAllKeys<TypeOfItem>,
     EANs extends ExtractEAsFromString<PE>['ean'],
-    EAN extends Record<EANs, GAK>
-  >(params: GetInput<TN, Key, PE, EANs, GAK, EAN>) {
+    const EAN extends Record<EANs, GAK>,
+    const DummyEAN extends undefined
+  >(params: GetInput<TN, Key, PE, EANs, GAK, EAN, DummyEAN>) {
     const res = await this.client.get(params).promise();
     return res as unknown as TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>;
   }
@@ -374,8 +380,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         PE extends string,
         GAK extends GetAllKeys<TypeOfItem>,
         EANs extends ExtractEAsFromString<PE>['ean'],
-        EAN extends Record<EANs, GAK>
-      >(params: StrictGetItemInput<Key, PE, EANs, GAK, EAN> | DoesKeyHaveAPropertyCalledKey<Key>): Promise<IO extends true ? GetOutput<PE, TypeOfItem, EAN>['Item'] : TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>> => {
+        const EAN extends Record<EANs, GAK>,
+        const DummyEAN extends undefined
+      >(params: StrictGetItemInput<Key, PE, EANs, GAK, EAN, DummyEAN> | DoesKeyHaveAPropertyCalledKey<Key>): Promise<IO extends true ? GetOutput<PE, TypeOfItem, EAN>['Item'] : TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>> => {
         let res;
         if ("Key" in params) {
           res = await this.client.get({ TableName, ...params }).promise();
@@ -431,10 +438,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     CE extends string,
     EAs extends ExtractEAsFromString<CE>,
     GAK extends GetAllKeys<TypeOfItem>,
-    EAN extends Record<EAs['ean'], GAK>,
-    EAV extends Record<EAs['eav'], any>,
+    const EAN extends Record<EAs['ean'], GAK>,
+    const DummyEAN extends undefined,
+    const EAV extends Record<EAs['eav'], any>,
+    const DummyEAV extends undefined,
     RN extends PutAndDeleteReturnValues = 'NONE'
-  >(params: PutInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, EAV, RN>) {
+  >(params: PutInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, DummyEAN, EAV, DummyEAV, RN>) {
     const res = await this.client.put(params).promise();
     return res as unknown as TypesafePromiseResult<PutOutput<TypeOfItem, RN>>;
   }
@@ -453,10 +462,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         CE extends string,
         EAs extends ExtractEAsFromString<CE>,
         GAK extends GetAllKeys<TypeOfItem>,
-        EAN extends Record<EAs['ean'], GAK>,
-        EAV extends Record<EAs['eav'], any>,
+        const EAN extends Record<EAs['ean'], GAK>,
+        const DummyEAN extends undefined,
+        const EAV extends Record<EAs['eav'], any>,
+        const DummyEAV extends undefined,
         RN extends PutAndDeleteReturnValues = 'NONE'
-      >(params: StrictPutItemInput<Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, EAV, RN>): Promise<AO extends true ? PutOutput<TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<PutOutput<TypeOfItem, RN>>> => {
+      >(params: StrictPutItemInput<Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, DummyEAN, EAV, DummyEAV, RN>): Promise<AO extends true ? PutOutput<TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<PutOutput<TypeOfItem, RN>>> => {
         const res = await this.client.put({ TableName, ...params }).promise();
         if (attributesOnly) {
           return res.Attributes as any;
@@ -474,8 +485,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     UEEAs extends ExtractEAsFromString<UE>,
     CEEAs extends ExtractEAsFromString<CE>,
     GAK extends GetAllKeys<TypeOfItem>,
-    EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
-    EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>,
+    const EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
+    const EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>,
     RN extends UpdateReturnValues = 'NONE'
   >(params: UpdateInput<TN, Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV, RN>) {
     const res = await this.client.update(params).promise();
@@ -498,8 +509,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         UEEAs extends ExtractEAsFromString<UE>,
         CEEAs extends ExtractEAsFromString<CE>,
         GAK extends GetAllKeys<TypeOfItem>,
-        EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
-        EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>,
+        const EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
+        const EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>,
         RN extends UpdateReturnValues = 'NONE'
       >(params: StrictUpdateItemInput<Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV, RN>): Promise<AO extends true ? UpdateOutput<TypeOfItem, UE, EAN, RN>['Attributes'] : TypesafePromiseResult<UpdateOutput<TypeOfItem, UE, EAN, RN>>> => {
         const res = await this.client.update({ TableName, ...params }).promise();
@@ -544,10 +555,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     AS extends string,
     ASEAs extends ExtractEAsFromString<AS>,
     GAK extends GetAllKeys<TypeOfItem>,
-    EAN extends Record<ASEAs['ean'], GAK>,
-    EAV extends Record<ASEAs['eav'], any>,
+    const EAN extends Record<ASEAs['ean'], GAK>,
+    const DummyEAN extends undefined,
+    const EAV extends Record<ASEAs['eav'], any>,
+    const DummyEAV extends undefined,
     RN extends UpdateReturnValues = 'NONE'
-  >(params: UpdateSimpleSETInput<TN, Key, Partial<NoKeysTypeOfItem>, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, EAV, RN>) {
+  >(params: UpdateSimpleSETInput<TN, Key, Partial<NoKeysTypeOfItem>, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>) {
     const { TableName, Key, Item, ReturnValues, extraConditions, _logParams } = params;
     const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
     const finalParams = {
@@ -587,10 +600,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         AS extends string,
         ASEAs extends ExtractEAsFromString<AS>,
         GAK extends GetAllKeys<TypeOfItem>,
-        EAN extends Record<ASEAs['ean'], GAK>,
-        EAV extends Record<ASEAs['eav'], any>,
+        const EAN extends Record<ASEAs['ean'], GAK>,
+        const DummyEAN extends undefined,
+        const EAV extends Record<ASEAs['eav'], any>,
+        const DummyEAV extends undefined,
         RN extends UpdateReturnValues = 'NONE'
-      >(params: StrictUpdateSimpleSETInput<Key, Partial<NoKeysTypeOfItem>, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, EAV, RN>): Promise<AO extends true ? UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>>> => {
+      >(params: StrictUpdateSimpleSETInput<Key, Partial<NoKeysTypeOfItem>, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>): Promise<AO extends true ? UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>>> => {
         const { Key, Item, ReturnValues, extraConditions, _logParams } = params;
         const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
         const finalParams = {
@@ -617,10 +632,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     CE extends string,
     EAs extends ExtractEAsFromString<CE>,
     GAK extends GetAllKeys<TypeOfItem>,
-    EAN extends Record<EAs['ean'], GAK>,
-    EAV extends Record<EAs['eav'], any>,
+    const EAN extends Record<EAs['ean'], GAK>,
+    const DummyEAN extends undefined,
+    const EAV extends Record<EAs['eav'], any>,
+    const DummyEAV extends undefined,
     RN extends PutAndDeleteReturnValues = 'NONE'
-  >(params: DeleteInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN>) {
+  >(params: DeleteInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>) {
     const res = await this.client.delete(params).promise();
     return res as unknown as TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>;
   }
@@ -645,10 +662,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         CE extends string,
         EAs extends ExtractEAsFromString<CE>,
         GAK extends GetAllKeys<TypeOfItem>,
-        EAN extends Record<EAs['ean'], GAK>,
-        EAV extends Record<EAs['eav'], any>,
+        const EAN extends Record<EAs['ean'], GAK>,
+        const DummyEAN extends undefined,
+        const EAV extends Record<EAs['eav'], any>,
+        const DummyEAV extends undefined,
         RN extends PutAndDeleteReturnValues = 'NONE'
-      >(params: StrictDeleteItemInput<Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, EAV, RN> | DoesKeyHaveAPropertyCalledKey<Key>): Promise<AO extends true ? DeleteOutput<TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>> => {
+      >(params: StrictDeleteItemInput<Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN> | DoesKeyHaveAPropertyCalledKey<Key>): Promise<AO extends true ? DeleteOutput<TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>> => {
         let res;
         if ("Key" in params) {
           res = await this.client.delete({ TableName, ...params }).promise();
@@ -670,8 +689,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     KCEEAs extends ExtractEAsFromString<KCE>,
     PEEAs extends ExtractEAsFromString<PE>,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
+    const EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
     const res = await this.client.query(params).promise();
@@ -718,8 +737,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     FE extends string,
     KCEEAs extends ExtractEAsFromString<KCE>,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
+    const EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
@@ -749,8 +768,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     KCEEAs extends ExtractEAsFromString<KCE>,
     PEEAs extends ExtractEAsFromString<PE>,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
+    const EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
     const items: unknown[] = await this.whileLastEvaluatedKey({ method: 'query', params });
@@ -800,8 +819,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     FE extends string,
     KCEEAs extends ExtractEAsFromString<KCE>,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
+    const EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
@@ -831,8 +850,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     KCEEAs extends ExtractEAsFromString<KCE>,
     PEEAs extends ExtractEAsFromString<PE>,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
+    const EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
     const { Items = [] } = await this.client.query(params).promise();
@@ -885,8 +904,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     FE extends string,
     KCEEAs extends ExtractEAsFromString<KCE>,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
+    const EAN extends Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
@@ -915,8 +934,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     PE extends string,
     FEEAs extends ExtractEAsFromString<FE>,
     PEEAs extends ExtractEAsFromString<PE>,
-    EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: ScanInput<TN, IndexName, FE, PE, FEEAs['ean'] | PEEAs['ean'], FEEAs['eav'], EAN, EAV>) {
     const res = await this.client.scan(params).promise();
@@ -938,8 +957,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     FE extends string,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: ScanPEInput<TN, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
@@ -966,8 +985,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     PE extends string,
     FEEAs extends ExtractEAsFromString<FE>,
     PEEAs extends ExtractEAsFromString<PE>,
-    EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: ScanInput<TN, IndexName, FE, PE, FEEAs['ean'] | PEEAs['ean'], FEEAs['eav'], EAN, EAV>) {
     const items: unknown[] = await this.whileLastEvaluatedKey({ method: 'scan', params });
@@ -992,8 +1011,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     FE extends string,
     FEEAs extends ExtractEAsFromString<FE>,
-    EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
   >(params: ScanPEInput<TN, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
@@ -1023,7 +1042,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     return this.client.createSet(list, options) as DocumentClient.BinarySet;
   }
 
-  private getUpdateSimpleSETParams(Key: Record<string, unknown>, Item: Record<string, unknown>, extraConditions?: ExtraConditions<any, any, any, any, any, any>) {
+  private getUpdateSimpleSETParams(Key: Record<string, unknown>, Item: Record<string, unknown>, extraConditions?: ExtraConditions<any, any, any, any, any, any, any, any>) {
     const { ANDSuffix, extraExpressionAttributeNames, extraExpressionAttributeValues } = extraConditions ?? {};
 
     let index = 0;

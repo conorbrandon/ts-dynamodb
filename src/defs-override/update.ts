@@ -49,21 +49,21 @@ export type StrictUpdateItemInput<
   RN extends UpdateReturnValues
 > = Omit<UpdateInput<never, Key, TypeOfItem, UE, CE, EANs, EAVs, GAK, EAN, EAV, RN>, 'TableName'>;
 
-export type ExtraConditions<AS extends string, EANs extends string, EAVs extends string, GAK extends string, EAN extends Record<EANs, GAK>, EAV extends Record<EAVs, any>> = {
+export type ExtraConditions<AS extends string, EANs extends string, EAVs extends string, GAK extends string, EAN extends Record<EANs, GAK>, DummyEAN extends undefined, EAV extends Record<EAVs, any>, DummyEAV extends undefined> = {
   ANDSuffix: AS extends UseAllExpressionAttributesInString<EAN, EAV> ? AS : `Error ❌ unused EAs in ANDSuffix: ${FilterUnusedEANOrVs<AS, OnlyStrings<keyof EAN | keyof EAV>>}`;
 } & (
     AS extends EANString
     ? {
       extraExpressionAttributeNames: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
     } : {
-      extraExpressionAttributeNames?: undefined;
+      extraExpressionAttributeNames?: DummyEAN;
     }
   ) & (
     AS extends EAVString
     ? {
       extraExpressionAttributeValues: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
     } : {
-      extraExpressionAttributeValues?: undefined;
+      extraExpressionAttributeValues?: DummyEAV;
     }
   );
 export type UpdateSimpleSETInput<
@@ -76,7 +76,9 @@ export type UpdateSimpleSETInput<
   EAVs extends string,
   GAK extends string,
   EAN extends Record<EANs, GAK>,
+  DummyEAN extends undefined,
   EAV extends Record<EAVs, any>,
+  DummyEAV extends undefined,
   RN extends UpdateReturnValues
 > = {
   TableName: TN;
@@ -106,7 +108,7 @@ export type UpdateSimpleSETInput<
   }
   * ```
   */
-  extraConditions?: ExtraConditions<AS, EANs, EAVs, GAK, EAN, EAV>;
+  extraConditions?: ExtraConditions<AS, EANs, EAVs, GAK, EAN, DummyEAN, EAV, DummyEAV>;
   /**
    * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `simpleUpdateSET` creates the parameters for you, you may wish to log exactly what was going into your DB (or debug conflicting names with the `extraConditions` option).
    * Make sure to set `log` to `true`!
@@ -123,9 +125,11 @@ export type StrictUpdateSimpleSETInput<
   EAVs extends string,
   GAK extends string,
   EAN extends Record<EANs, GAK>,
+  DummyEAN extends undefined,
   EAV extends Record<EAVs, any>,
+  DummyEAV extends undefined,
   RN extends UpdateReturnValues
-> = Omit<UpdateSimpleSETInput<never, Key, TypeOfItem, Item, AS, EANs, EAVs, GAK, EAN, EAV, RN>, 'TableName'>;
+> = Omit<UpdateSimpleSETInput<never, Key, TypeOfItem, Item, AS, EANs, EAVs, GAK, EAN, DummyEAN, EAV, DummyEAV, RN>, 'TableName'>;
 
 export type UpdateOutput<
   GenericT extends object,

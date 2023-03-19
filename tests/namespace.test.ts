@@ -14,7 +14,7 @@ test('all', () => {
     const blah = await tsDdb.get({
       TableName: MyTable.name,
       Key: k
-    } as const);
+    });
     console.log(blah.Item);
 
   };

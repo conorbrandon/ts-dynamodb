@@ -103,8 +103,12 @@ export type UnionToIntersection<U> =
   (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
 
 /** Force a Record to contain at least one key */
-export type NotEmpty<T> = keyof T extends never ? never : T;
-export type NotEmptyWithMessage<T, Msg extends string> = keyof T extends never ? { 'Error ❌': Msg } : T;
+export type NotEmpty<T> = keyof T extends never ? never : {
+  [K in keyof T]: T[K] // TODO: this is a temporary stopgap for https://github.com/microsoft/TypeScript/issues/53307
+};
+export type NotEmptyWithMessage<T, Msg extends string> = keyof T extends never ? { 'Error ❌': Msg } : {
+  [K in keyof T]: T[K] // TODO: this is a temporary stopgap for https://github.com/microsoft/TypeScript/issues/53307
+};
 
 /** https://stackoverflow.com/questions/70941227/intersection-of-values-based-on-union-of-keys */
 export type ValueIntersectionByKeyUnion<T, TKey extends keyof T> = {

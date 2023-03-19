@@ -1,4 +1,4 @@
-import { IsNever } from "./utils";
+import { IsNever, Primitive } from "./utils";
 import { NativeJSBinaryTypes } from "../dynamodb-types";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
@@ -23,11 +23,7 @@ type _DeepValidateShapev2<Obj, Shape> =
         : (
           IsNever<Exclude<keyof Obj, keyof Shape>> extends true // make sure Obj doesn't have an extra keys. It might, because of the distributing we do for Shape above, but the nice thing about using never is that it'll disappear in the union :)
           ? (
-            Obj extends string | number // accept branded types and template literal types
-            ? Obj
-            : Obj extends NativeJSBinaryTypes // do not map over all the silly binary types, causes all sorts of havoc
-            ? Obj
-            : Obj extends DocumentClient.DynamoDbSet
+            Obj extends Primitive | NativeJSBinaryTypes | DocumentClient.DynamoDbSet | Set<any> // accept branded types and template literal types
             ? Obj
             : Obj extends object // we should have gotten rid of all the types that extend object but that aren't really what most people thing of as "objects" above
             ? {

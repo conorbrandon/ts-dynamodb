@@ -13,7 +13,9 @@ export type DeleteInput<
   EAVs extends string,
   GAK extends string,
   EAN extends Record<EANs, GAK>,
+  DummyEAN extends undefined,
   EAV extends Record<EAVs, any>,
+  DummyEAV extends undefined,
   RN extends PutAndDeleteReturnValues
 > = Omit<DocumentClient.DeleteItemInput, 'TableName' | 'Key' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ConditionExpression' | 'ReturnValues'> & {
   TableName: TN;
@@ -25,14 +27,14 @@ export type DeleteInput<
     ? {
       ExpressionAttributeNames: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
     } : {
-      ExpressionAttributeNames?: undefined;
+      ExpressionAttributeNames?: DummyEAN;
     }
   ) & (
     CE extends EAVString
     ? {
       ExpressionAttributeValues: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
     } : {
-      ExpressionAttributeValues?: undefined;
+      ExpressionAttributeValues?: DummyEAV;
     }
   );
 // NOTE: to get the behavior I want with the generics around FilterUnusedEANsOrVs and conditionally including ExpressionAttributes, Omit on DeleteInput DOES NOT WORK. 
@@ -44,7 +46,9 @@ export type StrictDeleteItemInput<
   EAVs extends string,
   GAK extends string,
   EAN extends Record<EANs, GAK>,
+  DummyEAN extends undefined,
   EAV extends Record<EAVs, any>,
+  DummyEAV extends undefined,
   RN extends PutAndDeleteReturnValues
 > = Omit<DocumentClient.DeleteItemInput, 'TableName' | 'Key' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ConditionExpression' | 'ReturnValues'> & {
   Key: Key;
@@ -55,14 +59,14 @@ export type StrictDeleteItemInput<
     ? {
       ExpressionAttributeNames: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
     } : {
-      ExpressionAttributeNames?: undefined;
+      ExpressionAttributeNames?: DummyEAN;
     }
   ) & (
     CE extends EAVString
     ? {
       ExpressionAttributeValues: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
     } : {
-      ExpressionAttributeValues?: undefined;
+      ExpressionAttributeValues?: DummyEAV;
     }
   );
 

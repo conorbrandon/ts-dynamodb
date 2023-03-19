@@ -17,7 +17,7 @@
     {
       // https://stackoverflow.com/questions/58510287/parseroptions-project-has-been-set-for-typescript-eslint-parser
       "files": [
-        "*.ts"
+        "./src/**/*.ts"
       ],
       "extends": [
         // https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/src/configs/eslint-recommended.ts
@@ -319,5 +319,8 @@
       "error",
       "never"
     ]
-  }
+  },
+  "ignorePatterns": [
+    "tests/*"
+  ]
 }
