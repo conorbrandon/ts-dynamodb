@@ -67,7 +67,7 @@ describe('createStrict*', () => {
     const updateType3Zod = tsDdb.createStrictUpdateItem(Table3.name)<Type3Zod>();
     const updatedItem = await updateType3Zod({
       Key: {
-        threeID: 0,
+        threeID,
         otherID
       },
       UpdateExpression: 'SET zod = :zod',
