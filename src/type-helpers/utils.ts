@@ -16,7 +16,9 @@ export type KeysOfTuple<Arr extends any[]> = {
 export type Primitive = string | number | boolean | null | undefined | symbol | bigint;
 
 export type DeepSimplifyObject<T> =
-  T extends Primitive // make extra special considerations for strings, which may be template literals, branded types, etc...
+  IsAnyOrUnknown<T> extends true
+  ? T
+  : T extends Primitive
   ? T
   : T extends object
   ? (
@@ -35,7 +37,9 @@ export type XLevelSimplifyObject<T, Levels extends never[] = [never]> =
   Levels extends []
   ? T
   : (
-    T extends Primitive
+    IsAnyOrUnknown<T> extends true
+    ? T
+    : T extends Primitive
     ? T
     : T extends object
     ? (

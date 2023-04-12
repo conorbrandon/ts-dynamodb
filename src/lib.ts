@@ -550,8 +550,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    NoKeysTypeOfItem extends Omit<TypeOfItem, keyof Key>,
-    Item extends Partial<NoKeysTypeOfItem> | DeepReadonly<Partial<NoKeysTypeOfItem>>,
+    NoKeysTypeOfItem extends DeepReadonly<Partial<Omit<TypeOfItem, keyof Key>>>,
+    const Item extends NoKeysTypeOfItem,
     AS extends string,
     ASEAs extends ExtractEAsFromString<AS>,
     GAK extends GetAllKeys<TypeOfItem>,
@@ -560,7 +560,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const EAV extends Record<ASEAs['eav'], any>,
     const DummyEAV extends undefined,
     RN extends UpdateReturnValues = 'NONE'
-  >(params: UpdateSimpleSETInput<TN, Key, Partial<NoKeysTypeOfItem>, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>) {
+  >(params: UpdateSimpleSETInput<TN, Key, NoKeysTypeOfItem, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>) {
     const { TableName, Key, Item, ReturnValues, extraConditions, _logParams } = params;
     const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
     const finalParams = {
@@ -595,8 +595,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     return <TypeOfItem extends TableItem<TS, TN> = never>() =>
       async<
         Key extends TableItemKey<TS, TN, TypeOfItem>,
-        NoKeysTypeOfItem extends Omit<TypeOfItem, keyof Key>,
-        Item extends Partial<NoKeysTypeOfItem> | DeepReadonly<Partial<NoKeysTypeOfItem>>,
+        NoKeysTypeOfItem extends DeepReadonly<Partial<Omit<TypeOfItem, keyof Key>>>,
+        const Item extends NoKeysTypeOfItem,
         AS extends string,
         ASEAs extends ExtractEAsFromString<AS>,
         GAK extends GetAllKeys<TypeOfItem>,
@@ -605,7 +605,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         const EAV extends Record<ASEAs['eav'], any>,
         const DummyEAV extends undefined,
         RN extends UpdateReturnValues = 'NONE'
-      >(params: StrictUpdateSimpleSETInput<Key, Partial<NoKeysTypeOfItem>, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>): Promise<AO extends true ? UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>>> => {
+      >(params: StrictUpdateSimpleSETInput<Key, NoKeysTypeOfItem, Item, AS, ASEAs['ean'], ASEAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>): Promise<AO extends true ? UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>['Attributes'] : TypesafePromiseResult<UpdateSimpleSETOutput<DeepWriteable<Item>, TypeOfItem, RN>>> => {
         const { Key, Item, ReturnValues, extraConditions, _logParams } = params;
         const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
         const finalParams = {

@@ -1,6 +1,6 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { NativeJSBinaryTypes } from '../dynamodb-types';
-import { NoUndefined, Primitive, IsAny } from './utils';
+import { NoUndefined, Primitive, IsAny, IsAnyOrUnknown } from './utils';
 
 /** Take a union of object types and pick Fields from each type, producing another union.
  * i.e.: `U` = `{ p0: string; s0: number[] } | { p0: number; s0: string[] }` and `Fields` = `'p0'`
@@ -119,16 +119,16 @@ export type ValueIntersectionByKeyUnion<T, TKey extends keyof T> = {
 
 /** 
  * Removes the readonly modifier from a type (required for SET computed type to extend picked type) 
- * There's some absolute tomfoolery going on with why we need to check for numbers and strings in DeepWriteable.
+ * There's some absolute tomfoolery going on with why we need to check for `Primitive`s in DeepWriteable.
  * In short, branded types' primitives get destroyed by mapped types.
  * See https://stackoverflow.com/a/75213240/20071103
 */
-export type DeepWriteable<T> = T extends number | string ? T : { -readonly [P in keyof T]: DeepWriteable<T[P]> };
+export type DeepWriteable<T> = T extends Primitive | NativeJSBinaryTypes | Set<any> | DocumentClient.DynamoDbSet ? T : IsAnyOrUnknown<T> extends true ? T : { -readonly [P in keyof T]: DeepWriteable<T[P]> };
 /** 
  * Adds the readonly modifier from a type (required for updateSimpleSET Item to extend Partial with keys omitted of TableItem) 
  * (with the appropriate branded types check)
  */
-export type DeepReadonly<T> = T extends number | string ? T : { readonly [P in keyof T]: DeepReadonly<T[P]> };
+export type DeepReadonly<T> = T extends Primitive | NativeJSBinaryTypes | Set<any> | DocumentClient.DynamoDbSet ? T : IsAnyOrUnknown<T> extends true ? T : { readonly [P in keyof T]: DeepReadonly<T[P]> };
 
 /** Makes all properties in object optional, stopping short of mapping over branded types, binary types, and DDB and normal JS Sets */
 export type DeepPartial<T> =

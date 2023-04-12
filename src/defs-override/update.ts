@@ -1,7 +1,7 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, EANString, EAVString } from "../dynamodb-types";
 import { UpdateOutputHelper, UpdateReturnValues, UpdateSimpleSETOutputHelper } from "../lib";
-import { DeepValidateShapev2 } from "../type-helpers/deep-validate";
+import { DeepValidateShapev2WithBinaryResult } from "../type-helpers/deep-validate";
 import { DeepWriteable, NotEmptyWithMessage } from "../type-helpers/record";
 import { FilterUnusedEANOrVs, UseAllExpressionAttributesInString } from "../type-helpers/string";
 import { IsUEValid, UEIsValid } from "../type-helpers/UE/ue-lib";
@@ -83,7 +83,7 @@ export type UpdateSimpleSETInput<
 > = {
   TableName: TN;
   Key: Key;
-  Item: DeepWriteable<Item> extends DeepValidateShapev2<DeepWriteable<Item>, TypeOfItem> ? Item : { Error: "The type of Item provided to `updateSimpleSET` is invalid. The Item must extend a Partial of the type of Item with the provided Key, but may not contain any additional fields and may not contain any of the fields on the provided Key. Succinctly, `Exact< Partial< Omit<Item_with_Key, keyof Key> > >`" };
+  Item: Item;
   ReturnValues?: RN;
   /** 
   * 
@@ -115,7 +115,9 @@ export type UpdateSimpleSETInput<
    * Optionally also log a custom `message`.
    */
   _logParams?: _LogParams;
-};
+} & (
+    DeepValidateShapev2WithBinaryResult<DeepWriteable<Item>, DeepWriteable<TypeOfItem>> extends 1 ? unknown : { Error: "The type of Item provided to `updateSimpleSET` is invalid. The Item must extend a Partial of the type of Item with the provided Key, but may not contain any additional fields and may not contain any of the fields on the provided Key. Succinctly, `Exact< Partial< Omit<Item_with_Key, keyof Key> > >`" }
+  );
 export type StrictUpdateSimpleSETInput<
   Key extends object,
   TypeOfItem extends object,
