@@ -1,4 +1,5 @@
 import { DynamoDB } from 'aws-sdk';
+import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { z } from 'zod';
 
 export type UUIDSparse = `${string}-${string}-${string}-${string}`;
@@ -9,9 +10,25 @@ export type A = {
   obj: {
     prop1: string[];
     prop2: number;
-    prop3: Record<string, number>
+    prop3: Record<string, {
+      foo: 'bar',
+      bar: {
+        foo: ''
+      };
+    }>;
   };
   prop1: string[];
+  record: Record<string, Record<number, any>>;
+  record1: Record<string, {
+    foo: [string, number, string];
+    bar: {
+      baz: Record<number, unknown>;
+    };
+  }>;
+  recordWithSet?: {
+    prop: Record<string, Record<number, DocumentClient.NumberSet>>;
+  };
+  recordWithTuple?: Record<string, [string, number, string]>;
 };
 
 export type B = {

@@ -1,4 +1,4 @@
-import { IsNever, Primitive } from "./utils";
+import { IsAnyOrUnknown, IsNever, IsStringRecord, Primitive } from "./utils";
 import { NativeJSBinaryTypes } from "../dynamodb-types";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
@@ -13,6 +13,8 @@ type DeepValidateArray<Arr extends any[], Shape> =
 type _DeepValidateShapev2<Obj, Shape> =
   IsNever<Obj> extends true
   ? never
+  : IsAnyOrUnknown<Obj> extends true // SHORT CIRCUIT for any or unknown
+  ? Obj
   : (
     Obj extends Shape // first we check if all the required fields are on Obj, and the correct types
     ? (
@@ -40,7 +42,7 @@ type _DeepValidateShapev2<Obj, Shape> =
   );
 
 export type DeepValidateShapev2<Obj, Shape> =
-  string extends keyof Obj // annoyingly, it seems the Record<string, any> types passed from unresolved generics cause it to infinitely blow up for put
+  IsStringRecord<Obj> extends true // annoyingly, it seems the Record<string, any> types passed from unresolved generics cause it to infinitely blow up for put
   ? Obj
   : _DeepValidateShapev2<Obj, Shape> extends infer validated ? validated : never;
 

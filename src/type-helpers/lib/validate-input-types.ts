@@ -2,7 +2,7 @@ import { Tail } from "../record";
 import { KeysOfTuple } from "../utils";
 
 type TypesContainSparseArraysError = "Error: at least one of the types provided to a Table type contains sparse array(s), \
-i.e. tuples that can contain `undefined` at one or more elements. These types of arrays are not able to be checked in the type system \
+i.e. tuples that can contain `undefined`, `any`, or `unknown` at one or more elements. These types of arrays are not able to be checked in the type system \
 due to DynamoDB shifting elements forward when a preceding element is `put` as `undefined`. Consider using `null` instead to preserve tuple ordering.";
 
 /** Take a tuple and if any of the elements are optional, return 1.

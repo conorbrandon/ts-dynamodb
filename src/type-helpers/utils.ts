@@ -13,7 +13,7 @@ export type KeysOfTuple<Arr extends any[]> = {
   [K in keyof Arr]: K
 };
 
-export type Primitive = string | number | boolean | null | undefined | symbol;
+export type Primitive = string | number | boolean | null | undefined | symbol | bigint;
 
 export type DeepSimplifyObject<T> =
   T extends Primitive // make extra special considerations for strings, which may be template literals, branded types, etc...
@@ -54,6 +54,10 @@ export type XLevelSimplifyObject<T, Levels extends never[] = [never]> =
 
 export type IsNever<T> = [T] extends [never] ? true : false;
 export type IsAny<T> = 0 extends (1 & T) ? true : false;
+export type IsUnknown<T> = IsAny<T> extends true ? false : unknown extends T ? true : false;
+export type IsAnyOrUnknown<T> = IsAny<T> extends true ? true : unknown extends T ? true : false;
+export type IsNumberRecord<T> = number extends keyof T ? (T extends any[] ? false : true) : false;
+export type IsStringRecord<T> = string extends keyof T ? (T extends any[] ? false : true) : false;
 
 export type ArrayContainsNever<Arr extends any[]> =
   Arr extends [infer start, ...infer rest]
@@ -69,3 +73,8 @@ export type ArrayContainsNever<Arr extends any[]> =
  * regular Extract falls down in this scenario: Extract<string | number, ''> = never
  */
 export type NarrowerExtract<A, B> = B extends any ? A extends B ? B : never : never;
+
+declare const checkerForIndexAccess: Record<string, string>;
+declare const indexer: string;
+const checkingIndexAccess = checkerForIndexAccess[indexer];
+export type IsNoUncheckedIndexAccessEnabled = undefined extends typeof checkingIndexAccess ? true : false;

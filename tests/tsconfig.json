@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "./**/*"
+  ],
+  "exclude": [
+    "./no-unchecked-index-access/**/*" // this is so a test can be included that checks that the false condition is working
+  ]
+}

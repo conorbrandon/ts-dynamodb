@@ -44,6 +44,7 @@
     "@types/node": "^14.14.31",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "@typescript-eslint/parser": "^5.55.0",
+    "@typescript/analyze-trace": "^0.10.0",
     "eslint": "^8.36.0",
     "expect-type": "^0.15.0",
     "jest": "^29.3.1",
@@ -56,12 +57,25 @@
   "scripts": {
     "build": "yarn tsc",
     "pub": "./scripts/pub.sh",
-    "test": "yarn jest",
+    "test": "yarn jest --testPathIgnorePatterns \"no-unchecked\" && yarn jest \"no-unchecked\"",
     "ddb:create": "docker-compose -f ./tests/ddb-local/docker-compose.yml up -d && ts-node ./tests/ddb-local/create-tables-locally.ts",
     "ddb:down": "docker-compose -f ./tests/ddb-local/docker-compose.yml down",
     "ddb:reset": "yarn ddb:down && yarn ddb:create"
   },
   "jest": {
-    "preset": "ts-jest"
+    "transform": {
+      "^((?!no-unchecked-index-access).)*\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "tests/tsconfig.json"
+        }
+      ],
+      "^.*no-unchecked-index-access.*\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "tests/no-unchecked-index-access/tsconfig.json"
+        }
+      ]
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { NativeJSBinaryTypes } from '../dynamodb-types';
-import { NoUndefined } from './utils';
+import { NoUndefined, Primitive, IsAny } from './utils';
 
 /** Take a union of object types and pick Fields from each type, producing another union.
  * i.e.: `U` = `{ p0: string; s0: number[] } | { p0: number; s0: string[] }` and `Fields` = `'p0'`
@@ -48,8 +48,8 @@ type _GetAllKeysForArray<Arr extends any[]> = {
     : never
   )
   : never
-} extends infer nextGani extends any[]
-  ? nextGani[number]
+} extends infer nextGak extends any[]
+  ? nextGak[number]
   : never;
 
 type _GetAllKeys<Obj extends object> =
@@ -57,23 +57,25 @@ type _GetAllKeys<Obj extends object> =
   ? (
     {
       [K in keyof Obj]:
-      Obj[K] extends infer rmIK
+      Obj[K] extends infer objK
       ? (
-        rmIK extends object
+        objK extends object
         ? (
-          rmIK extends any[] // filter out arrays here
-          ? (
-            K | _GetAllKeysForArray<rmIK>
-          )
+          IsAny<objK> extends true
+          ? string
           : (
-            rmIK extends Set<any> | DocumentClient.DynamoDbSet // also filter out Sets
-            ? K
-            : rmIK extends string | number // for the pesky branded types
-            ? K
+            objK extends any[] // filter out arrays here
+            ? (
+              K | _GetAllKeysForArray<objK>
+            )
             : (
-              GetAllKeys<rmIK> extends infer nextGani
-              ? K | nextGani // finally, we have an object type with only non-indexed keys
-              : never
+              objK extends Primitive | Set<any> | DocumentClient.DynamoDbSet | NativeJSBinaryTypes // also filter out Sets and pesky branded types
+              ? K
+              : (
+                GetAllKeys<objK> extends infer nextGak
+                ? K | nextGak // finally, we have an object type with only non-indexed keys
+                : never
+              )
             )
           )
         )

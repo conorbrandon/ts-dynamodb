@@ -3,7 +3,7 @@ import { DeepValidateShapev2WithBinaryResult } from "../deep-validate";
 import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
 import { Head } from "../record";
 import { DrillIntoTypeUsingStrArray, Split, Trim, UnionSplitter, CreateNestedObjectUsingStringArray } from "../string";
-import { IsNever, NoUndefined } from "../utils";
+import { IsNever, IsNoUncheckedIndexAccessEnabled, NoUndefined } from "../utils";
 import { NestedPickForUE } from "./nested-pick";
 
 // ########## Step 1 ##########
@@ -243,7 +243,7 @@ type _GetFinalValueOfSetterTupleForComputedType<ValueStruct extends object, T ex
       : ValueStruct extends BrokenDocPath
       ? (
         CreatePropPickArrayFromDocPath<ValueStruct['path'], EAN> extends (infer propPickArray extends string[])
-        ? NestedPickForUE<T, propPickArray> extends (infer nestedPick extends Record<any, any>)
+        ? NestedPickForUE<T, propPickArray, (IsNoUncheckedIndexAccessEnabled extends true ? undefined : never)> extends (infer nestedPick extends Record<any, any>)
         ? DrillIntoTypeUsingStrArray<nestedPick, propPickArray>
         : never
         : never
@@ -260,7 +260,7 @@ export type GetFinalValuesOfSetterTuples<SetterTuples extends [string, object][]
 /** Uses the setter arrays parsed from a UE to pick from type T based on what they are setting */
 type CreatePickedObjectFromDocPath<RawDocPath extends string, T extends object, EAN extends AnyExpressionAttributeNames> =
   CreatePropPickArrayFromDocPath<RawDocPath, EAN> extends (infer PropPickArray extends string[])
-  ? NestedPickForUE<T, PropPickArray>
+  ? NestedPickForUE<T, PropPickArray, (IsNoUncheckedIndexAccessEnabled extends true ? undefined : never)>
   : never;
 /** NOTE: ONLY EXPORTED FOR TESTS */
 export type CreatePickedAndComputedTypesForSetters<FinalValueSetterTuples extends [string, any][], T extends object, EAN extends AnyExpressionAttributeNames> = {

@@ -1,10 +1,11 @@
 import { CiCdTable, CiCdTableType, MyTable, MyTableType, Table3 } from "./lib/tables";
-import { CICDSmaller, otherZodID, Type3Zod, A, B, CICDBigger, CICDMini, Type3a } from "./lib/types";
+import { CICDSmaller, otherZodID, Type3Zod, A, B, CICDBigger, CICDMini, Type3a, UUIDSparse } from "./lib/types";
 import { myInspect, tsDdb, tsDdbRaw } from "./lib/lib";
 import { TypesafeDocumentClientv2 } from "../src/lib";
 import { z } from "zod";
 import { expectTypeOf } from 'expect-type';
 import { TSDdbSet } from "../src/type-helpers/sets/utils";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
 jest.setTimeout(100_000);
 
@@ -488,6 +489,95 @@ myWackySet.nonsense`
     if (got) {
       console.log({ ConsumedCapacity });
       console.log('got:', myInspect(got));
+      const { thebig, ...rest } = got;
+      expectTypeOf<typeof rest>().toEqualTypeOf<{
+        myWackySet: undefined;
+        map: {
+          hi: {
+            hello: number | undefined;
+            exists: number;
+          };
+          howdy: {
+            hola: 7;
+          } | undefined;
+        } | undefined;
+        pure: (number[] | undefined)[] | undefined;
+        nest: [[true, false]];
+        prop: [{
+          strange: [string] | undefined;
+          weird: {
+            wack: {
+              even: "string" | "str";
+            } | {
+              even?: undefined;
+            } | {
+              even?: undefined;
+            } | undefined;
+            peculiar: [string, number | null];
+          };
+        }, "funky", "last" | null];
+        rest: [boolean, ...({
+          x: number;
+        }[] | undefined)[]];
+        datum: number;
+        datumStr?: `datum_${string}` | `blah_${number}` | undefined;
+        finaler?: number | undefined;
+        hashKey: `${string}-${string}-${string}-${string}`;
+        rangeKey: "small-cicd";
+        final: "const" | null;
+        myNumberSet: {
+          wrapperName: "Set";
+          type: "Number";
+          values: number[];
+        } | undefined;
+        doh?: undefined;
+      }>();
+      if (thebig) {
+        const { rangeKey, hashKey, data } = thebig;
+        expectTypeOf<typeof rangeKey>().toEqualTypeOf<"big-cicd">();
+        expectTypeOf<typeof hashKey>().toEqualTypeOf<UUIDSparse>();
+        if (data) {
+          const { myStringSet, myRestArray, myTuple, ...rest } = data;
+          expectTypeOf<typeof rest>().toEqualTypeOf<{
+            final: "oops" | undefined;
+            product: string | undefined;
+            baz: null | undefined;
+            quantity: number;
+            bar: string;
+            foo: number;
+            price: undefined;
+            relatedItems: (number | {
+              hi: string;
+              bye: number;
+            } | {
+              bye: number;
+            } | {
+              hi: string;
+            } | undefined)[] | undefined;
+            finale: "ahhh" | undefined;
+          }>();
+          expectTypeOf<typeof myTuple>().toEqualTypeOf<[{
+            tup1: null;
+          }, {
+            myBinarySet: {
+              wrapperName: "Set";
+              type: "Binary";
+              values: DocumentClient.binaryType[];
+            } | undefined;
+            tup2: string;
+          }] | undefined>();
+          expectTypeOf<typeof myStringSet>().toEqualTypeOf<{
+            wrapperName: "Set";
+            type: "String";
+            values: string[];
+          } | undefined>();
+          expectTypeOf<typeof myRestArray>().toEqualTypeOf<[number, ...({
+            moo: "moo";
+          } | {
+            boo: number;
+          } | undefined)[]] | undefined>();
+        }
+      }
     }
 
   });
@@ -979,7 +1069,7 @@ test('Awaited and Promise.all', async () => {
     }
   }).promise();
   type Query = Awaited<typeof queryPromise>['Items'];
-  expectTypeOf<Query>().toEqualTypeOf<(A | B)[] | undefined>();
+  expectTypeOf<Query>().toEqualTypeOf<(TSDdbSet<A, false> | TSDdbSet<B, false>)[] | undefined>();
 
 
   const scanPromise = tsDdbRaw.scan({
@@ -1014,6 +1104,7 @@ test('Awaited and Promise.all', async () => {
     queryPromise,
     scanPromise
   ]);
+  console.log(_got.Item, _updated.Attributes, _queried.Items, _scanned.Items);
 
 
   const deletePromise = tsDdbRaw.delete({
@@ -1037,10 +1128,17 @@ test('getPE', async () => {
       prop1: ['hi', 'bye'],
       prop2: 99,
       prop3: {
-        ' ': 0
+        ' ': {
+          foo: 'bar',
+          bar: {
+            foo: ''
+          }
+        }
       }
     },
-    prop1: ['0', '1']
+    prop1: ['0', '1'],
+    record: {},
+    record1: {}
   };
   await tsDdb.put({
     TableName: MyTable.name,
@@ -1302,7 +1400,7 @@ test('queryPE', async () => {
       },
       FilterExpression: 'attribute_exists(#otherID)'
     } as const;
-  }
+  };
   const queryItemType3Woo = async <PE extends string>(threeID: number, woo: string, pe?: PE) => {
     return await tsDdb.queryItemPE(constructQueryParams(threeID, woo), pe);
   };

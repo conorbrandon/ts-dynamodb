@@ -10,7 +10,8 @@ type DoesRemoveDocPathExtendUndefined<T extends Record<string, any>, Removers ex
   ? CreatePropPickArrayFromDocPath<Removers, EAN> extends infer PropPickArray
   ? PropPickArray extends string[]
   ? (
-    DrillIntoTypeUsingStrArray<NestedPickForUE<T, PropPickArray>, PropPickArray> extends infer drilled
+    // we want index signature keys to be able to be removed, hence harcoded undefined is passed
+    DrillIntoTypeUsingStrArray<NestedPickForUE<T, PropPickArray, undefined>, PropPickArray> extends infer drilled
     ? (
       undefined extends drilled ? true : false
     )

@@ -2,7 +2,7 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../../dynamodb-types";
 import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
 import { DrillIntoTypeUsingStrArray, Split, Trim, UnionSplitter } from "../string";
-import { IsNever } from "../utils";
+import { IsNever, NoUndefined } from "../utils";
 import { NestedPickForUE } from "./nested-pick";
 
 type IsDeleterTupleMatchingDynamoDBSet<Drilled, EAV> =
@@ -15,7 +15,8 @@ type IsDeleterTupleMatchingDynamoDBSet<Drilled, EAV> =
 export type ValidateDeleterTuples<DeleterTuple, T extends Record<string, any>, EAN extends Record<string, string>, EAV extends Record<string, any>> =
   DeleterTuple extends [infer names extends string, infer value extends string]
   ? CreatePropPickArrayFromDocPath<names, EAN> extends (infer PropPickArray extends string[])
-  ? DrillIntoTypeUsingStrArray<NestedPickForUE<T, PropPickArray>, PropPickArray> extends infer drilled
+  // no need to add AddUndefinedToIndexAccess because we use NoUndefined below anyway
+  ? NoUndefined<DrillIntoTypeUsingStrArray<NestedPickForUE<T, PropPickArray, never>, PropPickArray>> extends infer drilled
   ? (
     value extends `:${string}`
     ? EAV[keyof EAV & value]

@@ -1,29 +1,28 @@
 import { Join } from "../string";
-import { DeepSimplifyObject, IsNever, NoUndefined, Primitive } from "../utils";
+import { DeepSimplifyObject, IsNever, Primitive } from "../utils";
 import { ExtractAddTuplesFromUE } from "./ADD";
 import { ExtractPropsToRemoveFromUE } from "./REMOVE";
 import { ExtractSetterPartOfUE, ExtractSetterTuplesLookAhead } from "./SET";
 import { CreatePropPickArrayFromDocPath, ProjectProjectionExpression } from "../PE/pe-lib";
-import { AnyExpressionAttributeNames } from "../../dynamodb-types";
+import { AnyExpressionAttributeNames, NativeJSBinaryTypes } from "../../dynamodb-types";
 import { UppercaseUEClauses } from "./ue-lib";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Tail } from "../record";
 import { ExtractDeleteTuplesFromUE } from "./DELETE";
 
-// TODO: look into making this type a little better, because by doing distributive conditional on the DdbSet I've realized that NoUndefined might be overkill... undefined is disappearing from DdbSets by virtue of calling NoUndefined creating `never`. (Essentially, if a DdbSet is union'ed with undefined, undefined gets carried into the next branch, becomes never by the time we infer noUndef, and the DdbSet is union'ed with never)
 type RemoveUndefinedFromUEType<T extends object> = {
   [K in keyof T]-?:
   T[K] extends infer tk
   ? (
-    tk extends DocumentClient.DynamoDbSet
-    ? tk
-    : NoUndefined<tk> extends infer noUndef
-    ? noUndef extends Primitive // as always, filter out cheeky branded types
-    ? noUndef
-    : noUndef extends object
-    ? RemoveUndefinedFromUEType<noUndef>
-    : noUndef
-    : never
+    tk extends undefined
+    ? never
+    : (
+      tk extends DocumentClient.DynamoDbSet | Exclude<Primitive, undefined> | NativeJSBinaryTypes | Set<any>
+      ? tk
+      : tk extends object
+      ? RemoveUndefinedFromUEType<tk>
+      : tk
+    )
   )
   : never
 };

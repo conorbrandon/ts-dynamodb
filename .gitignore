@@ -5,3 +5,4 @@ scratch*
 dist
 .DS_Store
 coverage*
+trace

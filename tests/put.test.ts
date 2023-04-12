@@ -86,10 +86,12 @@ const Item2: A = {
     prop1: [''],
     prop2: 0,
     prop3: {
-      '': 99
+      '': { foo: "bar", bar: { foo: "", } }
     },
   },
   prop1: ["blah"],
+  record: {},
+  record1: {}
 };
 
 const Item4 = {

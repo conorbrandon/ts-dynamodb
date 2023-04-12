@@ -27,7 +27,8 @@ export type ValidateAdderTuples<AdderTuple, T extends Record<string, any>, EAN e
   AdderTuple extends [infer names extends string, infer value extends string]
   ? CreatePropPickArrayFromDocPath<names, EAN> extends (infer PropPickArray extends string[])
   // the behavior of ADD is very interesting. If the property doesn't exist, it can create it. So we can actually accept `undefined` for the drilled type, but we filter it out here so it doesn't cause issues in the checks below.
-  ? NoUndefined<DrillIntoTypeUsingStrArray<NestedPickForUE<T, PropPickArray>, PropPickArray>> extends infer drilled
+  // no need to add AddUndefinedToIndexAccess because we use NoUndefined below anyway
+  ? NoUndefined<DrillIntoTypeUsingStrArray<NestedPickForUE<T, PropPickArray, never>, PropPickArray>> extends infer drilled
   ? (
     value extends `:${string}`
     ? EAV[keyof EAV & value]

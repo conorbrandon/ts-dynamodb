@@ -3,7 +3,7 @@ import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { Flatten } from "../flatten";
 import { Tail, UnionToIntersection } from "../record";
 import { Split, Trim, UnionArraySplitter } from "../string";
-import { DeepSimplifyObject, OnlyObjects } from "../utils";
+import { DeepSimplifyObject, IsAnyOrUnknown, IsNoUncheckedIndexAccessEnabled, IsNumberRecord, IsStringRecord, OnlyObjects } from "../utils";
 import { AddUndefinedToObjectsWithOnlyUndefinedPropertiesAndUnknownToSparseArrays, MergeRestElementType, PickFromIndexInDdbArrayForPE, PickFromIndexInDdbArrayForPEType, ResolveRestElementUnionsInPickedMergedType } from "./non-accumulator-pick-helpers";
 import { TSDdbSet } from "../sets/utils";
 
@@ -100,6 +100,8 @@ type AssignPickedIndexToExistingAccArray<Acc extends any[], Index extends `${num
 type NestedPickWithAccumulator<T extends Record<any, any>, K extends string[], Acc extends Record<any, any> = {}> =
   K extends []
   ? T
+  : IsAnyOrUnknown<T> extends true // SHORT CIRCUIT for any or unknown
+  ? T
   : (
     T extends DocumentClient.DynamoDbSet
     ? (
@@ -109,44 +111,56 @@ type NestedPickWithAccumulator<T extends Record<any, any>, K extends string[], A
     )
     : T extends object
     ? (
-      K[0] extends `[${infer index extends `${number}`}]`
-      ? (
-        T extends any[]
-        ? (
-          PickFromIndexInDdbArrayForPE<T, index> extends (infer pickedIndex extends PickFromIndexInDdbArrayForPEType)
-          ? (
-            {} extends Acc
-            ? CreateNewArrayForAccWithPickedIndex<T, index, pickedIndex, Tail<K>>
-            : (
-              Acc extends any[]
-              ? AssignPickedIndexToExistingAccArray<Acc, index, pickedIndex, Tail<K>>
-              : never // I'm thinking it's actually impossible to hit this, because an at this point an Acc kinda has to be an array
-            )
-          )
-          : never
-        )
-        : {
-          [k in K[0]]?: undefined
-        } & Acc // TODO: if it blows up again, look to this intersection as the culprit
-      )
+      IsStringRecord<T> extends true
+      ? {
+        [k in K[0]]: NestedPickWithAccumulator<T[k], Tail<K>> | (IsNoUncheckedIndexAccessEnabled extends true ? undefined : never)
+      } & Acc
       : (
-        K[0] extends keyof Acc
-        ? (
-          {
-            [k in keyof Acc]: K[0] extends k ? NestedPickWithAccumulator<T[k], Tail<K>, OnlyObjects<Acc[k]>> : Acc[k]
-          }
-        )
+        IsNumberRecord<T> extends true
+        ? {
+          [k in K[0] & `${number}`]: NestedPickWithAccumulator<T[k], Tail<K>> | (IsNoUncheckedIndexAccessEnabled extends true ? undefined : never)
+        } & Acc
         : (
-          K[0] extends keyof T
+          K[0] extends `[${infer index extends `${number}`}]`
           ? (
-            {
-              [k in Extract<keyof T, K[0]>]: NestedPickWithAccumulator<T[k], Tail<K>>
-            } & Acc
-          )
-          : (
-            {
+            T extends any[]
+            ? (
+              PickFromIndexInDdbArrayForPE<T, index> extends (infer pickedIndex extends PickFromIndexInDdbArrayForPEType)
+              ? (
+                {} extends Acc
+                ? CreateNewArrayForAccWithPickedIndex<T, index, pickedIndex, Tail<K>>
+                : (
+                  Acc extends any[]
+                  ? AssignPickedIndexToExistingAccArray<Acc, index, pickedIndex, Tail<K>>
+                  : never // I'm thinking it's actually impossible to hit this, because an at this point an Acc kinda has to be an array
+                )
+              )
+              : never
+            )
+            : {
               [k in K[0]]?: undefined
             } & Acc // TODO: if it blows up again, look to this intersection as the culprit
+          )
+          : (
+            K[0] extends keyof Acc
+            ? (
+              {
+                [k in keyof Acc]: K[0] extends k ? (k extends keyof T ? NestedPickWithAccumulator<T[k], Tail<K>, OnlyObjects<Acc[k]>> : undefined) : Acc[k]
+              }
+            )
+            : (
+              K[0] extends keyof T
+              ? (
+                {
+                  [k in Extract<keyof T, K[0]>]: NestedPickWithAccumulator<T[k], Tail<K>>
+                } & Acc
+              )
+              : (
+                {
+                  [k in K[0]]?: undefined
+                } & Acc // TODO: if it blows up again, look to this intersection as the culprit
+              )
+            )
           )
         )
       )
