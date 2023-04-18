@@ -20,14 +20,14 @@ type _DeepValidateShapev2<Obj, Shape> =
     ? (
       Shape extends any // next, we must distribute Shape, because if it is a union, keyof Shape could do all sorts of wonky things. Example: Shape is { a: string } | { b: string } and Obj is { a: string }. This should pass our validation, but because keyof Shape is never, the Exclude evaluates to "a", which does not extends never, thus causing a failure.
       ? (
-        Obj extends any[] // delegate this to a helper type, hopefully allowing it to preserve an array type, instead of doing all sorts of annoying things and turning it into an object
+        Obj extends Primitive | NativeJSBinaryTypes | DocumentClient.DynamoDbSet | Set<any> // accept branded types and template literal types
+        ? Obj
+        : Obj extends any[] // delegate this to a helper type, hopefully allowing it to preserve an array type, instead of doing all sorts of annoying things and turning it into an object
         ? DeepValidateArray<Obj, Shape> // this must come before the Exclude thing below, because Obj might be a tuple, while Shape is an array, resulting in a `${number}` key not being excluded
         : (
           IsNever<Exclude<keyof Obj, keyof Shape>> extends true // make sure Obj doesn't have an extra keys. It might, because of the distributing we do for Shape above, but the nice thing about using never is that it'll disappear in the union :)
           ? (
-            Obj extends Primitive | NativeJSBinaryTypes | DocumentClient.DynamoDbSet | Set<any> // accept branded types and template literal types
-            ? Obj
-            : Obj extends object // we should have gotten rid of all the types that extend object but that aren't really what most people thing of as "objects" above
+            Obj extends object // we should have gotten rid of all the types that extend object but that aren't really what most people thing of as "objects" above
             ? {
               [K in keyof Obj]: K extends keyof Shape ? _DeepValidateShapev2<Obj[K], Shape[K]> : never;
             }
