@@ -82,3 +82,17 @@ declare const checkerForIndexAccess: Record<string, string>;
 declare const indexer: string;
 const checkingIndexAccess = checkerForIndexAccess[indexer];
 export type IsNoUncheckedIndexAccessEnabled = undefined extends typeof checkingIndexAccess ? true : false;
+
+export type IsUnion<T, U extends T = T> = (
+  T extends any
+  ? (U extends T ? false : true)
+  : never
+) extends false ? false : true;
+export type KeyOfUnion<T> = T extends any ? keyof T : never;
+
+declare const BRAND: unique symbol;
+export type Branded<S extends string, Type> = {
+  [BRAND]: {
+    [k in S]: true
+  };
+} & Type;
