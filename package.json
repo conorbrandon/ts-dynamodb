@@ -37,6 +37,8 @@
     "typescript": "^5.0.2"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.310.0",
+    "@aws-sdk/lib-dynamodb": "^3.310.0",
     "aws-sdk": "^2.1338.0"
   },
   "devDependencies": {
@@ -52,7 +54,7 @@
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.2",
-    "zod": "^3.20.2"
+    "zod": "^3.21.4"
   },
   "scripts": {
     "build": "yarn tsc",
@@ -60,7 +62,8 @@
     "test": "yarn jest --testPathIgnorePatterns \"no-unchecked\" && yarn jest \"no-unchecked\"",
     "ddb:create": "docker-compose -f ./tests/ddb-local/docker-compose.yml up -d && ts-node ./tests/ddb-local/create-tables-locally.ts",
     "ddb:down": "docker-compose -f ./tests/ddb-local/docker-compose.yml down",
-    "ddb:reset": "yarn ddb:down && yarn ddb:create"
+    "ddb:reset": "yarn ddb:down && yarn ddb:create",
+    "lint": "yarn eslint ."
   },
   "jest": {
     "transform": {
