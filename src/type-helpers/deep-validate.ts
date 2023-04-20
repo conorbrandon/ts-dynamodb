@@ -1,9 +1,9 @@
 import { IsAnyOrUnknown, IsNever, IsStringRecord, OnlyObjects, Primitive } from "./utils";
 import { NativeJSBinaryTypes } from "../dynamodb-types";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { DeepReadonly, DeepWriteable, UnionToIntersection } from "./record";
+import { UnionToIntersection } from "./record";
 
-/** Intersect all union constituents that Obj satisfies, with excess property checking. Obj SHOULD NOT be a union */
+/** Intersect all union constituents that Obj satisfies, with what effectively amounts to excess property checking. */
 type IntersectSatisfiedUnions<T extends object, Obj> = UnionToIntersection<
   T extends any
   ? Obj extends T
@@ -28,31 +28,14 @@ type _DeepValidateShapev2<Obj, Shape> =
   : (
     Obj extends Shape // first we check if all the required fields are on Obj, and the correct types
     ? (
-      (
-        Shape extends any // next, we must distribute Shape, because if it is a union, keyof Shape could do all sorts of wonky things. Example: Shape is { a: string } | { b: string } and Obj is { a: string }. This should pass our validation, but because keyof Shape is never, the Exclude evaluates to "a", which does not extends never, thus causing a failure.
+      Obj extends Primitive | NativeJSBinaryTypes | DocumentClient.DynamoDbSet | Set<any> // accept branded types and template literal types
+      ? Obj
+      : Obj extends any[] // delegate this to a helper type, hopefully allowing it to preserve an array type, instead of doing all sorts of annoying things and turning it into an object
+      ? DeepValidateArray<Obj, Shape> // this must come before the Exclude thing below, because Obj might be a tuple, while Shape is an array, resulting in a `${number}` key not being excluded
+      : (
+        Obj extends object // we should have gotten rid of all the types that extend object but that aren't really what most people thing of as "objects" above
         ? (
-          Obj extends Primitive | NativeJSBinaryTypes | DocumentClient.DynamoDbSet | Set<any> // accept branded types and template literal types
-          ? Obj
-          : Obj extends any[] // delegate this to a helper type, hopefully allowing it to preserve an array type, instead of doing all sorts of annoying things and turning it into an object
-          ? DeepValidateArray<Obj, Shape> // this must come before the Exclude thing below, because Obj might be a tuple, while Shape is an array, resulting in a `${number}` key not being excluded
-          : (
-            IsNever<Exclude<keyof Obj, keyof Shape>> extends true // make sure Obj doesn't have an extra keys. It might, because of the distributing we do for Shape above, but the nice thing about using never is that it'll disappear in the union :)
-            ? (
-              Obj extends object // we should have gotten rid of all the types that extend object but that aren't really what most people thing of as "objects" above
-              ? {
-                [K in keyof Obj]: K extends keyof Shape ? _DeepValidateShapev2<Obj[K], Shape[K]> : never;
-              }
-              : Obj // Obj must be a boolean, null, bigint, undefined or something else (not sure that'd be though)
-            )
-            : never
-          )
-        )
-        : never
-      ) extends infer result
-      ? (
-        IsNever<result> extends true
-        ? (
-          // as a final last ditch effort for when Obj satisfies multiple union constituents, attempt to continue.
+          // when Obj may satisfy multiple union constituents, we must find those constituents and check for extra properties.
           // as a side effect, this will produce very specific errors for extra fields, since they're set to never.
           IntersectSatisfiedUnions<OnlyObjects<Shape>, Obj> extends infer intersected
           ? {
@@ -60,9 +43,8 @@ type _DeepValidateShapev2<Obj, Shape> =
           }
           : never
         )
-        : result
+        : Obj // Obj must be a boolean, null, bigint, undefined or something else (not sure that'd be though)
       )
-      : never
     )
     : never
   );
@@ -73,34 +55,3 @@ export type DeepValidateShapev2<Obj, Shape> =
   : _DeepValidateShapev2<Obj, Shape> extends infer validated ? validated : never;
 
 export type DeepValidateShapev2WithBinaryResult<Obj, Shape> = Obj extends DeepValidateShapev2<Obj, Shape> ? 1 : 0;
-
-type Shape = {
-  ok: string;
-} | {
-  extra: string;
-  fizz: boolean[];
-} | string | number;
-const takesDeepVal = <const T extends Shape>(t: DeepReadonly<DeepValidateShapev2<DeepWriteable<T>, Shape>>) => {
-  const thing = (shape: Shape) => shape;
-  return thing(t as Shape);
-};
-const t = {
-  ok: "",
-  extra: "",
-  fizz: [true],
-  hoopla: null
-} as const;
-takesDeepVal(t);
-type test = DeepValidateShapev2<{
-  ok: string;
-  extra: string;
-}, {
-  ok: string;
-} | {
-  extra: string;
-}>;
-const u: test = "";
-
-type vObj = { type: "a"; foo: ''; bar: 0; baz: null; fizz: true };
-type vRes = IntersectSatisfiedUnions<{ type: "a"; foo: string } | { bar: number; baz: null } | { type: "b"; fizz: boolean }, vObj>;
-type v = IntersectSatisfiedUnions<OnlyObjects<Shape>, DeepWriteable<typeof t>>;

@@ -41,7 +41,7 @@ type Item = {
   myNumberSet: DocumentClient.NumberSet
 };
 
-type ItemInvalid = {
+type ItemAllUnionMembers = {
   hashKey: '---',
   rangeKey: 'small-cicd',
   datum: 5,
@@ -105,8 +105,7 @@ test('DeepValidateShapeForPutItem', () => {
 
   expectTypeOf<DeepValidateShapev2<Item, CICDSmaller>>().toEqualTypeOf<Item>();
 
-  // because Item includes the following: { even: 'string', odd: 0 }, it is invalid. This shape is really a union: { even: 'string' } | { odd: 0 }
-  expectTypeOf<DeepValidateShapev2WithBinaryResult<ItemInvalid, CICDSmaller>>().toEqualTypeOf<0>();
+  expectTypeOf<DeepValidateShapev2WithBinaryResult<ItemAllUnionMembers, CICDSmaller>>().toEqualTypeOf<1>();
 
   expectTypeOf<DeepValidateShapev2<typeof Item2, A>>().toEqualTypeOf<A>();
 
