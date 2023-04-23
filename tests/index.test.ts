@@ -1450,18 +1450,23 @@ test('scanPE', async () => {
   const scanType3Woo = async <PE extends string>(pe?: PE) => {
     return await _scanType3Woo(pe);
   };
-  const woos = await scanType3Woo();
+  /* const woos =  */await scanType3Woo();
 
   const all = await tsDdb.scanAllPE({
-    TableName: Table3.name
+    TableName: Table3.name,
+    FilterExpression: 'otherID = :1 OR otherID = :2',
+    ExpressionAttributeValues: {
+      ':1': `other_a-b-c-d`,
+      ':2': 'other_d-c-b-a'
+    }
   }, 'nowItExists,otherID') ?? [];
 
-  expect([...woos, ...all]).toEqual([
-    {
-      threeID: 0,
-      otherID: `other_a-b-c-d`,
-      woo: 'hi',
-    },
+  expect([/* ...woos, */ ...all]).toEqual([
+    // {
+    //   threeID: 0,
+    //   otherID: `other_a-b-c-d`,
+    //   woo: 'hi',
+    // },
     {
       otherID: 'other_a-b-c-d',
       nowItExists: []

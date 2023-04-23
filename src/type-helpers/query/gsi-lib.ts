@@ -2,8 +2,8 @@ import { AnyExpressionAttributeNames, DynamoDBKeyValue, ExpressionAttributeValue
 import { GSIIndexFromValue, ProjectAllIndex, ProjectAttributesIndex, ProjectOnlyKeysIndex } from "../../lib";
 import { ProjectProjectionExpression } from "../PE/pe-lib";
 import { DeepWriteable } from "../record";
-import { DeepSimplifyObject } from "../utils";
-import { BeginsWithExtractor, CommonExtractTypeForKCEKey, ExtractKeyFromKCE, NarrowExtractedTypesKeyFieldsToWidenedKeyValues, PickOverAllExtractedQueryTypes, WidenKeyToTypesItExtracted } from "./common";
+import { DeepSimplifyObject, IsNever, OnlyNonEmptyObjects } from "../utils";
+import { BeginsWithExtractor, CommonExtractTypeForKCEKey, ExtractKeyFromKCE, NarrowExtractedTypesKeyFieldsToWidenedKeyValues, PickOverAllExtractedQueryTypes, PickOverTypesForQueryKey, WidenKeyToTypesItExtracted } from "./common";
 
 type ValidateGSIExtractedKey<ExtractedKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>, Index extends GSIIndexFromValue> =
   ExtractKeysOfGSIIndex<Index> extends infer gsiKeys extends string
@@ -19,16 +19,20 @@ type ValidateGSIExtractedKey<ExtractedKey extends Record<string, DynamoDBKeyValu
   : never;
 
 /** Take a GSI Index object and extract the values of the 'partitionKey' and optional 'sortKey' fields in the object */
-export type ExtractKeysOfGSIIndex<Index extends GSIIndexFromValue> =
+export type ExtractKeysOfGSIIndex<Index extends GSIIndexFromValue, RetainObject extends boolean = false> =
   Pick<DeepWriteable<Index>, 'partitionKey' | 'sortKey'> extends infer picked extends Record<string, any>
   ? {
     [K in keyof picked as unknown extends picked[K] ? never : K]: picked[K] // because sortKey is optional, it's value will be unknown if not in the GSI index
-  } extends infer keyFiltered extends Record<string, string>
+  } extends infer keyFiltered extends { partitionKey: string } | { partitionKey: string; sortKey: string }
   ? (
-    keyFiltered[keyof keyFiltered] // leaving us with keyFiltered as just { partitionKey: string; } or { partitionKey: string; sortKey: string }
+    RetainObject extends true
+    ? keyFiltered
+    : keyFiltered[keyof keyFiltered] // leaving us with keyFiltered as just { partitionKey: string; } or { partitionKey: string; sortKey: string }
   )
   : never
   : never;
+export type GetGSIIndexKeyTypes<Index extends GSIIndexFromValue, AllTypesForTable extends object> =
+  OnlyNonEmptyObjects<PickOverTypesForQueryKey<AllTypesForTable, ExtractKeysOfGSIIndex<Index, true>>>;
 
 type ProjectItemsForGSIQuery<Index extends GSIIndexFromValue, IndexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>, ExtractedItem extends object, MainTableKeyFields extends string, PE extends string, EAN extends AnyExpressionAttributeNames> =
   (
@@ -69,8 +73,8 @@ type ProjectItemsForGSIQuery<Index extends GSIIndexFromValue, IndexKey extends R
   )
   : never;
 
-export type ProjectGSIQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, TableIndex extends GSIIndexFromValue, TableItem extends object, MainTableKeyFields extends string, PE extends string> =
-  ExtractKeyFromKCE<KCE, EAN, EAV, TableIndex['partitionKey']> extends (infer indexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>) // get the index key
+export type ProjectGSIQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, TableIndex extends GSIIndexFromValue, TableItem extends object, MainTableKeyFields extends string, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
+  (IsNever<QueryKey> extends true ? ExtractKeyFromKCE<KCE, EAN, EAV, TableIndex['partitionKey']> : QueryKey) extends (infer indexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>) // get the index key
   ? (
     ValidateGSIExtractedKey<indexKey, TableIndex> extends (infer validatedKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>)
     ? (

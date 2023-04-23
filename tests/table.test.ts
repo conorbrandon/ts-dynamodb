@@ -1,4 +1,4 @@
-import { expectTypeOf } from 'expect-type'
+import { expectTypeOf } from 'expect-type';
 import { ExtractTableItemForKey, TableIndex, TableIndexName, TableInidicesUnion, TableItem, TableKey, TableKeyPartitionSortRaw, TableName } from '../src/lib';
 import { CiCdTable, CiCdTableType, MyTableType, Table3Type } from './lib/tables';
 import { CICD, CICDBigger, Type3, UUIDSparse } from './lib/types';
@@ -30,7 +30,7 @@ test('table extraction helper types', () => {
 
   expectTypeOf<TableInidicesUnion<allTestTables, "ci-cd.test" | "ci-cd.prod">>().toEqualTypeOf<(typeof CiCdTable)['indices'][keyof (typeof CiCdTable)['indices']]>();
 
-  expectTypeOf<TableIndexName<allTestTables, "table3.test" | "table3.prod">>().toEqualTypeOf<"hoo-index.test" | "hoo-index.prod" | 'woo-index.test' | 'woo-index.prod' | 'hooAll-index.test' | 'hooAll-index.prod'>();
+  expectTypeOf<TableIndexName<allTestTables, "table3.test" | "table3.prod">>().toEqualTypeOf<"hoo-index.test" | "hoo-index.prod" | 'woo-index.test' | 'woo-index.prod' | 'hooAll-index.test' | 'hooAll-index.prod' | "otherID-all-index.test" | "otherID-all-index.prod">();
 
   expectTypeOf<TableIndex<allTestTables, "ci-cd.test" | "ci-cd.prod", `datum-all-index.test` | `datum-all-index.prod`>>().toEqualTypeOf<(typeof CiCdTable)['indices']['datum-all-index']>();
 });

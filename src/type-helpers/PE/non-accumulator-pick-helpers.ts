@@ -1,6 +1,7 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Tail } from "../record";
 import { DeepSimplifyObject, IsAnyOrUnknown, KeysOfTuple, NoArrays, NoUndefined, OnlyArrays, Primitive } from "../utils";
+import { TEMP_ARR_ACC } from "./pe-lib";
 
 type ExtractRestElementOfArray<Arr extends any[]> =
   keyof Arr & `${number}` extends never // if the rest array doesn't have `${number}` indices anymore, we've reached the rest element
@@ -64,8 +65,10 @@ type _ResolveRestElementUnionsInPickedMergedType<PickedType extends Record<any, 
         : never
       )
     )
-    : thePick extends string
+    : thePick extends Primitive
     ? thePick
+    : thePick extends TEMP_ARR_ACC
+    ? undefined // temporary solution, this will likely change when figuring out how to properly deal with union tuples
     : thePick extends Record<any, any>
     ? _ResolveRestElementUnionsInPickedMergedType<thePick, NonNullable<Shape[K]>>
     : thePick

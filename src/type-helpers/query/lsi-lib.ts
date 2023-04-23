@@ -1,8 +1,8 @@
 import { AnyExpressionAttributeNames, DynamoDBKeyValue, ExpressionAttributeValues } from "../../dynamodb-types";
 import { LSIIndexFromValue, ProjectAllIndex, ProjectAttributesIndex, ProjectOnlyKeysIndex } from "../../lib";
 import { ProjectProjectionExpression } from "../PE/pe-lib";
-import { DeepSimplifyObject } from "../utils";
-import { BeginsWithExtractor, CommonExtractTypeForKCEKey, ExtractKeyFromKCE, NarrowExtractedTypesKeyFieldsToWidenedKeyValues, PickOverAllExtractedQueryTypes, WidenKeyToTypesItExtracted } from "./common";
+import { DeepSimplifyObject, IsNever } from "../utils";
+import { BeginsWithExtractor, CommonExtractTypeForKCEKey, ExtractKeyFromKCE, NarrowExtractedTypesKeyFieldsToWidenedKeyValues, PickOverAllExtractedQueryTypes, PickOverTypesForQueryKey, WidenKeyToTypesItExtracted } from "./common";
 
 type ValidateLSIExtractedKey<ExtractedKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>, Index extends LSIIndexFromValue, PartitionKeyField extends string> =
   ExtractSortKeyOfLSIIndex<Index> extends infer lsiKey extends string
@@ -16,11 +16,13 @@ type ValidateLSIExtractedKey<ExtractedKey extends Record<string, DynamoDBKeyValu
   : never;
 
 export type ExtractSortKeyOfLSIIndex<Index extends LSIIndexFromValue> = Index['sortKey'];
+export type GetLSIIndexKeyTypes<Index extends LSIIndexFromValue, PartitionKey extends string, AllTypesForTable extends object> =
+  PickOverTypesForQueryKey<AllTypesForTable, { partitionKey: PartitionKey; sortKey: Index['sortKey'] }>;
 
 export type ProjectItemsForLSIQuery<Index extends LSIIndexFromValue, IndexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>, ExtractedItem extends object, MainTableKeyFields extends string, PE extends string, EAN extends AnyExpressionAttributeNames> =
-  string extends PE // PE was not provided
+  WidenKeyToTypesItExtracted<IndexKey, ExtractedItem> extends infer wk extends Record<string, DynamoDBKeyValue>
   ? (
-    WidenKeyToTypesItExtracted<IndexKey, ExtractedItem> extends infer wk extends Record<string, DynamoDBKeyValue>
+    string extends PE // PE was not provided
     ? (
       Index extends ProjectAllIndex
       ? DeepSimplifyObject<
@@ -44,18 +46,18 @@ export type ProjectItemsForLSIQuery<Index extends LSIIndexFromValue, IndexKey ex
         )
       )
     )
-    : never
+    : (
+      // when a PE is provided, it will do a Projection on the entire object
+      // more distributive conditional fun!
+      ExtractedItem extends object
+      ? ProjectProjectionExpression<NarrowExtractedTypesKeyFieldsToWidenedKeyValues<ExtractedItem, wk>, PE, EAN>
+      : never
+    )
   )
-  : (
-    // when a PE is provided, it will do a Projection on the entire object
-    // more distributive conditional fun!
-    ExtractedItem extends object
-    ? ProjectProjectionExpression<ExtractedItem, PE, EAN>
-    : never
-  );
+  : never;
 
-export type ProjectLSIQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, TableIndex extends LSIIndexFromValue, TableItem extends object, PartitionKeyField extends string, SortKeyField extends string, PE extends string> =
-  ExtractKeyFromKCE<KCE, EAN, EAV, PartitionKeyField> extends (infer indexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>) // get the index key
+export type ProjectLSIQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, TableIndex extends LSIIndexFromValue, TableItem extends object, PartitionKeyField extends string, SortKeyField extends string, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
+  (IsNever<QueryKey> extends true ? ExtractKeyFromKCE<KCE, EAN, EAV, PartitionKeyField> : QueryKey) extends (infer indexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>) // get the index key
   ? (
     ValidateLSIExtractedKey<indexKey, TableIndex, PartitionKeyField> extends (infer validatedKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>)
     ? (

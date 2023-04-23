@@ -8,6 +8,7 @@ export type NoArrays<T> = Exclude<T, any[]>;
 
 export type OnlyObjects<T> = T extends object ? T : never;
 export type OnlyStrings<T> = T extends string ? T : never;
+export type OnlyNonEmptyObjects<T> = T extends object ? {} extends T ? never : T : never;
 
 export type KeysOfTuple<Arr extends any[]> = {
   [K in keyof Arr]: K

@@ -15,4 +15,5 @@ export type TypesafeRequest<Output> = Request<XLevelSimplifyObject<Output>, AWSE
 /** Convenient helper type for the AWS PromiseResult type */
 export type TypesafePromiseResult<Output> = PromiseResult<XLevelSimplifyObject<Output>, AWSError>;
 
+/** For select methods where the params are generated from something (Item, Key, etc...), you can enable logging of the actual ddb params used. Pass an optional message to make it identifiable. */
 export type _LogParams = { log: boolean; message?: string };

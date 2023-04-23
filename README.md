@@ -1,6 +1,7 @@
 # ts-dynamodb
 
 ## Table of contents
+
 - [Introduction](#introduction)
 - [Installation](#installation)
   - [Prerequisites](#prerequisites)
@@ -15,8 +16,8 @@
   - [query](#query)
   - [scan](#scan)
 - [TypesafeDocumentClientv2](#typesafedocumentclientv2)
-  - [createStrict*Item](#createstrictitem)
-    - [createStrict*Item additional features](#createstrictitem-additional-features)
+  - [createStrict\*Item](#createstrictitem)
+    - [createStrict\*Item additional features](#createstrictitem-additional-features)
   - [updateSimpleSET](#updatesimpleset)
     - [createStrictUpdateSimpleSET](#createstrictupdatesimpleset)
   - [queryAll and scanAll](#queryall-and-scanall)
@@ -47,7 +48,7 @@ I welcome bug reports, suggestions, or comments! Please submit an issue if you a
 
 ### Prerequisites
 
-- `typescript@^5.0.2` 
+- `typescript@^5.0.2`
   - NOTE: as of `ts-dynamodb` version `1.0.0`, this package makes use of [`const` type parameters](https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#const-type-parameters), which were introduced in TS `5.0`.
   - if you are not able to upgrade yet, please use `ts-dynamodb` version `0.1.8`.
 - `strict` mode in `tsconfig.json`
@@ -78,22 +79,22 @@ type DBUser = {
 // Step 2: create a readonly table object
 // satisfies is not necessary, but may provide some type hints if adding indices
 export const UserTable = {
-  name: `users`
+  name: `users`,
 } as const satisfies TableFromValue;
 
 // Step 3: create a table type
-// the Table type takes 3 (or 4) arguments: 
+// the Table type takes 3 (or 4) arguments:
 // 1. a TableFromValue
 // 2. a union of types in the table
 // 3. the primary key
 // 4. optionally, sort key
-export type UserTableType = Table<typeof UserTable, DBUser, 'userID'>;
+export type UserTableType = Table<typeof UserTable, DBUser, "userID">;
 
 // Step 4: create the client
 // the client takes one type argument:
 // 1. a union of table types (one client can handle all of your tables!)
 export const tsDdb = new TypesafeDocumentClientv2<UserTableType>(
-  new DocumentClient({ region: 'us-east-1' })
+  new DocumentClient({ region: "us-east-1" })
 );
 
 // Use it as you normally would (but without having to call `.promise()`)
@@ -101,9 +102,9 @@ export const tsDdb = new TypesafeDocumentClientv2<UserTableType>(
 const { Item: userDetails } = await tsDdb.get({
   TableName: UserTable.name, // 'users'
   Key: {
-    userID: '123' // string
+    userID: "123", // string
   },
-  ProjectionExpression: 'username, email, name'
+  ProjectionExpression: "username, email, name",
 });
 /**
   typeof userDetails = {
@@ -115,51 +116,55 @@ const { Item: userDetails } = await tsDdb.get({
 ```
 
 ### Using the raw client instead
+
 ```ts
 import { TypesafeDocumentClientRawv2 } from "ts-dynamodb";
 
 // Replace Step 4 from above (step 1, 2, and 3 are the same in both)
 // assert the DocumentClient as TypesafeDocumentClientRawv2, passing a union of table types as the only argument
 export const tsDdbRaw = new DocumentClient({
-  region: 'us-east-1'
+  region: "us-east-1",
 }) as TypesafeDocumentClientRawv2<UserTableType>;
 
-const { Item: user } = await tsDdbRaw.get({
-  TableName: UserTable.name, // 'users'
-  Key: {
-    userID: '123' // string
-  },
-}).promise();
+const { Item: user } = await tsDdbRaw
+  .get({
+    TableName: UserTable.name, // 'users'
+    Key: {
+      userID: "123", // string
+    },
+  })
+  .promise();
 /**
   typeof user = TSDdbSet<DBUser, false> | undefined
  */
 ```
 
 ## [In depth example](./examples/inDepthExample.ts)
+
 ```ts
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { TableFromValue, Table, TypesafeDocumentClientv2 } from "ts-dynamodb";
 
 // Can handle environment/stage dependent table and index names no problem
-const stage = process.env.stage === 'test' ? 'test' : 'prod';
+const stage = process.env.stage === "test" ? "test" : "prod";
 
 // Supports branded types
-type UserID = string & { __brand: 'UserID' };
-type PositiveNumber = number & { __brand: 'PositiveNumber' };
+type UserID = string & { __brand: "UserID" };
+type PositiveNumber = number & { __brand: "PositiveNumber" };
 type User = {
   hashKey: UserID;
-  rangeKey: 'user';
+  rangeKey: "user";
   created: number;
   updated: number;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   lastLogin: number;
   favoriteSites: SiteID[];
   numLogins: PositiveNumber;
 };
-type SiteID = string & { __brand: 'SiteID' };
+type SiteID = string & { __brand: "SiteID" };
 type Site = {
   hashKey: SiteID;
-  rangeKey: 'site';
+  rangeKey: "site";
   created: number;
   updated: number;
   url: string;
@@ -174,33 +179,38 @@ type Site = {
 export const MyTable = {
   name: `my-table.${stage}`,
   indices: {
-    'lastLogin-index': {
-      name: 'lastLogin-index',
-      type: 'LSI',
-      sortKey: 'lastLogin',
-      project: 'keys-only'
-    }
-  }
+    "lastLogin-index": {
+      name: "lastLogin-index",
+      type: "LSI",
+      sortKey: "lastLogin",
+      project: "keys-only",
+    },
+  },
 } as const satisfies TableFromValue;
 
 // Step 2
-export type MyTableType = Table<typeof MyTable, User | Site, 'hashKey', 'rangeKey'>;
+export type MyTableType = Table<
+  typeof MyTable,
+  User | Site,
+  "hashKey",
+  "rangeKey"
+>;
 
 // Step 3
 const tsDdb = new TypesafeDocumentClientv2<MyTableType>(
-  new DocumentClient({ region: 'us-east-1' })
+  new DocumentClient({ region: "us-east-1" })
 );
 
 // And now we can use it in a nonsensical get, update, and query example
 
-const userID = '12345' as UserID;
+const userID = "12345" as UserID;
 const { Item: user } = await tsDdb.get({
   TableName: MyTable.name,
   Key: {
     hashKey: userID,
-    rangeKey: 'user'
+    rangeKey: "user",
   },
-  ProjectionExpression: 'hashKey, rangeKey, favoriteSites[0], numLogins[0]'
+  ProjectionExpression: "hashKey, rangeKey, favoriteSites[0], numLogins[0]",
 });
 /**
   type user = {
@@ -220,23 +230,24 @@ if (user) {
       TableName: MyTable.name,
       Key: {
         hashKey: siteID,
-        rangeKey: 'site'
+        rangeKey: "site",
       },
-      ConditionExpression: '#hashKey = :siteID AND #rangeKey = :site',
+      ConditionExpression: "#hashKey = :siteID AND #rangeKey = :site",
       // We can add this user to the blacklist, and for some reason we also want to remove the first site category
-      UpdateExpression: 'ADD config.userBlacklist :userID REMOVE categories[0] SET #updated = :now',
+      UpdateExpression:
+        "ADD config.userBlacklist :userID REMOVE categories[0] SET #updated = :now",
       ExpressionAttributeNames: {
-        '#hashKey': 'hashKey',
-        '#rangeKey': 'rangeKey',
-        '#updated': 'updated'
+        "#hashKey": "hashKey",
+        "#rangeKey": "rangeKey",
+        "#updated": "updated",
       },
       ExpressionAttributeValues: {
-        ':siteID': siteID,
-        ':site': 'site',
-        ':userID': tsDdb.createStringSet([userID]),
-        ':now': updated // Try changing this to a string instead and see what happens
+        ":siteID": siteID,
+        ":site": "site",
+        ":userID": tsDdb.createStringSet([userID]),
+        ":now": updated, // Try changing this to a string instead and see what happens
       },
-      ReturnValues: 'UPDATED_NEW'
+      ReturnValues: "UPDATED_NEW",
     });
     /**
       type updatedSite = {
@@ -256,16 +267,18 @@ if (user) {
     const { Items: partialUsers } = await tsDdb.query({
       TableName: MyTable.name,
       IndexName: MyTable.indices["lastLogin-index"].name,
-      KeyConditionExpression: 'hashKey = :userID AND lastLogin > :now',
+      KeyConditionExpression: "hashKey = :userID AND lastLogin > :now",
       ExpressionAttributeValues: {
-        ':userID': userID,
-        ':now': updated
+        ":userID": userID,
+        ":now": updated,
       },
-      Limit: 1
+      Limit: 1,
     });
     const partialUser = partialUsers?.[0];
     if (partialUser) {
-      console.log(`user '${partialUser.hashKey}' got a nasty suprise when they logged in at ${partialUser.lastLogin} and found they couldn't access their favorite site anymore 😕`);
+      console.log(
+        `user '${partialUser.hashKey}' got a nasty suprise when they logged in at ${partialUser.lastLogin} and found they couldn't access their favorite site anymore 😕`
+      );
     }
     /**
      * You only get back the attributes that exist on the index
@@ -287,7 +300,7 @@ if (user) {
 
 ### get
 
-`get` will narrow the type of `Item` returned based on the `TableName` and `Key` you provide. Further refine your results with a `ProjectionExpression`. 
+`get` will narrow the type of `Item` returned based on the `TableName` and `Key` you provide. Further refine your results with a `ProjectionExpression`.
 
 Validate that all `ExpressionAttributeNames` are used. Require `ExpressionAttributeNames` when any are present in the `ProjectionExpression`.
 
@@ -299,9 +312,9 @@ You'll probably notice in the example there's an extra type, `TSDdbSet`, surroun
 
 ### put
 
-`put` will validate the type of `Item` provided matches the combination of `TableName` and `Key` you provide. Forbid any extra keys in your object. 
+`put` will validate the type of `Item` provided matches the combination of `TableName` and `Key` you provide. Forbid any extra keys in your object.
 
-Validate that all `ExpressionAttribute`s are used in the `ConditionExpression`. Require `ExpressionAttribute`s when any are present in the `ConditionExpression`. 
+Validate that all `ExpressionAttribute`s are used in the `ConditionExpression`. Require `ExpressionAttribute`s when any are present in the `ConditionExpression`.
 
 Return the actual type of `Attributes` when using `ReturnValues = 'ALL_OLD'`.
 
@@ -333,7 +346,7 @@ There are some caveats about detecting extra keys in objects for the SET clause.
 
 `delete` will validate that all `ExpressionAttribute`s are used in the `ConditionExpression`. Require `ExpressionAttribute`s when any are present in the `ConditionExpression`.
 
-Return the actual type of `Attributes` when using `ReturnValues = 'ALL_OLD'`. 
+Return the actual type of `Attributes` when using `ReturnValues = 'ALL_OLD'`.
 
 ![delete](./examples/static/delete.gif)
 
@@ -379,9 +392,9 @@ const getUser = tsDdb.createStrictGetItem(MyTable.name)<User>();
 const { Item: user } = await getUser({
   Key: {
     hashKey: userID,
-    rangeKey: 'user'
+    rangeKey: "user",
   },
-  ProjectionExpression: 'hashKey, rangeKey'
+  ProjectionExpression: "hashKey, rangeKey",
 });
 type u = typeof user;
 //   ^? type u = TSDdbSet<User, false> | undefined
@@ -403,9 +416,9 @@ const deleteUser = tsDdb.createStrictDeleteItem(MyTable.name, true)<User>();
 const user = await deleteUser({
   Key: {
     hashKey: userID,
-    rangeKey: 'user'
+    rangeKey: "user",
   },
-  ReturnValues: 'ALL_OLD'
+  ReturnValues: "ALL_OLD",
 });
 type u = typeof user;
 //   ^? type u = TSDdbSet<User, false> | undefined
@@ -417,9 +430,9 @@ type u = typeof user;
 
 ```ts
 const user = await deleteUser({
-    hashKey: userID,
-    rangeKey: 'user'
-  });
+  hashKey: userID,
+  rangeKey: "user",
+});
 type u = typeof user;
 //   ^? type u = undefined
 ```
@@ -432,11 +445,12 @@ A common operation is to update an object with new top level properties, such as
 
 This method accepts an `Partial` of the `Item` with the provided `Key` (omitting the key fields themselves), and creates an `UpdateExpression` to `SET` the top level fields to a new value (only those that are not equal to `undefined`).
 
-__IMPORTANT__: a `ConditionExpression` is also added using the `Key` fields and values. This method is intended to update _existing_ items only.
-- You can add additional conditions using the optional `extraConditions` parameter. _DO NOT_ include `'AND'` in the suffix, it is added automatically.
-  - The following example results in the `ConditionExpression` `'(#1 = :1 AND #2 = :2) AND #role = :user'`
+**IMPORTANT**: a `ConditionExpression` is also added using the `Key` fields and values. This method is intended to update _existing_ items only.
 
-What's with the numeric `ExpressionAttribute`s? To avoid conflicting with EAs you may want to use in `extraConditions`, each field and value in the `Item` is assigned an ascending EAN and EAV. These are used in the `UpdateExpression` and the `ConditionExpression`. (My apologies if you use ascending keys in your objects 🫠!)
+- You can add additional conditions using the optional `extraConditions` parameter. _DO NOT_ include `'AND'` in the suffix, it is added automatically.
+  - The following example results in the `ConditionExpression` `'(#_1_ = :_1_ AND #_2_ = :_2_) AND #role = :user'`
+
+What's with the numeric `ExpressionAttribute`s? To avoid conflicting with EAs you may want to use in `extraConditions`, each field and value in the `Item` is assigned an ascending EAN and EAV. These are used in the `UpdateExpression` and the `ConditionExpression`. If you do happen to use one of these reserved number attributes, it is safely preserved, and the method chooses the next available number.
 
 One more option is `_logParams`. The goal of this library is to minimize the actual runtime code it's responsible for generating. This means that you get to control how you create the `params` object to all methods, which means you can log it if you want! With `updateSimpleSET`, you cannot control the params' creation, but providing `_logParams.log === true` will call Node's `util.inspect` on the generated parameters (pass an optional `message` as well to clearly identify which log it is).
 
@@ -444,26 +458,26 @@ For example:
 
 ```ts
 const Item = {
-  role: 'admin',
-  lastLogin: Date.now()
+  role: "admin",
+  lastLogin: Date.now(),
 } as const;
 const { Attributes: updatedUserToAdmin } = await tsDdb.updateSimpleSET({
   TableName: MyTable.name,
   Key: {
     hashKey: userID,
-    rangeKey: 'user'
+    rangeKey: "user",
   },
   Item,
-  ReturnValues: 'UPDATED_OLD',
+  ReturnValues: "UPDATED_OLD",
   extraConditions: {
-    ANDSuffix: '#role = :user',
-    extraExpressionAttributeNames: { '#role': 'role' },
-    extraExpressionAttributeValues: { ':user': 'user' }
+    ANDSuffix: "#role = :user",
+    extraExpressionAttributeNames: { "#role": "role" },
+    extraExpressionAttributeValues: { ":user": "user" },
   },
   _logParams: {
     log: true,
-    message: 'hello world'
-  }
+    message: "hello world",
+  },
 });
 type u = typeof updatedUser;
 //   ^? type u2 = {  role: "user" | "admin";  lastLogin: number;} | undefined
@@ -471,7 +485,7 @@ type u = typeof updatedUser;
 
 #### `createStrictUpdateSimpleSET`
 
-There is also a strict version of `updateSimpleSET`, because why not. It follows the same curried pattern described in [createStrict*Item](#createstrictitem).
+There is also a strict version of `updateSimpleSET`, because why not. It follows the same curried pattern described in [createStrict\*Item](#createstrictitem).
 
 ### `queryAll` and `scanAll`
 
@@ -483,33 +497,54 @@ Simply returns the first element of the `Items` returned in a single `query` ope
 
 ### `*PE` methods
 
-While the `createStrict*Item` methods slightly simplify the operation for the caller, sometimes you want to be able to _completely_ abstract away the creation of complex parameters (especially helpful for `query`). However, you may still want to provide the caller with the __option__ of passing a `ProjectionExpression` if they only require certain item attributes.
+While the `createStrict*Item` methods slightly simplify the operation for the caller, sometimes you want to be able to _completely_ abstract away the creation of complex parameters (especially helpful for `query`). However, you may still want to provide the caller with the **option** of passing a `ProjectionExpression` if they only require certain item attributes.
 
-`TypesafeDocumentClientv2` provides modified versions of `get`, `query`, `queryAll`, `queryItem`, `scan`, and `scanAll` with this functionality. Each produces the same output as it's regular version, simply append `PE` to the method name. The syntax for passing input params is slightly different however. Each of the `*PE` methods does not permit passing the `ProjectionExpression` directly in the params object. Instead, call the method with the normal params, minus `ProjectionExpression`, in the first parameter and then pass the actual `ProjectionExpression` in the second parameter. 
+`TypesafeDocumentClientv2` provides modified versions of `get`, `query`, `queryAll`, `queryItem`, `scan`, and `scanAll` with this functionality. Each produces the same output as it's regular version, simply append `PE` to the method name. The syntax for passing input params is slightly different however. Each of the `*PE` methods does not permit passing the `ProjectionExpression` directly in the params object. Instead, call the method with the normal params, minus `ProjectionExpression`, in the first parameter and then pass the actual `ProjectionExpression` in the second parameter.
 
 `ExpressionAttributeNames` are added to the `ProjectionExpression` automatically and for `query` and `scan` operations, spread onto any existing `ExpressionAttributeNames` you use for `KeyConditionExpression`s, `FilterExpression`s, etc...
 
 Here's a motivating example: say you want a function that queries for items with a timestamp less than or equal to a certain timestamp, but the caller may not need all the attributes of those items.
 
 ```ts
-const queryThingsLessThanOrEqualToK2 = async <PE extends string | undefined = undefined>(k1: string, k2: number, pe?: PE) => {
-    return (await tsDdb.queryPE({
+const queryThingsLessThanOrEqualToK2 = async <
+  PE extends string | undefined = undefined
+>(
+  k1: string,
+  k2: number,
+  pe?: PE
+) => {
+  return (
+    await tsDdb.queryPE(
+      {
         TableName: MyTable.name,
-        KeyConditionExpression: 'k1 = :k1 AND k2 <= :k2',
-        ExpressionAttributeValues: { ':k1': k1, ':k2': k2 },
+        KeyConditionExpression: "k1 = :k1 AND k2 <= :k2",
+        ExpressionAttributeValues: { ":k1": k1, ":k2": k2 },
         _logParams: {
-            log: true,
-            message: `getting Things before ${k2} with attributes: ${pe || 'all'}`
-        }
-    }, pe)).Items; // pass the ProjectionExpression in the _second_ parameter!
+          log: true,
+          message: `getting Things before ${k2} with attributes: ${
+            pe || "all"
+          }`,
+        },
+      },
+      pe
+    )
+  ).Items; // pass the ProjectionExpression in the _second_ parameter!
 };
-const k1IDsBeforeYesterday = await queryThingsLessThanOrEqualToK2('blah', Date.now() - ONE_DAY_MS, 'k1');
+const k1IDsBeforeYesterday = await queryThingsLessThanOrEqualToK2(
+  "blah",
+  Date.now() - ONE_DAY_MS,
+  "k1"
+);
 // typeof k1IDsBeforeYesterday = { k1: string }[];
-const ThingsBeforeYesterday = await queryThingsLessThanOrEqualToK2('blah', Date.now() - ONE_DAY_MS);
+const ThingsBeforeYesterday = await queryThingsLessThanOrEqualToK2(
+  "blah",
+  Date.now() - ONE_DAY_MS
+);
 // typeof ThingsBeforeYesterday = Thing[];
 ```
 
 You'll notice something about the example. When `*PE` methods are _used within other functions_ (the motivation behind these methods existing in the first place), the `ProjectionExpression` must be a generic type parameter that `extends string | undefined`, and defaults to `undefined`. This is so the `ProjectionExpression` can be "stored" as its literal value and not widened to type `string`. Without this, the `*PE` method will behave as if no `ProjectionExpression` was passed at all, but the type of Item returned will be a deep `Partial`. If the generic only extends `string` and it is not provided, the same occurs. If the generic extends `string | undefined = undefined`, the method is able to distinguish between an omitted `ProjectionExpression` and a `string` `ProjectionExpression` and will return either:
+
 1. If a `ProjectionExpression` is _not_ provided, the Item is returned as is.
 2. If a `ProjectionExpression` is provided, but it's the wide type `string`, a deep `Partial` of the Item is returned.
 3. If a `ProjectionExpression` is provided and it's a literal string (i.e. `"hashKey"`), only the fields in the `ProjectionExpression` are returned.
@@ -521,10 +556,13 @@ You'll notice something about the example. When `*PE` methods are _used within o
 `TypesafeDocumentClientv2` currently exposes two types that you may find useful.
 
 - `GetTableItemKey<TableType, Item>`
+
 ```ts
 type k = GetTableItemKey<MyTableType, User> = { rangeKey: "user"; hashKey: UserID };
 ```
+
 - `StrictSimpleUpdateSETItem<TableType, Item>`
+
 ```ts
 type u = StrictSimpleUpdateSETItem<MyTableType, User> = {
     name?: string | undefined;
@@ -589,7 +627,7 @@ const UpdateExpression = `
 
 ### TsDdbSet<...> and unknowable DynamoDBSets
 
-All `DynamoDbSet` are union'ed with `undefined`, except when using `ReturnValues = 'UPDATED_NEW'` for the `SET` and `ADD` clauses targeting a `DynamoDbSet` (they'll exist after the update because we set a new one or added to an existing one _or_ DynamoDB created a new one if it didn't exist). 
+All `DynamoDbSet` are union'ed with `undefined`, except when using `ReturnValues = 'UPDATED_NEW'` for the `SET` and `ADD` clauses targeting a `DynamoDbSet` (they'll exist after the update because we set a new one or added to an existing one _or_ DynamoDB created a new one if it didn't exist).
 
 This is because `DynamoDbSet`s cannot be empty. If they become empty through the `DELETE` clause, they cease to exist. Since it is unknowable what the state of a `DynamoDbSet` is in the DB, the safest, if slightly more inconvenient, option is to be open to the possibility that they will be `undefined` in the response. `TsDdbSet` is a recursive mapped type that does just that: adds `undefined` to a union with DynamoDbSets.
 
@@ -608,7 +646,9 @@ A similar situation arises for nested objects. If all properties in an object ar
 ```ts
 type obj = { topLevel: { a?: string; b?: number } };
 // when obj is returned in a get, for example, even without a ProjectionExpression, it becomes:
-type objReturned = { topLevel: { a: string | undefined; b: number | undefined } | undefined };
+type objReturned = {
+  topLevel: { a: string | undefined; b: number | undefined } | undefined;
+};
 ```
 
 For more information on unknowable types, see the companion bullet point in [Limitations](#limitations).
@@ -620,22 +660,25 @@ For more information on unknowable types, see the companion bullet point in [Lim
 Hopefully the rest of these will be relatively uncommon problems to run into.
 
 - `Key`s of all `Item`s in your table _must_ form a discriminated union. If you try to use two types with indistinguishable keys, you will run into errors. For example:
+
   ```ts
   type Item1 = { hashKey: string, .../** things that differ between Item1 and Item2 **/ };
   type Item2 = { hashKey: string, ... };
-  type MyTableType = Table<typeof MyTable, Item1 | Item2, 'hashKey'>; // unpredictable and unsupported behavior 
+  type MyTableType = Table<typeof MyTable, Item1 | Item2, 'hashKey'>; // unpredictable and unsupported behavior
   ```
 
 - Similar to `DynamoDBSet`s, there are certain types that become unknowable what their state is once inserted in the DB. Specifically, sparse tuples and rest arrays with rest elements that do not fall in the last position. If you try to use these types in a type in a table's types union, you will get an error (it will let you know that you've introduced these to your types, and will force you to change them to use the library). Here are examples of such types:
 
   ```ts
-  type sparseTuple = [number, number?, string?]; 
+  type sparseTuple = [number, number?, string?];
   ```
+
   If index `1` is inserted as `undefined`, what is the length of this tuple? Because undefined is not a valid value in DynamoDB land, this becomes `[number, string]` in the DB. Hmm, that doesn't seem good... This quickly spirals out of control the larger and sparser the tuple can be.
 
   ```ts
-  type startingRestArray = [...number[], string]; 
+  type startingRestArray = [...number[], string];
   ```
+
   Err, wait, if there are no numbers in this array, and you try to use a `ProjectionExpression` to get the zero element, what is the type? `number` or `string`? This quickly becomes for all intents and purposes a (string | number)[] array. All of these issues can be avoided if the rest element is the final element in the array, because we have a knowable number of starting, unchanging, ordered elements at the beginning of the array.
 
 - When using `'UPDATED_NEW'` `ReturnValues`, if `SET`ting a non-rest element and removing a rest-element from the same array, the array is union'ed with `undefined`, even though we know we `SET` a _for sure_ defined value, and thus the array will be returned.
@@ -643,32 +686,39 @@ Hopefully the rest of these will be relatively uncommon problems to run into.
 - Inner discriminated unions _will_ cause unpredictable behavior and are not supported. Here's what I mean by "inner discriminated unions":
   ```ts
   type IDU = {
-    base: 'thing';
-  } & ({
-    type: 'a';
-    thing: number;
-  } | {
-    type: 'b';
-    thing: string;
-  });
+    base: "thing";
+  } & (
+    | {
+        type: "a";
+        thing: number;
+      }
+    | {
+        type: "b";
+        thing: string;
+      }
+  );
   ```
   - Please make your `Key` types discriminated unions instead.
   - Perhaps with some smarter types, there may be a way to intelligently preserve the discriminated union when using a `ProjectionExpression`, and even more tricky, when using an `UpdateExpression` (would have to involve a `ConditionExpression` I'd think). If you have any suggestions, please let me know! I'd love to hear your thoughts.
 
 ### `Record<string | number, ...>` keys
 
-The set of valid `ExpressionAttributeNames` values is generated by a helper type to get all keys in a type (you may have noticed some cool intellisense in the gif examples). Unfortunately, this is diluted by index keys (i.e. `Record<string, unknown>`). Including these types dilutes the value set to simply `string`. There's no way to have good intellisense on these values if they're included in a type (a Typescript limitation). If I exclude all index keys (`string`), then arbitrary values couldn't be used _at all_ in `ExpressionAttributeNames`. For example, 
+The set of valid `ExpressionAttributeNames` values is generated by a helper type to get all keys in a type (you may have noticed some cool intellisense in the gif examples). Unfortunately, this is diluted by index keys (i.e. `Record<string, unknown>`). Including these types dilutes the value set to simply `string`. There's no way to have good intellisense on these values if they're included in a type (a Typescript limitation). If I exclude all index keys (`string`), then arbitrary values couldn't be used _at all_ in `ExpressionAttributeNames`. For example,
+
 ```ts
-Record<`#${string}`, string | 'key1' /* | ...etc */>
+Record<`#${string}`, string | "key1" /* | ...etc */>;
 ```
+
 reduces to simply
+
 ```ts
-Record<`#${string}`, string>
+Record<`#${string}`, string>;
 ```
 
 ### Super long Expressions
 
 If an Expression (Project, Update, or KeyCondition) is more than 1000 characters long, I'm running into Typescript's recursion limit. This is solely to remove newlines, tabs, and in some cases spaces from these Expressions to parse them properly.
+
 - Workarounds:
   - Omit newlines, tabs, and spaces when possible. It definitely helps with readability to split long expressions over multiple lines, so I apologize for this restriction.
   - Use shorter `ExpressionAttributeNames` or `ExpressionAttributeValues`. Again, this sacrifices readability 😕, but per the [docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Attributes.html#Expressions.Attributes.NestedElements.DocumentPathExamples), there are `a-z + A-Z + 0-9 = 26 + 26 + 10 = 62` one letter names you can use, so that's a start (hopefully 😅, for your needs).
@@ -676,7 +726,7 @@ If an Expression (Project, Update, or KeyCondition) is more than 1000 characters
 ### `query begins_with`
 
 `begins_with` explanation: (`field` refers to the sort key attribute of an index)
-  
+
 - The first check is if `string extends type[field]`. This is only true if `type[field]` is simply `string`. There's no other information we can capture, but we can say this is true, because there _could_ be a string(s) in the collection that begin with whatever value you specified.
 - The second check is `:eav extends type[field]`, so this can capture a scenario like if the `:eav` is `id_8`, and `type[field]` is `id_${number}`.
 - The third check is `type[field] extends ${:eav}${string}`, so depending on how specific the :eav value is, this condition may or may not be true. For example, if the `:eav` is `id_8`, and the `type[field]` is `id_${string}-${string}-${string}-${string}` (a _very_ loose representation of a UUID), one reason this condition will fail because there's no guarantee that the character after the `_` in `id_${string}-${string}-${string}-${string}` will be `8`! This check is mainly designed to find exact matches of a template literal type EAV if that EAV comes from function arguments, for example.
@@ -689,3 +739,4 @@ For the most part, this library can detect when extra keys are included in objec
 
 1. Because TS is [structually typed](https://www.typescriptlang.org/play#example/structural-typing), if, for example, the `Item` to `put` comes from a function argument, there is no guarantee that the `Item` will not include any extra keys.
 2. There seems to be a TS bug affecting the type I use to detect extra keys: [#52267](https://github.com/microsoft/TypeScript/issues/52267). This should only arise for uncommon types.
+

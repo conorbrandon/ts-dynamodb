@@ -110,7 +110,7 @@ export type UpdateSimpleSETInput<
   */
   extraConditions?: ExtraConditions<AS, EANs, EAVs, GAK, EAN, DummyEAN, EAV, DummyEAV>;
   /**
-   * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `simpleUpdateSET` creates the parameters for you, you may wish to log exactly what was going into your DB (or debug conflicting names with the `extraConditions` option).
+   * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `updateSimpleSET` creates the parameters for you, you may wish to log exactly what was going into your DB (or debug conflicting names with the `extraConditions` option).
    * Make sure to set `log` to `true`!
    * Optionally also log a custom `message`.
    */

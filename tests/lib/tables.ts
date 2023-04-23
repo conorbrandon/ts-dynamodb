@@ -59,6 +59,12 @@ export const Table3 = {
       type: 'LSI',
       sortKey: 'hoo',
       project: 'all'
+    },
+    'otherID-all-index': {
+      name: `otherID-all-index.${ddbStage}`,
+      type: 'GSI',
+      partitionKey: 'otherID',
+      project: 'all'
     }
   }
 } as const;

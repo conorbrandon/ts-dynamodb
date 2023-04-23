@@ -192,6 +192,37 @@ const table3: DynamoDB.CreateTableInput = {
       Projection: {
         ProjectionType: 'KEYS_ONLY'
       },
+    },
+    {
+      IndexName: 'hooAll-index.test',
+      KeySchema: [
+        {
+          AttributeName: 'threeID',
+          KeyType: 'HASH'
+        },
+        {
+          AttributeName: 'hoo',
+          KeyType: 'RANGE'
+        }
+      ],
+      Projection: {
+        ProjectionType: 'ALL'
+      }
+    }
+  ],
+  GlobalSecondaryIndexes: [
+    {
+      IndexName: 'otherID-all-index.test',
+      KeySchema: [
+        {
+          AttributeName: 'otherID',
+          KeyType: 'HASH'
+        }
+      ],
+      Projection: {
+        ProjectionType: 'ALL'
+      },
+      ProvisionedThroughput
     }
   ]
 };

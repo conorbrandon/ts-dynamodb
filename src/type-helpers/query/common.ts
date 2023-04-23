@@ -146,7 +146,7 @@ export type NarrowExtractedTypesKeyFieldsToWidenedKeyValues<Types extends object
     Pick<Types, Exclude<keyof Types, keyof WidenedKey>> & {
       [K in Extract<keyof Types, keyof WidenedKey>]-?: // important! because we are no longer intersecting, we should make sure we -? the optionality
       Types[K] extends infer tk
-      ? tk extends WidenedKey[K]
+      ? tk extends WidenedKey[K] // this step is to filter out of the types the union members at the key that aren't found in the key
       ? tk // however, we don't need to add NoUndefined here unnecessarily because undefined will get filtered out into the never branch below this (we know the values in WidenedKey CANNOT be undefined, that would have been rejected upstream)
       : never
       : never
@@ -313,20 +313,22 @@ export type CommonExtractTypeForKCEKey<AllTypesForTable extends object, Key exte
   : FilterForBeginsWithExtractor<AllTypesForTable, hasBeginsWithKeys, NoBeginsWithExtractor<Key> extends infer noBeginsWithKey extends Record<string, DynamoDBKeyValue> ? noBeginsWithKey : never>
   : never;
 
-export type ProjectQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, TableIndex extends IndexFromValue, TableItem extends object, PartitionKeyField extends string, SortKeyField extends string, PE extends string> =
+/** @param {QueryKey} - the pre-computed object key of the query, if any */
+export type ProjectQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, TableIndex extends IndexFromValue, TableItem extends object, PartitionKeyField extends string, SortKeyField extends string, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
   TableIndex extends GSIIndexFromValue
-  ? ProjectGSIQuery<KCE, EAN, EAV, TableIndex, TableItem, PartitionKeyField | SortKeyField, PE>
+  ? ProjectGSIQuery<KCE, EAN, EAV, TableIndex, TableItem, PartitionKeyField | SortKeyField, PE, QueryKey>
   : (
     TableIndex extends LSIIndexFromValue
-    ? ProjectLSIQuery<KCE, EAN, EAV, TableIndex, TableItem, PartitionKeyField, SortKeyField, PE>
+    ? ProjectLSIQuery<KCE, EAN, EAV, TableIndex, TableItem, PartitionKeyField, SortKeyField, PE, QueryKey>
     : (
       never
     )
-  )
+  );
 
 // TODO: can widen and extract here?
-export type ProjectNonIndexQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, PartitionKeyField extends string, SortKeyField extends string, TableItem extends object, PE extends string> =
-  ExtractKeyFromKCE<KCE, EAN, EAV, PartitionKeyField> extends (infer indexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>) // get the index key
+/** @param {QueryKey} - the pre-computed object key of the query, if any */
+export type ProjectNonIndexQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, PartitionKeyField extends string, SortKeyField extends string, TableItem extends object, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
+  (IsNever<QueryKey> extends true ? ExtractKeyFromKCE<KCE, EAN, EAV, PartitionKeyField> : QueryKey) extends (infer indexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>) // get the index key
   ? (
     keyof indexKey extends (PartitionKeyField | SortKeyField)
     ? (
@@ -351,5 +353,27 @@ export type PickOverAllExtractedQueryTypes<TypeUnion extends object, FieldsOnInd
   TypeUnion extends object
   ? (
     Pick<TypeUnion, Extract<FieldsOnIndex, keyof TypeUnion>>
+  )
+  : never;
+export type PickOverTypesForQueryKey<TypeUnion extends object, IndexKeyNames extends { partitionKey: string } | { partitionKey: string; sortKey: string }> =
+  TypeUnion extends object
+  ? (
+    IndexKeyNames['partitionKey'] extends keyof TypeUnion // an Item has to have at minimum the partitionKey of a GSI index to be able be queried
+    ? (
+      Required<
+        Pick<TypeUnion, IndexKeyNames['partitionKey']>
+      > & (
+        IndexKeyNames extends { sortKey: string }
+        ? (
+          IndexKeyNames['sortKey'] extends keyof TypeUnion
+          ? Partial<Pick<TypeUnion, IndexKeyNames['sortKey']>>
+          : {
+            [K in IndexKeyNames['sortKey']]?: never // make sure to Exclusify the union for proper excess property checking
+          }
+        )
+        : unknown
+      )
+    )
+    : never
   )
   : never;

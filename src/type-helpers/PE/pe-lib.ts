@@ -3,7 +3,7 @@ import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { Flatten } from "../flatten";
 import { Tail, UnionToIntersection } from "../record";
 import { Split, Trim, UnionArraySplitter } from "../string";
-import { DeepSimplifyObject, IsAnyOrUnknown, IsNoUncheckedIndexAccessEnabled, IsNumberRecord, IsStringRecord, OnlyObjects } from "../utils";
+import { Branded, DeepSimplifyObject, IsAnyOrUnknown, IsNever, IsNoUncheckedIndexAccessEnabled, IsNumberRecord, IsStringRecord, OnlyObjects } from "../utils";
 import { AddUndefinedToObjectsWithOnlyUndefinedPropertiesAndUnknownToSparseArrays, MergeRestElementType, PickFromIndexInDdbArrayForPE, PickFromIndexInDdbArrayForPEType, ResolveRestElementUnionsInPickedMergedType } from "./non-accumulator-pick-helpers";
 import { TSDdbSet } from "../sets/utils";
 
@@ -96,6 +96,7 @@ type AssignPickedIndexToExistingAccArray<Acc extends any[], Index extends `${num
     )
     : never
   );
+export type TEMP_ARR_ACC = Branded<"TEMP ARR ACC", {}>;
 
 type NestedPickWithAccumulator<T extends Record<any, any>, K extends string[], Acc extends Record<any, any> = {}> =
   K extends []
@@ -127,12 +128,18 @@ type NestedPickWithAccumulator<T extends Record<any, any>, K extends string[], A
             ? (
               PickFromIndexInDdbArrayForPE<T, index> extends (infer pickedIndex extends PickFromIndexInDdbArrayForPEType)
               ? (
-                {} extends Acc
+                IsNever<pickedIndex> extends true // is possible when tuple doesn't have index
+                ? (
+                  Acc extends any[]
+                  ? Acc
+                  : TEMP_ARR_ACC
+                )
+                : TEMP_ARR_ACC extends Acc
                 ? CreateNewArrayForAccWithPickedIndex<T, index, pickedIndex, Tail<K>>
                 : (
                   Acc extends any[]
                   ? AssignPickedIndexToExistingAccArray<Acc, index, pickedIndex, Tail<K>>
-                  : never // I'm thinking it's actually impossible to hit this, because an at this point an Acc kinda has to be an array
+                  : never
                 )
               )
               : never

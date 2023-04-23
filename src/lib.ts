@@ -7,8 +7,8 @@ import { DoesKeyHaveAPropertyCalledKey, ValidateInputTypesForTable } from "./typ
 import { DeepReadonly, DeepWriteable, GetAllKeys, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
 import { ProjectUpdateExpression } from "./type-helpers/UE/output";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { AnyExpressionAttributeNames } from "./dynamodb-types";
-import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
+import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "./dynamodb-types";
+import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryKeyInput, QueryKeyKey, QueryKeyOutput, QueryKeyPEInput, QueryKeyPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
 import { DeepSimplifyObject, NoUndefined } from "./type-helpers/utils";
 import { ExtractEAsFromString } from "./type-helpers/extract-EAs";
 import { TSDdbSet } from "./type-helpers/sets/utils";
@@ -134,6 +134,7 @@ export type UpdateSimpleSETOutputHelper<Item extends Record<string, any>, TypeOf
       [K in keyof Item]: TypeOfItem[K & keyof TypeOfItem]
     }>> | undefined
   ) : RN extends 'UPDATED_NEW' ? DeepSimplifyObject<TSDdbSet<Item, true>> | undefined : never;
+type Limit1 = { Limit?: 1 };
 
 /** 
  * A barebones interface to replace the core DocumentClient methods (`get`, `put`, `update`, `delete`, `query`, and `scan`) with typesafe versions. Validate all `ExpressionAttribute*s` are used, deeply nested `ProjectionExpressions`, ensure updates are following your type contract _exactly_, extract the types returned in `query.Items` based on the `KeyConditionExpression`, and more.
@@ -403,7 +404,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * ⚠️⚠️⚠️ To reiterate, `ProjectionExpression` should not contain any `ExpressionAttributeNames`. The `ProjectionExpression` is parsed and `ExpressionAttributeNames` are added automatically. 💡 If any of your attributes contain spaces, newlines, or tabs, this method will not work.
    * 
-   * @see `params._logParams` to log the `get` input parameters
+   * @see {@link _LogParams} to log the `get` input parameters
    * 
    * @example
    * ```ts
@@ -530,8 +531,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * __IMPORTANT__: a `ConditionExpression` is also added using the `Key` fields and values. This method is intended to update _existing_ items only.
    * 
-   * @see `params.extraConditions` for more options
-   * @see `params._logParams` to log the `update` input parameters
+   * @see {@link extraConditions} for more options
+   * @see {@link _LogParams} to log the `update` input parameters
    * 
    * @example 
    * An `Item` with `{ role: 'user' }` will create the following parameters for the `update` operation:
@@ -714,7 +715,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * ⚠️⚠️⚠️ To reiterate, `ProjectionExpression` should not contain any `ExpressionAttributeNames`. The `ProjectionExpression` is parsed and `ExpressionAttributeNames` are added automatically. 💡 If any of your attributes contain spaces, newlines, or tabs, this method will not work.
    * 
-   * @see `params._logParams` to log the `query` input parameters
+   * @see {@link _LogParams} to log the `query` input parameters
    * 
    * @example
    * ```ts
@@ -758,6 +759,73 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   }
 
   /**
+   * Convenience method to create the KeyConditionExpression as an `AND`ed combination of one or both of the keys provided in the `Key` property.
+   */
+  async queryKey<
+    TN extends TableName<TS>,
+    PE extends string,
+    FE extends string,
+    PEEAs extends ExtractEAsFromString<PE>,
+    FEEAs extends ExtractEAsFromString<FE>,
+    const EAN extends Record<PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
+    tableItem extends TableItem<TS, TN>,
+    PartitionKeyField extends TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
+    SortKeyField extends NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
+    IndexName extends TableIndexName<TS, TN> = never,
+    QKK extends QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField> = QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField>,
+    const Key extends QKK = QKK
+  >(params: QueryKeyInput<TN, Key, IndexName, PE, FE, PEEAs['ean'] | FEEAs['ean'], FEEAs['eav'], EAN, EAV>) {
+    const finalParams = this.getKCEFromQueryKey(params);
+    if (finalParams._logParams?.log) {
+      console.log(finalParams._logParams.message ?? '', this.myInspect(finalParams));
+    }
+    const res = await this.client.query(finalParams).promise();
+    return res as QueryKeyOutput<
+      Key,
+      tableItem,
+      PartitionKeyField,
+      SortKeyField,
+      EAN,
+      TableIndex<TS, TN, IndexName>,
+      PE
+    >;
+  }
+
+
+  /**
+   * Convenience method to create the KeyConditionExpression as an `AND`ed combination of one or both of the keys provided in the `Key` property.
+   * 
+   * Please @see {@link queryPE} for details on this method. It works much the same way. 
+   */
+  async queryKeyPE<
+    TN extends TableName<TS>,
+    FE extends string,
+    FEEAs extends ExtractEAsFromString<FE>,
+    const EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
+    tableItem extends TableItem<TS, TN>,
+    PartitionKeyField extends TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
+    SortKeyField extends NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
+    PE extends string | undefined = undefined,
+    IndexName extends TableIndexName<TS, TN> = never,
+    QKK extends QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField> = QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField>,
+    const Key extends QKK = QKK
+  >(params: QueryKeyPEInput<TN, Key, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
+    const queryParams = this.getKCEFromQueryKey(params);
+    const finalParams = this.parsePEConstructedParamsAndLog(queryParams, ProjectionExpression);
+    const res = await this.client.query(finalParams).promise();
+    return res as QueryKeyPEOutput<
+      Key,
+      tableItem,
+      PartitionKeyField,
+      SortKeyField,
+      TableIndex<TS, TN, IndexName>,
+      PE
+    >;
+  }
+
+  /**
    * Convenience method to query the entire table. Does not return `ConsumedCapacity`, `Count`, etc..., simply an array of all Items.
    */
   async queryAll<
@@ -796,7 +864,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * ⚠️⚠️⚠️ To reiterate, `ProjectionExpression` should not contain any `ExpressionAttributeNames`. The `ProjectionExpression` is parsed and `ExpressionAttributeNames` are added automatically. 💡 If any of your attributes contain spaces, newlines, or tabs, this method will not work.
    * 
-   * @see `params._logParams` to log the `query` input parameters
+   * @see {@link _LogParams} to log the `query` input parameters
    * 
    * @example
    * ```ts
@@ -840,6 +908,76 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   }
 
   /**
+   * Convenience method to create the KeyConditionExpression as an `AND`ed combination of one or both of the keys provided in the `Key` property.
+   * 
+   * Convenience method to query the entire table. Does not return `ConsumedCapacity`, `Count`, etc..., simply an array of all Items.
+   */
+  async queryAllKey<
+    TN extends TableName<TS>,
+    PE extends string,
+    FE extends string,
+    PEEAs extends ExtractEAsFromString<PE>,
+    FEEAs extends ExtractEAsFromString<FE>,
+    const EAN extends Record<PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
+    tableItem extends TableItem<TS, TN>,
+    PartitionKeyField extends TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
+    SortKeyField extends NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
+    IndexName extends TableIndexName<TS, TN> = never,
+    QKK extends QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField> = QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField>,
+    const Key extends QKK = QKK
+  >(params: QueryKeyInput<TN, Key, IndexName, PE, FE, PEEAs['ean'] | FEEAs['ean'], FEEAs['eav'], EAN, EAV>) {
+    const finalParams = this.getKCEFromQueryKey(params);
+    if (finalParams._logParams?.log) {
+      console.log(finalParams._logParams.message ?? '', this.myInspect(finalParams));
+    }
+    const res = await this.whileLastEvaluatedKey({ method: 'query', params: finalParams });
+    return res as NoUndefined<QueryKeyOutput<
+      Key,
+      tableItem,
+      PartitionKeyField,
+      SortKeyField,
+      EAN,
+      TableIndex<TS, TN, IndexName>,
+      PE
+    >['Items']>;
+  }
+
+  /**
+   * Convenience method to create the KeyConditionExpression as an `AND`ed combination of one or both of the keys provided in the `Key` property.
+   * 
+   * Convenience method to query the entire table. Does not return `ConsumedCapacity`, `Count`, etc..., simply an array of all Items.
+   * 
+   * Please @see {@link queryPE} for details on this method. It works much the same way. 
+   */
+  async queryAllKeyPE<
+    TN extends TableName<TS>,
+    FE extends string,
+    FEEAs extends ExtractEAsFromString<FE>,
+    const EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
+    tableItem extends TableItem<TS, TN>,
+    PartitionKeyField extends TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
+    SortKeyField extends NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
+    PE extends string | undefined = undefined,
+    IndexName extends TableIndexName<TS, TN> = never,
+    QKK extends QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField> = QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField>,
+    const Key extends QKK = QKK
+  >(params: QueryKeyPEInput<TN, Key, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
+    const queryParams = this.getKCEFromQueryKey(params);
+    const finalParams = this.parsePEConstructedParamsAndLog(queryParams, ProjectionExpression);
+    const res = await this.whileLastEvaluatedKey({ method: 'query', params: finalParams });
+    return res as NoUndefined<QueryKeyPEOutput<
+      Key,
+      tableItem,
+      PartitionKeyField,
+      SortKeyField,
+      TableIndex<TS, TN, IndexName>,
+      PE
+    >['Items']>;
+  }
+
+  /**
    * Convenience method to query for the first Item returned in the Items array in a single query operation. Does not return `ConsumedCapacity`, `Count`, etc....
    */
   async queryItem<
@@ -853,8 +991,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
     const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
-    const { Items = [] } = await this.client.query(params).promise();
+  >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV> & Limit1) {
+    const { Items = [] } = await this.client.query({ ...params, Limit: 1 }).promise();
     const Item = Items[0];
     if (!Item) {
       return undefined;
@@ -881,7 +1019,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * 
    * ⚠️⚠️⚠️ To reiterate, `ProjectionExpression` should not contain any `ExpressionAttributeNames`. The `ProjectionExpression` is parsed and `ExpressionAttributeNames` are added automatically. 💡 If any of your attributes contain spaces, newlines, or tabs, this method will not work.
    * 
-   * @see `params._logParams` to log the `query` input parameters
+   * @see {@link _LogParams} to log the `query` input parameters
    * 
    * @example
    * ```ts
@@ -908,9 +1046,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
+  >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV> & Limit1, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
-    const { Items = [] } = await this.client.query(p).promise();
+    const { Items = [] } = await this.client.query({ ...p, Limit: 1 }).promise();
     const Item = Items[0];
     if (!Item) {
       return undefined;
@@ -926,6 +1064,84 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       KCE,
       PE
     >;
+  }
+
+  /**
+   * Convenience method to create the KeyConditionExpression as an `AND`ed combination of one or both of the keys provided in the `Key` property.
+   * 
+   * Convenience method to query for the first Item returned in the Items array in a single query operation. Does not return `ConsumedCapacity`, `Count`, etc....
+   */
+  async queryItemKey<
+    TN extends TableName<TS>,
+    PE extends string,
+    FE extends string,
+    PEEAs extends ExtractEAsFromString<PE>,
+    FEEAs extends ExtractEAsFromString<FE>,
+    const EAN extends Record<PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
+    tableItem extends TableItem<TS, TN>,
+    PartitionKeyField extends TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
+    SortKeyField extends NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
+    IndexName extends TableIndexName<TS, TN> = never,
+    QKK extends QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField> = QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField>,
+    const Key extends QKK = QKK
+  >(params: QueryKeyInput<TN, Key, IndexName, PE, FE, PEEAs['ean'] | FEEAs['ean'], FEEAs['eav'], EAN, EAV> & Limit1) {
+    const finalParams = this.getKCEFromQueryKey(params);
+    if (finalParams._logParams?.log) {
+      console.log(finalParams._logParams.message ?? '', this.myInspect(finalParams));
+    }
+    const { Items = [] } = await this.client.query({ ...finalParams, Limit: 1 }).promise();
+    const Item = Items[0];
+    if (!Item) {
+      return undefined;
+    }
+    return Item as NoUndefined<QueryKeyOutput<
+      Key,
+      tableItem,
+      PartitionKeyField,
+      SortKeyField,
+      EAN,
+      TableIndex<TS, TN, IndexName>,
+      PE
+    >['Items']>[number];
+  }
+
+  /**
+   * Convenience method to create the KeyConditionExpression as an `AND`ed combination of one or both of the keys provided in the `Key` property.
+   * 
+   * Convenience method to query for the first Item returned in the Items array in a single query operation. Does not return `ConsumedCapacity`, `Count`, etc....
+   * 
+   * Please @see {@link queryPE} for details on this method. It works much the same way. 
+   */
+  async queryItemKeyPE<
+    TN extends TableName<TS>,
+    FE extends string,
+    FEEAs extends ExtractEAsFromString<FE>,
+    const EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+    const EAV extends Record<FEEAs['eav'], any>,
+    tableItem extends TableItem<TS, TN>,
+    PartitionKeyField extends TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
+    SortKeyField extends NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
+    PE extends string | undefined = undefined,
+    IndexName extends TableIndexName<TS, TN> = never,
+    QKK extends QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField> = QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField>,
+    const Key extends QKK = QKK
+  >(params: QueryKeyPEInput<TN, Key, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV> & Limit1, ProjectionExpression?: PE) {
+    const queryParams = this.getKCEFromQueryKey(params);
+    const finalParams = this.parsePEConstructedParamsAndLog(queryParams, ProjectionExpression);
+    const { Items = [] } = await this.client.query({ ...finalParams, Limit: 1 }).promise();
+    const Item = Items[0];
+    if (!Item) {
+      return undefined;
+    }
+    return Item as NoUndefined<QueryKeyPEOutput<
+      Key,
+      tableItem,
+      PartitionKeyField,
+      SortKeyField,
+      TableIndex<TS, TN, IndexName>,
+      PE
+    >['Items']>[number];
   }
 
   async scan<
@@ -1042,18 +1258,23 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     return this.client.createSet(list, options) as DocumentClient.BinarySet;
   }
 
-  private getUpdateSimpleSETParams(Key: Record<string, unknown>, Item: Record<string, unknown>, extraConditions?: ExtraConditions<any, any, any, any, any, any, any, any>) {
-    const { ANDSuffix, extraExpressionAttributeNames, extraExpressionAttributeValues } = extraConditions ?? {};
+  private getUpdateSimpleSETParams(Key: Record<string, unknown>, Item: Record<string, unknown>, extraConditions?: ExtraConditions<any, any, any, any, any, undefined, any, undefined>) {
+    const { ANDSuffix, extraExpressionAttributeNames = {}, extraExpressionAttributeValues = {} } = extraConditions ?? {};
 
     let index = 0;
-    const ExpressionAttributeNames: Record<`#${number}`, string> = {};
-    const ExpressionAttributeValues: Record<`:${number}`, any> = {};
-    const UpdateExpressionFields: `#${number}=:${number}`[] = [];
+    const ExpressionAttributeNames: Record<`#_${number}_`, string> = {};
+    const ExpressionAttributeValues: Record<`:_${number}_`, any> = {};
+    const UpdateExpressionFields: `#_${number}_=:_${number}_`[] = [];
     for (const key in Item) {
       const value = Item[key];
       if (value !== undefined) {
-        const ean = `#${index}` as const;
-        const eav = `:${index}` as const;
+        let ean = `#_${index}_` as const;
+        let eav = `:_${index}_` as const;
+        while (extraExpressionAttributeNames[ean] || extraExpressionAttributeValues[eav]) {
+          index++;
+          ean = `#_${index}_`;
+          eav = `:_${index}_`;
+        }
         index++;
         ExpressionAttributeNames[ean] = key;
         ExpressionAttributeValues[eav] = value;
@@ -1062,11 +1283,16 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       }
     }
 
-    const ConditionExpressionFields: `#${number}=:${number}`[] = [];
+    const ConditionExpressionFields: `#_${number}_=:_${number}_`[] = [];
     for (const key in Key) {
       const value = Key[key];
-      const ean = `#${index}` as const;
-      const eav = `:${index}` as const;
+      let ean = `#_${index}_` as const;
+      let eav = `:_${index}_` as const;
+      while (extraExpressionAttributeNames[ean] || extraExpressionAttributeValues[eav]) {
+        index++;
+        ean = `#_${index}_`;
+        eav = `:_${index}_`;
+      }
       index++;
       ExpressionAttributeNames[ean] = key;
       ExpressionAttributeValues[eav] = value;
@@ -1082,6 +1308,36 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     };
   }
 
+  private getKCEFromQueryKey<RawParams extends { Key: Record<string, unknown>; ExpressionAttributeNames?: AnyExpressionAttributeNames; ExpressionAttributeValues?: ExpressionAttributeValues }>(params: RawParams) {
+    let index = 0;
+    const ExpressionAttributeNames: Record<`#_${number}_`, string> = {};
+    const ExpressionAttributeValues: Record<`:_${number}_`, any> = {};
+    const KeyConditionExpressionFields: `#_${number}_=:_${number}_`[] = [];
+    for (const key in params.Key) {
+      const value = params.Key[key];
+      if (value !== undefined) {
+        let ean = `#_${index}_` as const;
+        let eav = `:_${index}_` as const;
+        while (params.ExpressionAttributeNames?.[ean] || params.ExpressionAttributeValues?.[eav]) {
+          index++;
+          ean = `#_${index}_`;
+          eav = `:_${index}_`;
+        }
+        index++;
+        ExpressionAttributeNames[ean] = key;
+        ExpressionAttributeValues[eav] = value;
+        const field = `${ean}=${eav}` as const;
+        KeyConditionExpressionFields.push(field);
+      }
+    }
+    return {
+      ...params,
+      ExpressionAttributeNames: { ...params.ExpressionAttributeNames, ...ExpressionAttributeNames },
+      ExpressionAttributeValues: { ...params.ExpressionAttributeValues, ...ExpressionAttributeValues },
+      ...(KeyConditionExpressionFields.length ? { KeyConditionExpression: KeyConditionExpressionFields.join(" AND ") } : undefined)
+    };
+  }
+
   private mapFlip<K, V extends PropertyKey>(map: Map<K, V>) {
     return [...map.entries()].reduce<Record<V, K>>((acc, [key, value]) => {
       acc[value] = key;
@@ -1094,7 +1350,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     let p;
     let i = 0;
     if (peRaw) {
-      const ExpressionAttributeNamesMap: Map<string, `#${number}`> = new Map;
+      const ExpressionAttributeNamesMap: Map<string, `#_${number}_`> = new Map;
       const ProjectionExpression = peRaw
         .replace(/\s/g, '') // squish the whole thing
         .split(",") // split the big parts
@@ -1114,7 +1370,11 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
               if (get) {
                 return `${get}${indexPart}` as const;
               } else {
-                const compoundEAN = `#${i}` as const;
+                let compoundEAN = `#_${i}_` as const;
+                while (params.ExpressionAttributeNames?.[compoundEAN]) {
+                  i++;
+                  compoundEAN = `#_${i}_`;
+                }
                 i++;
                 ExpressionAttributeNamesMap.set(pePart, compoundEAN);
                 return `${compoundEAN}${indexPart}`;
