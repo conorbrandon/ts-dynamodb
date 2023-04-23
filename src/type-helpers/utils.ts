@@ -23,7 +23,7 @@ export type DeepSimplifyObject<T> =
   ? T
   : T extends object
   ? (
-    T extends NativeJSBinaryTypes | Set<any>
+    T extends NativeJSBinaryTypes | Set<any> | ReadonlySet<any>
     ? T
     : T extends DynamoDB.DocumentClient.DynamoDbSet
     ? {

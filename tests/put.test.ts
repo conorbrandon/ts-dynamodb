@@ -49,7 +49,7 @@ type ItemAllUnionMembers = {
   prop: [
     {
       weird: {
-        wack: { even: 'string', odd: 0 },
+        wack: { even: 'string', odd: 0 }, // this is the union with all members
         peculiar: ["💯", null]
       },
       strange: ["this is the end!"]

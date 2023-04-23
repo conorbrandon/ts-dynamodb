@@ -903,3 +903,39 @@ test('number branded type', async () => {
   type t = IsUEValid<`ADD numLogins:one`, User, {}, typeof g>;
   expectTypeOf<t>().toEqualTypeOf<UEIsValid>();
 });
+test('disallow extra union properties in union', () => {
+  type test = IsUEValidForSET<'SET wack=:wack', {
+    wack: {
+      even: 'string' | 'str'
+    } | {
+      odd: number
+    } | {
+      modulo: '%';
+    } | null;
+  }, {}, {
+    ':wack': {
+      even: "str",
+      odd: 0,
+      modulo: '%',
+      extra: null
+    }
+  }>;
+  expectTypeOf<test>().toEqualTypeOf<0>();
+});
+test('defacto excess property checking in union', () => {
+  type test = IsUEValidForSET<'SET wack=:wack', {
+    wack: {
+      even: 'string' | 'str';
+    } | {
+      odd: number;
+      modulo: '%';
+    } | null;
+  }, {}, {
+    ':wack': {
+      even: "str",
+      // have to include odd here for it to be valid
+      modulo: '%'
+    }
+  }>;
+  expectTypeOf<test>().toEqualTypeOf<0>();
+});

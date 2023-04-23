@@ -284,7 +284,7 @@ describe('createStrict*', () => {
     });
 
     type t = TypesafeDocumentClientv2.StrictSimpleUpdateSETItem<CiCdTableType, CICDSmaller>
-    const simpleUpdateItem: t = {
+    const simpleUpdateItem = {
       datum: 0,
       datumStr: 'datum_blah',
       final: null,
@@ -301,8 +301,24 @@ describe('createStrict*', () => {
           quantity: 78,
           myStringSet: tsDdb.createStringSet(["hi", "hello"]),
         }
-      }
-    };
+      },
+      prop: [
+        {
+          weird: {
+            wack: {
+              odd: 0,
+              modulo: '%',
+              // @ts-expect-error this is so annoying, it's not erroring for the updateSimpleSET call because of https://github.com/microsoft/TypeScript/issues/52267
+              extra: null
+            },
+            peculiar: ['', null]
+          }
+        },
+        'funky',
+        'last'
+      ]
+    } as const satisfies t;
+
     const updateSimpleSETCICDSmaller = tsDdb.createStrictUpdateSimpleSET(CiCdTable.name)<CICDSmaller>();
     const { Attributes: simpleUpdated } = await updateSimpleSETCICDSmaller({
       Key,
@@ -612,7 +628,7 @@ myWackySet.nonsense`
 #final=:final,
 prop[1]=:funky,
 prop[0].weird.peculiar[1]=:peculiar,
-prop[0].weird.wack.even=:even,
+prop[0].weird.wack=:wack,
 thebig.rangeKey=:bigrKey,
 thebig.#d.quantity=thebig.#d.quantity+:quantity,
 thebig.#d.myTuple[1].tup3=:tup3,
@@ -661,7 +677,11 @@ thebig.#d.myStringSet :stringSet`,
         ':tup3': 999,
         ':quantity': 22,
         ':doobedoo': 100,
-        ':even': 'str',
+        ':wack': {
+          even: "str",
+          odd: 0,
+          modulo: '%'
+        },
         ':peculiar': 100_000_000,
         ':final': "const",
         ':hola': 7,

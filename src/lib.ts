@@ -1446,7 +1446,7 @@ export declare namespace TypesafeDocumentClientv2 {
   export type StrictSimpleUpdateSETItem<Table extends AnyGenericTable, TypeOfItem extends TableItem<Table, Table['name']>> =
     TableItemKey<Table, Table['name'], TypeOfItem> extends infer Key
     ? Omit<TypeOfItem, keyof Key> extends infer I
-    ? Partial<I>
+    ? Partial<I> | DeepReadonly<Partial<I>>
     : never
     : never;
 
