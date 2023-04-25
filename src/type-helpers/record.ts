@@ -144,3 +144,8 @@ export type ForceRecordToEAN<T extends Record<string, string>> =
   { [P in keyof T & string as `${P extends `#${string}` ? P : `#${P}`}`]: T[P] };
 export type ForceRecordToEAV<T extends Record<string, any>> =
   { [P in keyof T & string as `${P extends `:${string}` ? P : `:${P}`}`]: T[P] };
+
+export type RemoveIndexKeys<T> = {
+  [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K]
+};
+export type GetAllNonIndexKeys<T> = keyof RemoveIndexKeys<T>;

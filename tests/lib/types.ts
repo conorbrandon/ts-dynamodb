@@ -120,7 +120,7 @@ export type Type3a = {
   woo: string;
   hoo?: `999${number}`;
   boo: null;
-  nowItExists: string[];
+  nowItExists: string[] | { hi: string };
 };
 export type Type3b = {
   threeID: number;

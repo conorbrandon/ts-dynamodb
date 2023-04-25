@@ -9,7 +9,7 @@ import { ProjectUpdateExpression } from "./type-helpers/UE/output";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "./dynamodb-types";
 import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryKeyInput, QueryKeyKey, QueryKeyOutput, QueryKeyPEInput, QueryKeyPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
-import { DeepSimplifyObject, NoUndefined } from "./type-helpers/utils";
+import { DeepSimplifyObject, NoUndefined, OnlyStrings } from "./type-helpers/utils";
 import { ExtractEAsFromString } from "./type-helpers/extract-EAs";
 import { TSDdbSet } from "./type-helpers/sets/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
@@ -172,7 +172,8 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
   put<
     TN extends TableName<TS>,
     Item extends TableItem<TS, TN>,
-    Key extends Pick<Item, keyof TableKey<TS, TN>>,
+    // we must pick across if the Item is a union
+    Key extends PickAcrossUnionOfRecords<Item, OnlyStrings<keyof TableKey<TS, TN>>>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     CE extends string,
     EAs extends ExtractEAsFromString<CE>,
@@ -434,7 +435,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   async put<
     TN extends TableName<TS>,
     Item extends TableItem<TS, TN>,
-    Key extends Pick<Item, keyof TableKey<TS, TN>>,
+    // we must pick across if the Item is a union
+    Key extends PickAcrossUnionOfRecords<Item, OnlyStrings<keyof TableKey<TS, TN>>>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     CE extends string,
     EAs extends ExtractEAsFromString<CE>,

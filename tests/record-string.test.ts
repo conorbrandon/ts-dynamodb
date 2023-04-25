@@ -123,12 +123,12 @@ recordWithTuple.hmm[2]
   }).promise();
   expectTypeOf<(typeof scanned)[number]>().toEqualTypeOf<NonNullable<typeof got> | {
     obj: {
-      prop3?: undefined;
+      prop3: undefined;
     } | undefined;
-    record?: undefined;
-    record1?: undefined;
-    recordWithSet?: undefined;
-    recordWithTuple?: undefined;
+    record: undefined;
+    record1: undefined;
+    recordWithSet: undefined;
+    recordWithTuple: undefined;
   }>();
 });
 

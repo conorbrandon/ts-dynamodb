@@ -1,6 +1,6 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, EANString } from "../dynamodb-types";
-import { ProjectProjectionExpression } from "../type-helpers/PE/pe-lib";
+import { ProjectProjectionExpressionStruct } from "../type-helpers/PE2/pe-lib";
 import { DeepPartial, NotEmptyWithMessage } from "../type-helpers/record";
 import { TSDdbSet } from "../type-helpers/sets/utils";
 import { FilterUnusedEANOrVs, UseAllExpressionAttributeNamesInString } from "../type-helpers/string";
@@ -71,7 +71,7 @@ export type GetOutput<
 > = (Omit<DocumentClient.GetItemOutput, 'Item'> & {
   Item?: (string extends PE
     ? TSDdbSet<TypeOfItem>
-    : ProjectProjectionExpression<TypeOfItem, PE, EAN>) extends infer Res ? Res : never;
+    : ProjectProjectionExpressionStruct<TypeOfItem, PE, EAN>) extends infer Res ? Res : never;
 }) extends infer Res2 ? Res2 : never;
 
 export type GetPEOutput<
@@ -85,7 +85,7 @@ export type GetPEOutput<
     : string extends PE
     ? DeepPartial<TSDdbSet<TypeOfItem>>
     : PE extends string
-    ? ProjectProjectionExpression<TypeOfItem, PE, EAN>
+    ? ProjectProjectionExpressionStruct<TypeOfItem, PE, EAN>
     : never
   ) extends infer Res ? Res : never;
 }) extends infer Res2 ? Res2 : never;

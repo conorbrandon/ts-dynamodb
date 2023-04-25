@@ -1,7 +1,9 @@
 import { expectTypeOf } from "expect-type";
 import { tsDdb, tsDdbRaw } from "./lib/lib";
-import { Table3 } from "./lib/tables";
-import { Type3Zod, Type3a, otherZodID } from "./lib/types";
+import { MyTable, Table3 } from "./lib/tables";
+import { A, B, C, Type3Zod, Type3a, otherZodID } from "./lib/types";
+import { PickAcrossUnionOfRecords } from "../src/type-helpers/record";
+import { TSDdbSet } from "../src/type-helpers/sets/utils";
 
 const queryKey1 = {
   threeID: Math.random(),
@@ -32,9 +34,9 @@ test('queryKey', async () => {
   console.log(item);
   expectTypeOf<typeof item>().toEqualTypeOf<{
     hoo: `999${number}`;
-    nowItExists: string[];
+    nowItExists: string[] | { hi: string };
     woo: string;
-    moo?: undefined;
+    moo: undefined;
   } | undefined>();
   expect(item).toStrictEqual({
     hoo: Item1.hoo,
@@ -53,9 +55,9 @@ test('queryKeyPE', async () => {
   console.log(peItems);
   expectTypeOf<typeof peItems>().toEqualTypeOf<{
     hoo: `999${number}`;
-    nowItExists: string[];
+    nowItExists: string[] | { hi: string };
     woo: string;
-    moo?: undefined;
+    moo: undefined;
   }[]>();
   expect(peItems).toStrictEqual([{
     hoo: Item1.hoo,
@@ -74,9 +76,9 @@ test('queryAllKeyPE', async () => {
   console.log(peItems);
   expectTypeOf<typeof peItems>().toEqualTypeOf<{
     hoo: `999${number}`;
-    nowItExists: string[];
+    nowItExists: string[] | { hi: string };
     woo: string;
-    moo?: undefined;
+    moo: undefined;
   }[]>();
   expect(peItems).toStrictEqual([{
     hoo: Item1.hoo,
@@ -96,20 +98,20 @@ test('queryItemKeyPE', async () => {
   }, 'nowItExists, woo, moo, hoo');
   console.log(item);
   expectTypeOf<typeof item>().toEqualTypeOf<{
-    hoo?: `999${number}` | undefined;
-    nowItExists: string[];
+    hoo: `999${number}` | undefined;
+    nowItExists: string[] | { hi: string };
     woo: string;
-    moo?: undefined;
+    moo: undefined;
   } | {
-    hoo?: undefined;
-    nowItExists?: undefined;
-    woo?: undefined;
-    moo?: undefined;
+    hoo: undefined;
+    nowItExists: undefined;
+    woo: undefined;
+    moo: undefined;
   } | {
-    hoo?: undefined;
-    nowItExists?: undefined;
-    woo?: undefined;
-    moo?: undefined;
+    hoo: undefined;
+    nowItExists: undefined;
+    woo: undefined;
+    moo: undefined;
   } | undefined>();
   expect(item).toStrictEqual({
     hoo: Item1.hoo,
@@ -141,4 +143,18 @@ test('queryItemKey', async () => {
   });
   expectTypeOf<typeof item>().toEqualTypeOf<Type3Zod | undefined>();
 
+});
+test('query*Key union key', async () => {
+  const q = (Key: PickAcrossUnionOfRecords<C, 'p0' | 's0'>) => tsDdb.queryItemKey({
+    TableName: MyTable.name,
+    Key
+  });
+  const q1 = (Key: PickAcrossUnionOfRecords<C, 'p0' | 's0'>) => tsDdb.queryKey({
+    TableName: MyTable.name,
+    Key
+  });
+  type r = Awaited<ReturnType<typeof q>>;
+  expectTypeOf<r>().toEqualTypeOf<TSDdbSet<A, false> | TSDdbSet<B, false> | undefined>();
+
+  expectTypeOf<Awaited<ReturnType<typeof q1>>['Items']>().toEqualTypeOf<(TSDdbSet<A, false> | TSDdbSet<B, false>)[] | undefined>();
 });

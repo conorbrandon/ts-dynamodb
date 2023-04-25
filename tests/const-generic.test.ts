@@ -1,7 +1,7 @@
 import { expectTypeOf } from "expect-type";
 import { tsDdbRaw } from "./lib/lib";
 import { CiCdTable } from "./lib/tables";
-import { CICDBigger, CICDMini, CICDSmaller } from "./lib/types";
+import { CICDMini, CICDSmaller } from "./lib/types";
 
 test('const generic', async () => {
   const hashKey = `---${Math.random()}` as const;
@@ -84,9 +84,9 @@ test('const generic', async () => {
     }
   }).promise();
   type awaitedScanPromise = Awaited<typeof scanPromise>['Items'];
-  expectTypeOf<awaitedScanPromise>().toEqualTypeOf<(Pick<CICDBigger, 'datum'> | Pick<CICDSmaller, 'datum'> | Pick<CICDMini, 'datum'>)[] | undefined>();
+  expectTypeOf<awaitedScanPromise>().toEqualTypeOf<({ datum: string | undefined } | Pick<CICDSmaller, 'datum'> | Pick<CICDMini, 'datum'>)[] | undefined>();
   const { Items: scanned = [] } = await scanPromise;
-  expectTypeOf<typeof scanned>().toEqualTypeOf<(Pick<CICDBigger, 'datum'> | Pick<CICDSmaller, 'datum'> | Pick<CICDMini, 'datum'>)[]>();
+  expectTypeOf<typeof scanned>().toEqualTypeOf<({ datum: string | undefined } | Pick<CICDSmaller, 'datum'> | Pick<CICDMini, 'datum'>)[]>();
 
   const deletePromise = tsDdbRaw.delete({
     TableName: CiCdTable.name,
@@ -116,5 +116,6 @@ test('const generic', async () => {
     scanPromise,
     deletePromise
   ]);
+  console.log('' && [_awaitedPutPromiseAll, _awaitedQueryPromiseAll, _awaitedGetPromiseAll, _awaitedUpdatePromiseAll, _awaitedScanPromiseAll, _awaitedDeletePromiseAll]);
 
 });

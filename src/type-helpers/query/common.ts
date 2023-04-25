@@ -1,6 +1,6 @@
 import { AnyExpressionAttributeNames, DynamoDBKeyValue, ExpressionAttributeValues } from "../../dynamodb-types";
 import { GSIIndexFromValue, IndexFromValue, LSIIndexFromValue } from "../../lib";
-import { ProjectProjectionExpression } from "../PE/pe-lib";
+import { ProjectProjectionExpressionStruct } from "../PE2/pe-lib";
 import { UnionToIntersection } from "../record";
 import { TSDdbSet } from "../sets/utils";
 import { Join, Split, StringReplaceAll, Trim } from "../string";
@@ -338,7 +338,7 @@ export type ProjectNonIndexQuery<KCE extends string, EAN extends AnyExpressionAt
         ? typesFromQuery
         : (
           typesFromQuery extends object // again, distributive conditional
-          ? ProjectProjectionExpression<typesFromQuery, PE, EAN>
+          ? ProjectProjectionExpressionStruct<typesFromQuery, PE, EAN>
           : never
         )
       )

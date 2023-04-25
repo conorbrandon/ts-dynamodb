@@ -1,6 +1,6 @@
 import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { GSIIndexFromValue, IndexFromValue, LSIIndexFromValue, ProjectAllIndex, ProjectAttributesIndex, ProjectOnlyKeysIndex } from "../../lib";
-import { ProjectProjectionExpression } from "../PE/pe-lib";
+import { ProjectProjectionExpressionStruct } from "../PE2/pe-lib";
 import { PickOverAllExtractedQueryTypes } from "../query/common";
 import { ExtractKeysOfGSIIndex } from "../query/gsi-lib";
 import { ExtractSortKeyOfLSIIndex } from "../query/lsi-lib";
@@ -11,7 +11,7 @@ export type ProjectNonIndexScan<TableItem extends object, EAN extends AnyExpress
   string extends PE
   ? TSDdbSet<TableItem>
   : TableItem extends object
-  ? ProjectProjectionExpression<TableItem, PE, EAN>
+  ? ProjectProjectionExpressionStruct<TableItem, PE, EAN>
   : never;
 
 export type ProjectScan<TableItem extends object, TableIndex extends IndexFromValue, PartitionKeyField extends string, SortKeyField extends string, EAN extends AnyExpressionAttributeNames, PE extends string> =
@@ -44,7 +44,7 @@ type ProjectGSIScan<Index extends GSIIndexFromValue, Item extends object, MainTa
     ? DeepSimplifyObject<TSDdbSet<indexItem>>
     : (
       indexItem extends object
-      ? ProjectProjectionExpression<indexItem, PE, EAN>
+      ? ProjectProjectionExpressionStruct<indexItem, PE, EAN>
       : never
     )
   )
@@ -68,6 +68,6 @@ type ProjectLSIScan<Index extends LSIIndexFromValue, Item extends object, MainTa
   : (
     // when a PE is provided, it will do a Projection on the entire object
     Item extends object
-    ? ProjectProjectionExpression<Item, PE, EAN>
+    ? ProjectProjectionExpressionStruct<Item, PE, EAN>
     : never
   );

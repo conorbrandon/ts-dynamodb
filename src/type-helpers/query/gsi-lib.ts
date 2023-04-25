@@ -1,6 +1,6 @@
 import { AnyExpressionAttributeNames, DynamoDBKeyValue, ExpressionAttributeValues } from "../../dynamodb-types";
 import { GSIIndexFromValue, ProjectAllIndex, ProjectAttributesIndex, ProjectOnlyKeysIndex } from "../../lib";
-import { ProjectProjectionExpression } from "../PE/pe-lib";
+import { ProjectProjectionExpressionStruct } from "../PE2/pe-lib";
 import { DeepWriteable } from "../record";
 import { DeepSimplifyObject, IsNever, OnlyNonEmptyObjects } from "../utils";
 import { BeginsWithExtractor, CommonExtractTypeForKCEKey, ExtractKeyFromKCE, NarrowExtractedTypesKeyFieldsToWidenedKeyValues, PickOverAllExtractedQueryTypes, PickOverTypesForQueryKey, WidenKeyToTypesItExtracted } from "./common";
@@ -67,7 +67,7 @@ type ProjectItemsForGSIQuery<Index extends GSIIndexFromValue, IndexKey extends R
     : (
       // more distributive conditional fun!
       narrowedItemByIndexType extends object
-      ? ProjectProjectionExpression<narrowedItemByIndexType, PE, EAN>
+      ? ProjectProjectionExpressionStruct<narrowedItemByIndexType, PE, EAN>
       : never
     )
   )

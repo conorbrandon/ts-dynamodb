@@ -1,7 +1,9 @@
-import { CreatePropPickArrayFromDocPath, ProjectProjectionExpression } from "../src/type-helpers/PE/pe-lib";
+import { CreatePropPickArrayFromDocPath } from "../src/type-helpers/PE/pe-lib";
 import { CICDSmaller } from "./lib/types";
 import { expectTypeOf } from 'expect-type';
 import { DynamoDB } from "aws-sdk";
+import { ProjectProjectionExpressionStruct } from "../src/type-helpers/PE2/pe-lib";
+import { DeepValidateShapev2WithBinaryResult } from "../src/type-helpers/deep-validate";
 
 type Expected = {
   map:
@@ -28,10 +30,10 @@ type Expected = {
           even: "string" | "str";
         }
         | {
-          even?: undefined;
+          even: undefined;
         }
         | {
-          even?: undefined;
+          even: undefined;
         }
         | undefined;
         peculiar: [string, number | null];
@@ -110,18 +112,18 @@ type Expected = {
     | undefined;
   }
   | undefined;
-  datumStr?: `datum_${string}` | `blah_${number}`;
-  finaler?: number;
+  datumStr: `datum_${string}` | `blah_${number}` | undefined;
+  finaler: number | undefined;
   hashKey: `${string}-${string}-${string}-${string}`;
   datum: number;
-  doh?: undefined;
+  doh: undefined;
   final: "const" | null;
   rangeKey: "small-cicd";
   myNumberSet: ({ wrapperName: 'Set' } & DynamoDB.DocumentClient.NumberSet) | undefined;
   myWackySet: undefined;
 };
 
-type Actual = ProjectProjectionExpression<CICDSmaller, `
+type Actual = ProjectProjectionExpressionStruct<CICDSmaller, `
 thebig.#data.myRestArray[2].moo,
 rest[2][0].x,
 thebig.hashKey,
@@ -177,7 +179,8 @@ myWackySet.values`, {
 
 test('ProjectProjectionExpression', () => {
 
-  expectTypeOf<Expected>().toEqualTypeOf<Actual>();
+  type test = DeepValidateShapev2WithBinaryResult<Expected, Actual>;
+  expectTypeOf<test>().toEqualTypeOf<1>();
 
   expectTypeOf<CreatePropPickArrayFromDocPath<"blahHaHa.#nahNahNah[0][1][2].boo", { '#nahNahNah': 'nahNahNah' }>>().toEqualTypeOf<["blahHaHa", "nahNahNah", "[0]", "[1]", "[2]", "boo"]>();
 

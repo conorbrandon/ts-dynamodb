@@ -525,9 +525,9 @@ myWackySet.nonsense`
             wack: {
               even: "string" | "str";
             } | {
-              even?: undefined;
+              even: undefined;
             } | {
-              even?: undefined;
+              even: undefined;
             } | undefined;
             peculiar: [string, number | null];
           };
@@ -536,8 +536,8 @@ myWackySet.nonsense`
           x: number;
         }[] | undefined)[]];
         datum: number;
-        datumStr?: `datum_${string}` | `blah_${number}` | undefined;
-        finaler?: number | undefined;
+        datumStr: `datum_${string}` | `blah_${number}` | undefined;
+        finaler: number | undefined;
         hashKey: `${string}-${string}-${string}-${string}`;
         rangeKey: "small-cicd";
         final: "const" | null;
@@ -546,7 +546,7 @@ myWackySet.nonsense`
           type: "Number";
           values: number[];
         } | undefined;
-        doh?: undefined;
+        doh: undefined;
       }>();
       if (thebig) {
         const { rangeKey, hashKey, data } = thebig;
@@ -1189,7 +1189,7 @@ test('getPE', async () => {
       prop2: number;
       prop1: string[] | undefined;
     };
-    prop2?: undefined;
+    prop2: undefined;
   } | undefined>();
 
 
@@ -1374,7 +1374,7 @@ test('queryPE', async () => {
   const woos = await queryType3Woo(0, 'hi', 'woo, hoo, boo');
   console.log(myInspect(woos));
   expectTypeOf<typeof woos>().toEqualTypeOf<{
-    hoo?: `999${number}` | undefined;
+    hoo: `999${number}` | undefined;
     woo: string;
     boo: null;
   }[]>();

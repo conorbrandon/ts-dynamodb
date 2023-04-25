@@ -1,6 +1,6 @@
 import { AnyExpressionAttributeNames, DynamoDBKeyValue, ExpressionAttributeValues } from "../../dynamodb-types";
 import { LSIIndexFromValue, ProjectAllIndex, ProjectAttributesIndex, ProjectOnlyKeysIndex } from "../../lib";
-import { ProjectProjectionExpression } from "../PE/pe-lib";
+import { ProjectProjectionExpressionStruct } from "../PE2/pe-lib";
 import { DeepSimplifyObject, IsNever } from "../utils";
 import { BeginsWithExtractor, CommonExtractTypeForKCEKey, ExtractKeyFromKCE, NarrowExtractedTypesKeyFieldsToWidenedKeyValues, PickOverAllExtractedQueryTypes, PickOverTypesForQueryKey, WidenKeyToTypesItExtracted } from "./common";
 
@@ -50,7 +50,7 @@ export type ProjectItemsForLSIQuery<Index extends LSIIndexFromValue, IndexKey ex
       // when a PE is provided, it will do a Projection on the entire object
       // more distributive conditional fun!
       ExtractedItem extends object
-      ? ProjectProjectionExpression<NarrowExtractedTypesKeyFieldsToWidenedKeyValues<ExtractedItem, wk>, PE, EAN>
+      ? ProjectProjectionExpressionStruct<NarrowExtractedTypesKeyFieldsToWidenedKeyValues<ExtractedItem, wk>, PE, EAN>
       : never
     )
   )

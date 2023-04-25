@@ -249,7 +249,7 @@ type ExtractIndexAccessFromPE<Parts extends string[][]> =
   never;
 
 /** Take a full projection expression and parse out all the doc paths to get */
-type ParsePEToPropPickNestedArray<PE extends string, EAN extends AnyExpressionAttributeNames> =
+export type ParsePEToPropPickNestedArray<PE extends string, EAN extends AnyExpressionAttributeNames> =
   MapArrayOfDocPathPropsToEAN<
     ExtractIndexAccessFromPE<
       UnionArraySplitter<
@@ -265,6 +265,7 @@ export type CreatePropPickArrayFromDocPath<DocPath extends string, EAN extends A
 
 /** Takes a DynamoDB projection expression and creates the return type of the Item from the PE
  * Can pass an optional flag to _not_ transform the final response into undefineds and unknown arrays
+ * @deprecated
  */
 export type ProjectProjectionExpression<T extends Record<any, any>, PE extends string, EAN extends AnyExpressionAttributeNames, NoFinalAddUndefined extends boolean = false> =
   ParsePEToPropPickNestedArray<Trim<Trim<PE, "\t" | "\n">, " ">, EAN> extends (infer nestedPropPickArray extends string[][])

@@ -210,12 +210,12 @@ test('ProjectNonIndex/GSI/LSIQuery', () => {
     'rangeKey',
     'datumStr, hashKey, datum, rangeKey' // datum is NOT on the index
   >>().toEqualTypeOf<{
-    datum?: undefined;
+    datum: undefined;
     datumStr: `blah_${number}`;
     hashKey: `${string}-${string}-${string}-${string}`;
     rangeKey: "small-cicd";
   } | {
-    datum?: undefined;
+    datum: undefined;
     datumStr: `blah_${number}`;
     hashKey: `${string}-${string}-${string}-${string}`;
     rangeKey: "mini-cicd";
@@ -294,7 +294,7 @@ test('ProjectNonIndex/GSI/LSIQuery', () => {
   >>().toEqualTypeOf<{
     threeID: number;
     hoo: `999${number}`;
-    nowItExists: string[];
+    nowItExists: string[] | { hi: string };
     otherID: `other_${string}-${string}-${string}-${string}`;
   }>();
 
@@ -368,17 +368,17 @@ test('ProjectNonIndex/GSI/LSIQuery', () => {
     Type3,
     'obj, zod'
   >>().toEqualTypeOf<{
-    obj?: undefined;
-    zod?: undefined;
+    obj: undefined;
+    zod: undefined;
   } | {
     obj: {
       nah: "fam";
       duck: "goose";
       '💀': "RIP";
     };
-    zod?: undefined;
+    zod: undefined;
   } | {
-    obj?: undefined;
+    obj: undefined;
     zod: {
       thing: "random" | "stringz";
       more: {

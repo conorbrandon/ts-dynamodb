@@ -1,7 +1,9 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { expectTypeOf } from "expect-type";
 import { DeepValidateShapev2, DeepValidateShapev2WithBinaryResult } from "../src/type-helpers/deep-validate";
-import { A, B, CICDMini, CICDSmaller } from "./lib/types";
+import { A, B, C, CICDMini, CICDSmaller } from "./lib/types";
+import { tsDdb } from "./lib/lib";
+import { MyTable } from "./lib/tables";
 
 type Item = {
   hashKey: '---',
@@ -113,4 +115,15 @@ test('DeepValidateShapeForPutItem', () => {
 
   expectTypeOf<DeepValidateShapev2<typeof Item4, CICDMini>>().toBeNever();
 
+});
+test('Item with union keys', async () => {
+  const p = (c: C) => tsDdb.put({
+    TableName: MyTable.name,
+    Item: c
+  });
+  const c: C = {
+    p0: `${Math.random()}---`,
+    s0: 'b'
+  };
+  await p(c);
 });

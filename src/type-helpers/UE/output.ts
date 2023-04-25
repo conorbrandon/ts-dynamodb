@@ -1,31 +1,14 @@
 import { Join } from "../string";
-import { DeepSimplifyObject, IsNever, Primitive } from "../utils";
+import { DeepSimplifyObject, IsNever } from "../utils";
 import { ExtractAddTuplesFromUE } from "./ADD";
 import { ExtractPropsToRemoveFromUE } from "./REMOVE";
 import { ExtractSetterPartOfUE, ExtractSetterTuplesLookAhead } from "./SET";
-import { CreatePropPickArrayFromDocPath, ProjectProjectionExpression } from "../PE/pe-lib";
-import { AnyExpressionAttributeNames, NativeJSBinaryTypes } from "../../dynamodb-types";
+import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
+import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { UppercaseUEClauses } from "./ue-lib";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Tail } from "../record";
 import { ExtractDeleteTuplesFromUE } from "./DELETE";
-
-type RemoveUndefinedFromUEType<T extends object> = {
-  [K in keyof T]-?:
-  T[K] extends infer tk
-  ? (
-    tk extends undefined
-    ? never
-    : (
-      tk extends DocumentClient.DynamoDbSet | Exclude<Primitive, undefined> | NativeJSBinaryTypes | Set<any>
-      ? tk
-      : tk extends object
-      ? RemoveUndefinedFromUEType<tk>
-      : tk
-    )
-  )
-  : never
-};
+import { ProjectProjectionExpressionStruct } from "../PE2/pe-lib";
 
 type _DrillIntoTypeToAddUndefinedToArray<PropPickArray extends string[], T extends object> =
   PropPickArray extends []
@@ -154,13 +137,11 @@ export type ProjectUpdateExpression<
     ? Join<[setterPE, addPE, removePE, deletePE], ", "> extends (infer fullPE extends string)
     ? (
       ReturnValues extends 'UPDATED_OLD'
-      ? ProjectProjectionExpression<T, fullPE, EAN, false>
+      ? ProjectProjectionExpressionStruct<T, fullPE, EAN>
       : DeepSimplifyObject<
         AddUndefinedToOnlyIndexRemoveProps<
           trimmedUE,
-          RemoveUndefinedFromUEType< // because this is UPDATED_NEW, we know we haven't set anything to undefined
-            ProjectProjectionExpression<T, fullPE, EAN, true>
-          >,
+          ProjectProjectionExpressionStruct<T, fullPE, EAN, true>,
           EAN
         >
       >

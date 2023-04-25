@@ -63,6 +63,9 @@ export type IsUnknown<T> = IsAny<T> extends true ? false : unknown extends T ? t
 export type IsAnyOrUnknown<T> = IsAny<T> extends true ? true : unknown extends T ? true : false;
 export type IsNumberRecord<T> = number extends keyof T ? (T extends any[] ? false : true) : false;
 export type IsStringRecord<T> = string extends keyof T ? (T extends any[] ? false : true) : false;
+export type IsRecord<T> = IsStringRecord<T> extends true ? true : IsNumberRecord<T> extends true ? true : false;
+
+export type ArrayHasNoDefinedIndices<T extends any[]> = IsNever<keyof T & `${number}`>;
 
 export type ArrayContainsNever<Arr extends any[]> =
   Arr extends [infer start, ...infer rest]
@@ -97,3 +100,6 @@ export type Branded<S extends string, Type> = {
     [k in S]: true
   };
 } & Type;
+export type UnbrandRecord<T extends Record<string, any> & Branded<string, object>> = {
+  [K in keyof T as K extends typeof BRAND ? never : K]: T[K];
+};

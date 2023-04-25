@@ -7,6 +7,7 @@ import { CICDSmaller } from "./lib/types";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { ExtractDeleteTuplesFromUE, IsUEValidForDELETE } from "../src/type-helpers/UE/DELETE";
 import { ProjectUpdateExpression } from "../src/type-helpers/UE/output";
+import { DeepValidateShapev2WithBinaryResult } from "../src/type-helpers/deep-validate";
 
 type rawUE = `
   set 
@@ -875,7 +876,11 @@ test('output', () => {
 
   expectTypeOf<ProjectUpdateExpression<rawUE, CICDSmaller, ean, 'UPDATED_NEW'>>().toEqualTypeOf<expectedOutputUPDATED_NEW>();
 
-  expectTypeOf<ProjectUpdateExpression<rawUE, CICDSmaller, ean, 'UPDATED_OLD'>>().toEqualTypeOf<expectedOutputUPDATED_OLD>();
+  type old = ProjectUpdateExpression<rawUE, CICDSmaller, ean, 'UPDATED_OLD'>;
+  expectTypeOf<DeepValidateShapev2WithBinaryResult<old, expectedOutputUPDATED_OLD>>().toEqualTypeOf<1>();
+
+  type out = ProjectUpdateExpression<'SET thing = :thing', { thing?: { foo?: number; bar?: string; num: number | undefined } }, {}, 'UPDATED_NEW'>;
+  expectTypeOf<out>().toEqualTypeOf<{ thing: { foo?: number; bar?: string; num: number | undefined } }>();
 
 });
 

@@ -111,13 +111,13 @@ type RemoveUnknownAndNeverFromSparseArray<PickedArr extends any[], ShapeArr exte
     )
   );
 
-type CheckIfUndefinedInTuple<T extends any[]> = {
+export type CheckIfUndefinedInTuple<T extends any[]> = {
   [K in keyof T & `${number}`]:
   undefined extends T[K] // I don't believe (hopefully) we need to check for any or unknown because those are banned in validate-input-types.ts
   ? 1
   : 0
 }[keyof T & `${number}`];
-type CheckKeysOfObjectForUndefined<T extends Record<PropertyKey, any>> = {
+export type CheckKeysOfObjectForUndefined<T extends Record<PropertyKey, any>> = {
   [K in keyof T]: IsAnyOrUnknown<T[K]> extends true ? 0 : (undefined extends T[K] ? 0 : 1)
 }[keyof T];
 type _AddUndefinedToObjectsWithOnlyUndefinedPropertiesAndUnknownToSparseArrays<T extends Record<any, any>> = {

@@ -10,7 +10,7 @@ test('scan', () => {
   expectTypeOf<ProjectNonIndexScan<CICD, {}, 'datum, rangeKey'>>().toEqualTypeOf<
     {
       rangeKey: "big-cicd";
-      datum?: string | undefined;
+      datum: string | undefined;
     } | {
       rangeKey: "small-cicd";
       datum: number;
