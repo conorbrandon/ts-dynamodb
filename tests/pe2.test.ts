@@ -529,6 +529,20 @@ myWackySet.values`;
     }>();
 
   });
+  test('top level discriminated union', () => {
+
+    type test = ProjectProjectionExpressionStruct<{ type: 'a'; foo: string } | { type: 'b'; bar: number }, 'type, foo, bar', {}>;
+    expectTypeOf<test>().toEqualTypeOf<{
+      foo: string;
+      type: "a";
+      bar: undefined;
+    } | {
+      bar: number;
+      type: "b";
+      foo: undefined;
+    }>();
+
+  });
 
   describe('errors', () => {
 

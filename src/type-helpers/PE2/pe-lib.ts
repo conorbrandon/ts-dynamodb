@@ -209,7 +209,8 @@ type _ProjectProjectionExpressionStruct<T extends Record<string, any>, PropPickA
 
 type TLPKeys<T extends Record<string, any>, PropPickArray extends [string][]> = _GetKeysForNextLevel<T, PropPickArray[number][0]>;
 type TopLevelPick<T extends Record<string, any>, PropPickArray extends [string][], MakeRequired extends boolean> =
-  (
+  T extends any
+  ? (
     {
       [K in Extract<TLPKeys<T, PropPickArray>, keyof T>]: T[K] | (K extends GetAllNonIndexKeys<T> ? never : IsNoUncheckedIndexAccessEnabled extends true ? undefined : never);
     } & {
@@ -219,11 +220,12 @@ type TopLevelPick<T extends Record<string, any>, PropPickArray extends [string][
   ? MakeRequired extends true
   ? RemoveUndefinedOneLevel<projected>
   : projected
+  : never
   : never;
 
 export type ProjectProjectionExpressionStruct<T extends Record<string, any>, PE extends string, EAN extends AnyExpressionAttributeNames, MakeRequired extends boolean = false> =
   ParsePEToPropPickNestedArray<Trim<Trim<PE, "\t" | "\n">, " ">, EAN> extends (infer nestedPropPickArray extends string[][])
   ? nestedPropPickArray extends [string][]
-  ? TSDdbSet<TopLevelPick<T, nestedPropPickArray, MakeRequired>, MakeRequired>
+  ? DeepSimplifyObject<TopLevelPick<TSDdbSet<T, MakeRequired>, nestedPropPickArray, MakeRequired>>
   : _ProjectProjectionExpressionStruct<T, nestedPropPickArray, MakeRequired>
   : never;
