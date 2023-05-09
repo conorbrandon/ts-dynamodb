@@ -375,6 +375,52 @@ myWackySet.values`;
       foo: string | undefined;
     }>();
 
+    type test = ProjectProjectionExpressionStruct<{
+      foo?: string;
+      bar: number | undefined;
+    } & Record<string, boolean>, 'foo, bar, baz', {}>;
+    expectTypeOf<test>().toEqualTypeOf<{
+      foo: string | undefined;
+      bar: number | undefined;
+      baz: boolean | undefined;
+    }>();
+
+
+  });
+  test('number records', () => {
+
+    type test = ProjectProjectionExpressionStruct<Record<1 | 2, boolean>, '#1, #3', { '#1': '1'; '#3': '3' }>;
+    expectTypeOf<test>().toEqualTypeOf<{
+      1: boolean;
+      "3": undefined;
+    }>();
+
+    type test2 = ProjectProjectionExpressionStruct<{
+      foo?: Record<number, boolean>;
+    }, 'foo.#1', { '#1': '1' }>;
+    expectTypeOf<test2>().toEqualTypeOf<{
+      foo: {
+        1: boolean | undefined;
+      } | undefined;
+    }>();
+
+    type test3 = ProjectProjectionExpressionStruct<{
+      foo?: Record<1 | "2" | 3, boolean>;
+    }, 'foo.#1, foo.#2', { '#1': '1'; '#2': '2' }>;
+    expectTypeOf<test3>().toEqualTypeOf<{
+      foo: {
+        1: boolean;
+        "2": boolean;
+      } | undefined;
+    }>();
+    // @ts-expect-error 2 should be "2" per the type above
+    expectTypeOf<test3>().toEqualTypeOf<{
+      foo: {
+        1: boolean;
+        2: boolean;
+      } | undefined;
+    }>();
+
   });
   test('remove UnsetTupleIndex in rest arrays', () => {
 
