@@ -1,7 +1,7 @@
 {
   "name": "ts-dynamodb",
   "description": "Typesafe DynamoDB DocumentClient type definitions for single-table designs",
-  "version": "1.2.0-beta3",
+  "version": "1.2.0-beta4",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
@@ -37,11 +37,11 @@
     "typescript": "^5.0.2"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.316.0",
-    "@aws-sdk/lib-dynamodb": "^3.316.0",
-    "aws-sdk": "^2.1361.0"
+    "aws-sdk": "^2.1376.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.316.0",
+    "@aws-sdk/lib-dynamodb": "^3.316.0",
     "@types/jest": "^29.5.1",
     "@types/node": "^14.18.42",
     "@typescript-eslint/eslint-plugin": "^5.59.0",
@@ -57,7 +57,7 @@
     "zod": "^3.21.4"
   },
   "scripts": {
-    "build": "yarn tsc",
+    "build": "rm -rf dist && yarn tsc",
     "pub": "./scripts/pub.sh",
     "test": "yarn jest --testPathIgnorePatterns \"no-unchecked\" && yarn jest \"no-unchecked\"",
     "ddb:create": "docker-compose -f ./tests/ddb-local/docker-compose.yml up -d && ts-node ./tests/ddb-local/create-tables-locally.ts",
