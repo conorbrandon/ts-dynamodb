@@ -134,7 +134,6 @@ export type UpdateSimpleSETOutputHelper<Item extends Record<string, any>, TypeOf
       [K in keyof Item]: TypeOfItem[K & keyof TypeOfItem]
     }>> | undefined
   ) : RN extends 'UPDATED_NEW' ? DeepSimplifyObject<TSDdbSet<Item, true>> | undefined : never;
-type Limit1 = { Limit?: 1 };
 
 /** 
  * A barebones interface to replace the core DocumentClient methods (`get`, `put`, `update`, `delete`, `query`, and `scan`) with typesafe versions. Validate all `ExpressionAttribute*s` are used, deeply nested `ProjectionExpressions`, ensure updates are following your type contract _exactly_, extract the types returned in `query.Items` based on the `KeyConditionExpression`, and more.
@@ -993,8 +992,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const EAN extends Record<KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
     const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV> & Limit1) {
-    const { Items = [] } = await this.client.query({ ...params, Limit: 1 }).promise();
+  >(params: QueryInput<TN, IndexName, KCE, PE, FE, KCEEAs['ean'] | PEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>) {
+    const { Items = [] } = await this.client.query(params).promise();
     const Item = Items[0];
     if (!Item) {
       return undefined;
@@ -1048,9 +1047,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const EAV extends Record<KCEEAs['eav'] | FEEAs['eav'], any>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV> & Limit1, ProjectionExpression?: PE) {
+  >(params: QueryPEInput<TN, IndexName, KCE, FE, KCEEAs['ean'] | FEEAs['ean'], KCEEAs['eav'] | FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
-    const { Items = [] } = await this.client.query({ ...p, Limit: 1 }).promise();
+    const { Items = [] } = await this.client.query(p).promise();
     const Item = Items[0];
     if (!Item) {
       return undefined;
@@ -1087,12 +1086,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     IndexName extends TableIndexName<TS, TN> = never,
     QKK extends QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField> = QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField>,
     const Key extends QKK = QKK
-  >(params: QueryKeyInput<TN, Key, IndexName, PE, FE, PEEAs['ean'] | FEEAs['ean'], FEEAs['eav'], EAN, EAV> & Limit1) {
+  >(params: QueryKeyInput<TN, Key, IndexName, PE, FE, PEEAs['ean'] | FEEAs['ean'], FEEAs['eav'], EAN, EAV>) {
     const finalParams = this.getKCEFromQueryKey(params);
     if (finalParams._logParams?.log) {
       console.log(finalParams._logParams.message ?? '', this.myInspect(finalParams));
     }
-    const { Items = [] } = await this.client.query({ ...finalParams, Limit: 1 }).promise();
+    const { Items = [] } = await this.client.query(finalParams).promise();
     const Item = Items[0];
     if (!Item) {
       return undefined;
@@ -1128,10 +1127,10 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     IndexName extends TableIndexName<TS, TN> = never,
     QKK extends QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField> = QueryKeyKey<tableItem, IndexName, TableIndex<TS, TN, IndexName>, TableKey<TS, TN>, PartitionKeyField>,
     const Key extends QKK = QKK
-  >(params: QueryKeyPEInput<TN, Key, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV> & Limit1, ProjectionExpression?: PE) {
+  >(params: QueryKeyPEInput<TN, Key, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
     const queryParams = this.getKCEFromQueryKey(params);
     const finalParams = this.parsePEConstructedParamsAndLog(queryParams, ProjectionExpression);
-    const { Items = [] } = await this.client.query({ ...finalParams, Limit: 1 }).promise();
+    const { Items = [] } = await this.client.query(finalParams).promise();
     const Item = Items[0];
     if (!Item) {
       return undefined;
