@@ -80,13 +80,13 @@ export type Table<
 type AnyGenericTable = Table<TableFromValue, Record<string, any>, string, string | undefined>;
 
 /** Produce a union of all table names from a union of Tables */
-export type TableName<Tables> = Tables extends Table<TableFromValue, any, string, string | undefined> ? Tables['name'] : never;
+export type TableName<Tables> = Tables extends AnyGenericTable ? Tables['name'] : never;
 /** Just get the keys object in the Table type above */
-export type TableKeyPartitionSortRaw<Tables, TN extends string> = Tables extends Table<TableFromValue, any, string, string | undefined> ? Extract<Tables, { name: TN }>['keys'] : never;
+export type TableKeyPartitionSortRaw<Tables, TN extends string> = Tables extends AnyGenericTable ? TN extends Tables['name'] ? Tables['keys'] : never : never;
 /** Produce the union of keys that corresponds to the Table with name TN */
-export type TableKey<Tables, TN extends string> = Tables extends Table<TableFromValue, any, string, string | undefined> ? PickAcrossUnionOfRecords<TableItem<Tables, TN>, Values<Extract<Tables, { name: TN }>['keys']>> : never;
+export type TableKey<Tables, TN extends string> = Tables extends AnyGenericTable ? TN extends Tables['name'] ? PickAcrossUnionOfRecords<TableItem<Tables, TN>, Values<Tables['keys']>> : never : never;
 /** Produce the union of item types that corresponds to the Table with name TN */
-export type TableItem<Tables, TN extends string> = Tables extends Table<TableFromValue, any, string, string | undefined> ? Extract<Tables, { name: TN }>['types'] : never;
+export type TableItem<Tables, TN extends string> = Tables extends AnyGenericTable ? TN extends Tables['name'] ? Tables['types'] : never : never;
 /** Extract the type of item that contains the type of Key */
 export type ExtractTableItemForKey<T extends Record<string, any>, Key extends Record<string, any>> =
   T extends Record<string, any>
@@ -101,9 +101,10 @@ export type ExtractTableItemForKey<T extends Record<string, any>, Key extends Re
 
 /** Extract a union of all indices[string] IndexFromValue objects */
 export type TableInidicesUnion<Tables, TN extends string> =
-  Tables extends Table<TableFromValue, any, string, string | undefined>
+  Tables extends AnyGenericTable
+  ? TN extends Tables['name']
   ? (
-    Extract<Tables, { name: TN }>['indices'] extends infer indicesForTable
+    Tables['indices'] extends infer indicesForTable
     ? indicesForTable[keyof indicesForTable] extends (infer indicesUnion extends IndexFromValue)
     ? (
       indicesUnion
@@ -111,11 +112,13 @@ export type TableInidicesUnion<Tables, TN extends string> =
     : never
     : never
   )
+  : never
   : never;
 /** Extract a union of IndexFromValue['name'] strings */
 export type TableIndexName<Tables, TN extends string> = TableInidicesUnion<Tables, TN>['name'];
+type _TableIndex<IndicesUnion, IndexName extends string> = IndicesUnion extends IndexFromValue ? IndexName extends IndicesUnion['name'] ? IndicesUnion : never : never;
 /** Take a IndexFromValue['name'] string and find the indices[string] IndexFromValue it came from */
-export type TableIndex<Tables, TN extends string, IndexName extends string> = Extract<TableInidicesUnion<Tables, TN>, { name: IndexName }>;
+export type TableIndex<Tables, TN extends string, IndexName extends string> = _TableIndex<TableInidicesUnion<Tables, TN>, IndexName>;
 /** Pick the Key object from a TableItem object */
 export type TableItemKey<Tables, TN extends string, Item extends TableItem<Tables, TN>> = TableKey<Tables, TN> extends infer tKey ? [keyof tKey] extends [keyof Item] ? Pick<Item, keyof tKey> : never : never;
 

@@ -20,13 +20,11 @@ export type Primitive = string | number | boolean | null | undefined | symbol | 
 export type DeepSimplifyObject<T> =
   IsAnyOrUnknown<T> extends true
   ? T
-  : T extends Primitive
+  : T extends Primitive | NativeJSBinaryTypes | Set<any> | ReadonlySet<any>
   ? T
   : T extends object
   ? (
-    T extends NativeJSBinaryTypes | Set<any> | ReadonlySet<any>
-    ? T
-    : T extends DynamoDB.DocumentClient.DynamoDbSet
+    T extends DynamoDB.DocumentClient.DynamoDbSet
     ? {
       [K in keyof T]: T[K]
     }
@@ -41,13 +39,11 @@ export type XLevelSimplifyObject<T, Levels extends never[] = [never]> =
   : (
     IsAnyOrUnknown<T> extends true
     ? T
-    : T extends Primitive
+    : T extends Primitive | NativeJSBinaryTypes | Set<any> | ReadonlySet<any>
     ? T
     : T extends object
     ? (
-      T extends NativeJSBinaryTypes | Set<any>
-      ? T
-      : T extends DynamoDB.DocumentClient.DynamoDbSet
+      T extends DynamoDB.DocumentClient.DynamoDbSet
       ? {
         [K in keyof T]: T[K]
       }

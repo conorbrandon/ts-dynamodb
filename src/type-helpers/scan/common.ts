@@ -25,30 +25,32 @@ export type ProjectScan<TableItem extends object, TableIndex extends IndexFromVa
     )
   );
 
+type _ProjectGSIScan<PE extends string, EAN extends AnyExpressionAttributeNames, indexItem extends object> =
+  string extends PE
+  ? DeepSimplifyObject<TSDdbSet<indexItem>>
+  : (
+    indexItem extends object
+    ? ProjectProjectionExpressionStruct<indexItem, PE, EAN>
+    : never
+  );
 type ProjectGSIScan<Index extends GSIIndexFromValue, Item extends object, MainTableKeyFields extends string, PE extends string, EAN extends AnyExpressionAttributeNames> =
-  (
-    Index extends ProjectAllIndex
-    ? Item
-    : (
-      Index extends ProjectOnlyKeysIndex
-      ? PickOverAllExtractedQueryTypes<Item, ExtractKeysOfGSIIndex<Index> | MainTableKeyFields>
+  _ProjectGSIScan<
+    PE,
+    EAN,
+    (
+      Index extends ProjectAllIndex
+      ? Item
       : (
-        Index extends ProjectAttributesIndex
-        ? PickOverAllExtractedQueryTypes<Item, ExtractKeysOfGSIIndex<Index> | MainTableKeyFields | Index['attributes'][number]>
-        : never
+        Index extends ProjectOnlyKeysIndex
+        ? PickOverAllExtractedQueryTypes<Item, ExtractKeysOfGSIIndex<Index> | MainTableKeyFields>
+        : (
+          Index extends ProjectAttributesIndex
+          ? PickOverAllExtractedQueryTypes<Item, ExtractKeysOfGSIIndex<Index> | MainTableKeyFields | Index['attributes'][number]>
+          : never
+        )
       )
     )
-  ) extends (infer indexItem extends object)
-  ? (
-    string extends PE
-    ? DeepSimplifyObject<TSDdbSet<indexItem>>
-    : (
-      indexItem extends object
-      ? ProjectProjectionExpressionStruct<indexItem, PE, EAN>
-      : never
-    )
-  )
-  : never;
+  >;
 
 type ProjectLSIScan<Index extends LSIIndexFromValue, Item extends object, MainTableKeyFields extends string, PE extends string, EAN extends AnyExpressionAttributeNames> =
   string extends PE // PE was not provided
