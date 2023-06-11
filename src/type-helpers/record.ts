@@ -1,6 +1,6 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 import { NativeJSBinaryTypes } from '../dynamodb-types';
-import { Primitive, IsAny, IsAnyOrUnknown } from './utils';
+import { Primitive, IsAnyOrUnknown } from './utils';
 
 /** Take a union of object types and pick Fields from each type, producing another union.
  * i.e.: `U` = `{ p0: string; s0: number[] } | { p0: number; s0: string[] }` and `Fields` = `'p0'`
@@ -28,65 +28,14 @@ export type RemoveIndex<T extends object> = {
     tk extends object ? (
       (
         tk extends any[]
-        ? tk
+        ? {
+          [K in keyof tk]: tk[K] extends infer tkk ? tkk extends object ? RemoveIndex<tkk> : tkk : never;
+        }
         : RemoveIndex<tk>
       )
     ) : tk
   ) : never
 };
-
-type _GetAllKeysForArray<Arr extends any[]> = {
-  [K in keyof Arr]:
-  Arr[K] extends infer arrK
-  ? (
-    arrK extends object
-    ? (
-      arrK extends any[]
-      ? _GetAllKeysForArray<arrK>
-      : GetAllKeys<arrK>
-    )
-    : never
-  )
-  : never
-} extends infer nextGak extends any[]
-  ? nextGak[number]
-  : never;
-
-type _GetAllKeys<Obj extends object> =
-  Obj extends object
-  ? (
-    {
-      [K in keyof Obj as K extends symbol ? never : K]:
-      Obj[K] extends infer objK
-      ? (
-        objK extends Primitive | Set<any> | DocumentClient.DynamoDbSet | NativeJSBinaryTypes // also filter out Sets and pesky branded types
-        ? K
-        : objK extends object
-        ? (
-          IsAny<objK> extends true
-          ? string
-          : (
-            objK extends any[] // filter out arrays here
-            ? (
-              K | _GetAllKeysForArray<objK>
-            )
-            : (
-              GetAllKeys<objK> extends infer nextGak
-              ? K | nextGak // finally, we have an object type with only non-indexed keys
-              : never
-            )
-          )
-        )
-        : K
-      )
-      : never
-    } extends infer gani
-    ? gani[keyof gani]
-    : never
-  )
-  : never;
-type FilterGAK<G> = G extends string ? G : G extends number ? `${G}` : never;
-export type GetAllKeys<Obj extends object> = FilterGAK<_GetAllKeys<Obj>>;
 
 /** Get tail of a tuple */
 export type Tail<T extends any[]> = T extends [head: any, ...tail: infer I]
@@ -148,3 +97,5 @@ export type RemoveIndexKeys<T> = {
   [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K]
 };
 export type GetAllNonIndexKeys<T> = keyof RemoveIndexKeys<T>;
+
+export type KeyIntoObject<T extends object> = T[keyof T];

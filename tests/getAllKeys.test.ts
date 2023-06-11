@@ -1,7 +1,8 @@
 import { expectTypeOf } from "expect-type";
-import { GetAllKeys } from "../src/type-helpers/record";
+import { GetAllKeys } from "../src/type-helpers/get-all-keys";
 import { CICDBigger, Type3Zod } from "./lib/types";
 import { Branded } from "../src/type-helpers/utils";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
 test('GetAllKeys', () => {
   expectTypeOf<GetAllKeys<CICDBigger>>().toEqualTypeOf<
@@ -32,5 +33,16 @@ test('symbol (branded) objects', () => {
 
   type test2 = GetAllKeys<Omit<T, "nums">>;
   expectTypeOf<test2>().toEqualTypeOf<"foo" | "1" | "specificNums" | "2" | "3">();
+
+});
+test('arrays', () => {
+
+  type T = {
+    strs: Branded<"ID", string>[];
+    sets: DocumentClient.BinarySet | Set<string>;
+    buff: Buffer;
+  };
+  type test = GetAllKeys<T>;
+  expectTypeOf<test>().toEqualTypeOf<"strs" | "sets" | "buff">();
 
 });

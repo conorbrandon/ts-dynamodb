@@ -4,7 +4,7 @@ import { GetInput, StrictGetItemInput, GetOutput, GetPEInput, GetPEOutput } from
 import { PutInput, PutOutput, StrictPutItemInput } from "./defs-override/put";
 import { ExtraConditions, StrictUpdateItemInput, StrictUpdateSimpleSETInput, UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput } from "./defs-override/update";
 import { DoesKeyHaveAPropertyCalledKey, ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
-import { DeepReadonly, DeepWriteable, GetAllKeys, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
+import { DeepReadonly, DeepWriteable, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
 import { ProjectUpdateExpression } from "./type-helpers/UE/output";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "./dynamodb-types";
@@ -14,6 +14,7 @@ import { ExtractEAsFromString } from "./type-helpers/extract-EAs";
 import { TSDdbSet } from "./type-helpers/sets/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
 import { inspect, InspectOptions } from 'util';
+import { GetAllKeys } from "./type-helpers/get-all-keys";
 
 export type ProjectAllIndex = {
   project: 'all';

@@ -1184,7 +1184,12 @@ test('getPE', async () => {
     prop1: string[] | undefined;
     obj: {
       prop3: {
-        [x: string]: number;
+        [x: string]: {
+          foo: "bar";
+          bar: {
+            foo: "";
+          };
+        };
       };
       prop2: number;
       prop1: string[] | undefined;
@@ -1369,7 +1374,7 @@ test('queryPE', async () => {
       },
       FilterExpression: 'attribute_exists(#otherID)'
     }, pe);
-    return Items ?? [];
+    return Items ?? ([] as never);
   };
   const woos = await queryType3Woo(0, 'hi', 'woo, hoo, boo');
   console.log(myInspect(woos));
