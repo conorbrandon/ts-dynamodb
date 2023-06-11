@@ -22,10 +22,16 @@ export type UnionArrayTrimmer<S extends any[], Separator extends string = " "> =
 /** Takes a string and produces an array of the string split on the D=delimeter.
  * For ex, take "obj, item" and produce ["obj", " item"]
  */
-export type Split<S extends string, D extends string = " "> =
-  string extends S ? string[] :
-  S extends '' ? [] :
-  S extends `${infer T}${D}${infer U}` ? (Split<U, D> extends infer restSplit extends string[] ? [T, ...restSplit] : never) : [S];
+export type Split<S extends string, D extends string = " ", Acc extends string[] = []> =
+  string extends S
+  ? [...Acc, ...string[]]
+  : S extends ''
+  ? Acc
+  : S extends `${infer Start}${D}${infer Rest}`
+  ? (
+    Split<Rest, D, [...Acc, Start]>
+  )
+  : [...Acc, S];
 /** Takes a union of strings and applies Split to each string in the union,
  * producing a union of string arrays.
  */
