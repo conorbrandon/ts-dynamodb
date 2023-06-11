@@ -40,10 +40,10 @@ export type UnionSplitter<S, D extends string = " "> = S extends string ? Split<
 export type UnionArraySplitter<S extends any[], Separator extends string = " "> = S extends string[] ? { [K in keyof S]: Split<S[K], Separator> } : never;
 
 /** Note: intentionally does _not_ join empty strings with `Sep`!!! */
-export type Join<Arr extends string[], Sep extends string = "."> =
+export type Join<Arr extends string[], Sep extends string = ".", Acc extends string = ''> =
   Arr extends [infer S extends string, ...infer Rest extends string[]]
-  ? `${S}${S extends "" ? "" : Rest extends [] ? "" : Sep}${Join<Rest, Sep>}`
-  : '';
+  ? Join<Rest, Sep, `${Acc}${S}${S extends "" ? "" : Rest extends [] ? "" : Sep}`>
+  : Acc;
 
 /** Take a Record and create a template string that forces you to 
  * use all keys of the Record at least once somewhere in the string. Useful for making
