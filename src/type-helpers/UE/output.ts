@@ -49,14 +49,14 @@ type AddUndefinedToOnlyIndexRemoveProps<UE extends string, T extends object, EAN
   : never
   : never;
 
-type RemoveNonIndexRemovesFromRemoveProps<RemoveProps extends string[]> =
+type RemoveNonIndexRemovesFromRemoveProps<RemoveProps extends string[], Acc extends string[] = []> =
   RemoveProps extends [infer S extends string, ...infer Rest extends string[]]
   ? (
     S extends `${string}[${number}]`
-    ? [S, ...RemoveNonIndexRemovesFromRemoveProps<Rest>]
-    : RemoveNonIndexRemovesFromRemoveProps<Rest>
+    ? RemoveNonIndexRemovesFromRemoveProps<Rest, [...Acc, S]>
+    : RemoveNonIndexRemovesFromRemoveProps<Rest, Acc>
   )
-  : [];
+  : Acc;
 
 type ExtractSetterPEFromUE<
   UE extends string

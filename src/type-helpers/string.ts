@@ -113,7 +113,7 @@ export type CreateNestedObjectUsingStringArray<Keys extends string[], EndValue> 
   )
   : never;
 
-/** This is meant to be used WITH NestedPickSimple! It assumes any arrays in T are of length 1.
+/** This is meant to be used WITH NestedPickForUE! It assumes any arrays in T are of length 1.
  * Take a type and a string[] and attempts to keep traversing into it until 
  * either the path is invalid, or the path runs out of elements, returning the final type 
  */

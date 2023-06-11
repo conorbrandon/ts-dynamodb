@@ -243,9 +243,10 @@ type _GetFinalValueOfSetterTupleForComputedType<ValueStruct extends object, T ex
       : ValueStruct extends BrokenDocPath
       ? (
         CreatePropPickArrayFromDocPath<ValueStruct['path'], EAN> extends (infer propPickArray extends string[])
-        ? NestedPickForUE<T, propPickArray, (IsNoUncheckedIndexAccessEnabled extends true ? undefined : never)> extends (infer nestedPick extends Record<any, any>)
-        ? DrillIntoTypeUsingStrArray<nestedPick, propPickArray>
-        : never
+        ? DrillIntoTypeUsingStrArray<
+          NestedPickForUE<T, propPickArray, (IsNoUncheckedIndexAccessEnabled extends true ? undefined : never)>,
+          propPickArray
+        >
         : never
       )
       : never // This should never be hit unless an error

@@ -52,10 +52,10 @@ type WalkThroughUppercaseUEClauses<Str extends string, Acc extends string = ''> 
   )
   : `${Acc}${Str}`;
 export type UppercaseUEClauses<UE extends string> =
-  StringReplaceAll<StringReplaceAll<UE, { '\n': ' '; '\t': ' ' }>, {
-    't#': 't #'; 'T#': 'T #'; // for SET
-    'e#': 'e #'; 'E#': 'E #'; // for REMOVE and DELETE
-    'd#': 'd #'; 'D#': 'D #'; // for ADD
-  }> extends infer splitForParsing extends string
-  ? WalkThroughUppercaseUEClauses<splitForParsing>
-  : never;
+  WalkThroughUppercaseUEClauses<
+    StringReplaceAll<StringReplaceAll<UE, { '\n': ' '; '\t': ' ' }>, {
+      't#': 't #'; 'T#': 'T #'; // for SET
+      'e#': 'e #'; 'E#': 'E #'; // for REMOVE and DELETE
+      'd#': 'd #'; 'D#': 'D #'; // for ADD
+    }>
+  >;
