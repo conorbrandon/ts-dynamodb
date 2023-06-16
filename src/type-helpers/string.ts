@@ -21,6 +21,7 @@ export type UnionArrayTrimmer<S extends any[], Separator extends string = " "> =
 
 /** Takes a string and produces an array of the string split on the D=delimeter.
  * For ex, take "obj, item" and produce ["obj", " item"]
+ * Intentionally does not append an empty string if the string to split ends with the delimiter.
  */
 export type Split<S extends string, D extends string = " ", Acc extends string[] = []> =
   string extends S
@@ -42,7 +43,7 @@ export type UnionArraySplitter<S extends any[], Separator extends string = " "> 
 /** Note: intentionally does _not_ join empty strings with `Sep`!!! */
 export type Join<Arr extends string[], Sep extends string = ".", Acc extends string = ''> =
   Arr extends [infer S extends string, ...infer Rest extends string[]]
-  ? Join<Rest, Sep, `${Acc}${S}${S extends "" ? "" : Rest extends [] ? "" : Sep}`>
+  ? Join<Rest, Sep, `${Acc}${S}${S extends "" ? "" : Rest extends [] ? "" : Rest extends ""[] ? "" : Sep}`>
   : Acc;
 
 /** Take a Record and create a template string that forces you to 
@@ -154,3 +155,5 @@ export type DrillIntoTypeUsingStrArray<T extends object, Keys extends string[]> 
     : never // error for when we can't key into T using Keys[0]
   )
 );
+
+export type AlphaNumericCharacters = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"][number];
