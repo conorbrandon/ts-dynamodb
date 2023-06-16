@@ -1,10 +1,11 @@
 import { DeepSimplifyObject } from "../src/type-helpers/utils";
-import { ArrayIndicesStruct, ConstructPEStruct, PEStruct, ProjectProjectionExpressionStruct } from "../src/type-helpers/PE2/pe-lib";
+import { ArrayIndicesStruct, PEStruct, ProjectProjectionExpressionStruct } from "../src/type-helpers/PE2/pe-lib";
 import { expectTypeOf } from "expect-type";
 import { DeepValidateShapev2WithBinaryResult } from "../src/type-helpers/deep-validate";
 import { CICDSmaller, Type3a } from "./lib/types";
 import { DynamoDB } from "aws-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { ParsePEToPEStruct } from "../src/type-helpers/PE2/parse-pe-to-object-lib";
 
 type pe = `
 #prop[0].#weird.peculiar[1],
@@ -64,7 +65,7 @@ type ean = {
   '#datumStr': 'datumStr';
   '#myNumberSet': 'myNumberSet';
 };
-type peStruct = ConstructPEStruct<
+type peStruct = ParsePEToPEStruct<
   pe,
   ean
 >;
@@ -171,7 +172,7 @@ test('ConstructPEStruct', () => {
   type val = DeepValidateShapev2WithBinaryResult<peStructSimplified, peStructExpectation>;
   expectTypeOf<val>().toEqualTypeOf<1>();
 
-  type shortCircuit = ConstructPEStruct<'thing[0], thing[0][0], prop, prop.hi', {}>;
+  type shortCircuit = ParsePEToPEStruct<'thing[0], thing[0][0], prop, prop.hi', {}>;
   expectTypeOf<shortCircuit>().toEqualTypeOf<{
     thing: {
       "0": true;

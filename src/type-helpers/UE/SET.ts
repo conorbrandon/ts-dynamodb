@@ -1,6 +1,6 @@
 import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../../dynamodb-types";
 import { DeepValidateShapev2WithBinaryResult } from "../deep-validate";
-import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
+import { CreatePropPickArrayFromDocPath } from "../PE2/parse-pe-to-object-lib";
 import { Head } from "../record";
 import { DrillIntoTypeUsingStrArray, Split, Trim, UnionSplitter, CreateNestedObjectUsingStringArray } from "../string";
 import { IsNever, IsNoUncheckedIndexAccessEnabled, NoUndefined } from "../utils";

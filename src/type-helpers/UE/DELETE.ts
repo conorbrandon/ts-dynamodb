@@ -1,6 +1,6 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../../dynamodb-types";
-import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
+import { CreatePropPickArrayFromDocPath } from "../PE2/parse-pe-to-object-lib";
 import { DrillIntoTypeUsingStrArray, Split, Trim, UnionSplitter } from "../string";
 import { IsNever, NoUndefined } from "../utils";
 import { NestedPickForUE } from "./nested-pick";

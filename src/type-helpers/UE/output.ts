@@ -3,7 +3,7 @@ import { DeepSimplifyObject, IsNever } from "../utils";
 import { ExtractAddTuplesFromUE } from "./ADD";
 import { ExtractPropsToRemoveFromUE } from "./REMOVE";
 import { ExtractSetterPartOfUE, ExtractSetterTuplesLookAhead } from "./SET";
-import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
+import { CreatePropPickArrayFromDocPath } from "../PE2/parse-pe-to-object-lib";
 import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { UppercaseUEClauses } from "./ue-lib";
 import { Tail } from "../record";

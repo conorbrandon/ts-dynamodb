@@ -1,56 +1,17 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, NativeJSBinaryTypes } from "../../dynamodb-types";
-import { ParsePEToPropPickNestedArray } from "../PE/pe-lib";
-import { Trim } from "../string";
 import { ArrayHasNoDefinedIndices, Branded, DeepSimplifyObject, IsAnyOrUnknown, IsNever, IsNoUncheckedIndexAccessEnabled, NoUndefined, OnlyNumbers, Primitive, UnbrandRecord } from "../utils";
 import { CheckIfUndefinedInTuple, CheckKeysOfObjectForUndefined } from "../PE/non-accumulator-pick-helpers";
 import { GetAllNonIndexKeys } from "../record";
 import { TSDdbSet } from "../sets/utils";
+import { ParsePEToPEStruct } from "./parse-pe-to-object-lib";
 
+/**
+ * We need the `PropertyKey` key type because `ArrayIndicesStruct`s have number and symbol keys
+ */
 export type PEStruct = { [key: PropertyKey]: true | PEStruct };
 export type ArrayIndicesStruct = Branded<"ARRAY_INDICES", {}>;
 type UnsetTupleIndex = Branded<"UNSET_TUPLE_INDEX", symbol>;
-type _AddToPEStructAcc<PropPick extends string[], Acc = {}> =
-  PropPick extends [infer First extends string, ...infer Rest extends string[]]
-  ? Acc extends true
-  ? Acc // SHORT CIRCUIT for already existing top level property in Acc that terminated a doc path
-  : (
-    First extends `[${infer Index extends number}]`
-    ? (
-      Acc extends ArrayIndicesStruct
-      ? ( // if there is an existing ArrayIndicesStruct, either add to an existing property (arr[0].foo, arr[0].bar), or set a new property
-        `${Index}` extends keyof Acc
-        ? {
-          [K in keyof Acc]: `${Index}` extends K ? _AddToPEStructAcc<Rest, Acc[K]> : Acc[K]
-        }
-        : {
-          [K in `${Index}`]: _AddToPEStructAcc<Rest, {}>
-        } & Acc
-      ) // otherwise, create a new ArrayIndicesStruct
-      : {
-        [K in `${Index}`]: _AddToPEStructAcc<Rest, {}>
-      } & ArrayIndicesStruct
-    )
-    : First extends keyof Acc
-    // these are fairly standard, if First is in Acc already, add to it
-    ? {
-      [K in keyof Acc]: First extends K ? _AddToPEStructAcc<Rest, Acc[K]> : Acc[K]
-    }
-    // otherwise, set First as a new property
-    : {
-      [K in First]: _AddToPEStructAcc<Rest, {}>
-    } & Acc
-  )
-  : true;
-
-type _ConstructPEStruct<PropPickArray extends string[][], Acc extends Record<string, unknown> = {}> =
-  PropPickArray extends [infer First extends [string, ...string[]], ...infer Rest extends string[][]]
-  ? _ConstructPEStruct<Rest, _AddToPEStructAcc<First, Acc>>
-  : Acc;
-export type ConstructPEStruct<PE extends string, EAN extends AnyExpressionAttributeNames> =
-  ParsePEToPropPickNestedArray<Trim<Trim<PE, "\t" | "\n">, " ">, EAN> extends (infer nestedPropPickArray extends string[][])
-  ? _ConstructPEStruct<nestedPropPickArray>
-  : never;
 
 type RemapNumberKeysToNumStrings<Struct extends ArrayIndicesStruct> = {
   [K in keyof Struct as K extends number ? `${K}` : K]: Struct[K];
@@ -202,19 +163,14 @@ type RemoveUndefinedOneLevel<T extends object> = {
   [K in keyof T]-?: Exclude<T[K], undefined>;
 };
 
-type _ProjectProjectionExpressionStruct<T extends Record<string, any>, PropPickArray extends string[][], MakeRequired extends boolean> =
-  _ConstructPEStruct<PropPickArray> extends infer peStruct extends PEStruct
-  ? DeepSimplifyObject<NoUndefined<ProjectPEStruct<peStruct, T, MakeRequired>>>
-  : never;
-
-type TLPKeys<T extends Record<string, any>, PropPickArray extends [string][]> = _GetKeysForNextLevel<T, PropPickArray[number][0]>;
-type TopLevelPick<T extends Record<string, any>, PropPickArray extends [string][], MakeRequired extends boolean> =
+type TLPKeys<T extends Record<string, any>, Props extends string> = _GetKeysForNextLevel<T, Props>;
+type TopLevelPick<T extends Record<string, any>, Props extends string, MakeRequired extends boolean> =
   T extends any
   ? (
     {
-      [K in Extract<TLPKeys<T, PropPickArray>, keyof T>]: T[K] | (K extends GetAllNonIndexKeys<T> ? never : IsNoUncheckedIndexAccessEnabled extends true ? undefined : never);
+      [K in Extract<TLPKeys<T, Props>, keyof T>]: T[K] | (K extends GetAllNonIndexKeys<T> ? never : IsNoUncheckedIndexAccessEnabled extends true ? undefined : never);
     } & {
-      [K in Exclude<TLPKeys<T, PropPickArray>, keyof T>]: undefined;
+      [K in Exclude<TLPKeys<T, Props>, keyof T>]: undefined;
     }
   ) extends infer projected extends object
   ? MakeRequired extends true
@@ -224,8 +180,8 @@ type TopLevelPick<T extends Record<string, any>, PropPickArray extends [string][
   : never;
 
 export type ProjectProjectionExpressionStruct<T extends Record<string, any>, PE extends string, EAN extends AnyExpressionAttributeNames, MakeRequired extends boolean = false> =
-  ParsePEToPropPickNestedArray<Trim<Trim<PE, "\t" | "\n">, " ">, EAN> extends (infer nestedPropPickArray extends string[][])
-  ? nestedPropPickArray extends [string][]
-  ? DeepSimplifyObject<TopLevelPick<TSDdbSet<T, MakeRequired>, nestedPropPickArray, MakeRequired>>
-  : _ProjectProjectionExpressionStruct<T, nestedPropPickArray, MakeRequired>
-  : never;
+  ParsePEToPEStruct<PE, EAN> extends infer peStruct extends PEStruct
+  ? peStruct extends Record<string, true>
+  ? DeepSimplifyObject<TopLevelPick<TSDdbSet<T, MakeRequired>, keyof peStruct & string, MakeRequired>>
+  : DeepSimplifyObject<NoUndefined<ProjectPEStruct<peStruct, T, MakeRequired>>>
+  : never; // peStruct inference

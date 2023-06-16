@@ -1,9 +1,9 @@
-import { CreatePropPickArrayFromDocPath } from "../src/type-helpers/PE/pe-lib";
 import { CICDSmaller } from "./lib/types";
 import { expectTypeOf } from 'expect-type';
 import { DynamoDB } from "aws-sdk";
 import { ProjectProjectionExpressionStruct } from "../src/type-helpers/PE2/pe-lib";
 import { DeepValidateShapev2WithBinaryResult } from "../src/type-helpers/deep-validate";
+import { CreatePropPickArrayFromDocPath } from "../src/type-helpers/PE2/parse-pe-to-object-lib";
 
 type Expected = {
   map:

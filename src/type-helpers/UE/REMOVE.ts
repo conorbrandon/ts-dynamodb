@@ -1,6 +1,6 @@
 import { NestedPickForUE } from "./nested-pick";
 import { DrillIntoTypeUsingStrArray, Split, Trim, UnionSplitter } from "../string";
-import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
+import { CreatePropPickArrayFromDocPath } from "../PE2/parse-pe-to-object-lib";
 import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { IsNever } from "../utils";
 
