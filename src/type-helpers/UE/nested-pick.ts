@@ -1,4 +1,4 @@
-import { PickFromIndexInDdbArrayForPE, PickFromIndexInDdbArrayForPEType } from "../PE/non-accumulator-pick-helpers";
+import { PickFromIndexInDdbArrayForPE, PickFromIndexInDdbArrayForPEType } from "../PE2/pick-from-index-in-ddb-array-for-pe";
 import { Tail } from "../record";
 import { IsAnyOrUnknown, IsNumberRecord, IsStringRecord } from "../utils";
 

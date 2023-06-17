@@ -8,7 +8,7 @@ due to DynamoDB shifting elements forward when a preceding element is `put` as `
 /** Take a tuple and if any of the elements are optional, return 1.
  * Recursively check the elements, if they are arrays or Records, as well
  */
-type CheckIfUndefinedInTuple<T extends any[]> = {
+type DeepCheckIfUndefinedInTuple<T extends any[]> = {
   [K in keyof T & `${number}`]:
   undefined extends T[K]
   ? 1 | (T[K] extends Record<any, any> ? _IsArraySparse<T[K]> : never)
@@ -18,7 +18,7 @@ type CheckIfUndefinedInTuple<T extends any[]> = {
 type _IsArraySparse<T extends Record<any, any>> =
   T extends Record<any, any>
   ? T extends any[]
-  ? 1 extends CheckIfUndefinedInTuple<T> ? 1 : 0
+  ? 1 extends DeepCheckIfUndefinedInTuple<T> ? 1 : 0
   : (
     T extends string
     ? never

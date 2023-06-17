@@ -1,7 +1,6 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, NativeJSBinaryTypes } from "../../dynamodb-types";
 import { ArrayHasNoDefinedIndices, Branded, DeepSimplifyObject, IsAnyOrUnknown, IsNever, IsNoUncheckedIndexAccessEnabled, NoUndefined, OnlyNumbers, Primitive, UnbrandRecord } from "../utils";
-import { CheckIfUndefinedInTuple, CheckKeysOfObjectForUndefined } from "../PE/non-accumulator-pick-helpers";
 import { GetAllNonIndexKeys } from "../record";
 import { TSDdbSet } from "../sets/utils";
 import { ParsePEToPEStruct } from "./parse-pe-to-object-lib";
@@ -155,8 +154,17 @@ type FilterUnsetTupleIndex<T extends any[], Acc extends any[] = []> =
   )
   : [...Acc, ...T];
 
+type CheckKeysOfObjectForUndefined<T extends Record<PropertyKey, any>> = {
+  [K in keyof T]: IsAnyOrUnknown<T[K]> extends true ? 0 : (undefined extends T[K] ? 0 : 1)
+}[keyof T];
 type AddUndefinedToObject<T extends Record<PropertyKey, any>> = 1 extends CheckKeysOfObjectForUndefined<T> ? T : T | undefined;
 
+type CheckIfUndefinedInTuple<T extends any[]> = {
+  [K in keyof T & `${number}`]:
+  undefined extends T[K] // I don't believe (hopefully) we need to check for any or unknown because those are banned in validate-input-types.ts
+  ? 1
+  : 0
+}[keyof T & `${number}`];
 type AddUndefinedOrUnknownToArray<T extends any[]> = ArrayHasNoDefinedIndices<T> extends true ? T : 1 extends CheckIfUndefinedInTuple<T> ? unknown[] | undefined : T;
 
 type RemoveUndefinedOneLevel<T extends object> = {

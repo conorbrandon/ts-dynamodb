@@ -1,5 +1,4 @@
 import { Tail } from "../record";
-import { IsAnyOrUnknown } from "../utils";
 
 type ExtractRestElementOfArray<Arr extends any[]> =
   keyof Arr & `${number}` extends never // if the rest array doesn't have `${number}` indices anymore, we've reached the rest element
@@ -37,14 +36,3 @@ export type PickFromIndexInDdbArrayForPE<Arr extends any[], index extends `${num
     ? never // if it doesn't, return never
     : { _val: Arr[keyof Arr & index]; _isRest: false; _isRestElement: false } // if it does, return the element
   );
-
-export type CheckIfUndefinedInTuple<T extends any[]> = {
-  [K in keyof T & `${number}`]:
-  undefined extends T[K] // I don't believe (hopefully) we need to check for any or unknown because those are banned in validate-input-types.ts
-  ? 1
-  : 0
-}[keyof T & `${number}`];
-
-export type CheckKeysOfObjectForUndefined<T extends Record<PropertyKey, any>> = {
-  [K in keyof T]: IsAnyOrUnknown<T[K]> extends true ? 0 : (undefined extends T[K] ? 0 : 1)
-}[keyof T];
