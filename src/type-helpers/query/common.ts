@@ -19,7 +19,7 @@ type ExtractKeyConditionFieldFromEAVs<Field extends string, EAV extends Expressi
 /** Replace newlines, tabs, and 'and' with 'AND' and 'between' with 'BETWEEN' in a KCE for consistency */
 type KCEKeywords = 'AND' | 'BETWEEN';
 /** NOTE: ONLY EXPORTED FOR TESTS */
-export type CleanKCE<KCE extends string> = WalkThroughUppercaseKCEKeywords<StringReplaceAll<StringReplaceAll<KCE, { '\n': ' '; '\t': ' ' }>, { '#': ' #'; ':': ' :' }>>;
+export type CleanKCE<KCE extends string> = WalkThroughUppercaseKCEKeywords<StringReplaceAll<StringReplaceAll<KCE, { '\n': ' '; '\t': ' '; '\r': '' }>, { '#': ' #'; ':': ' :' }>>;
 type WalkThroughUppercaseKCEKeywords<Str extends string, Acc extends string = ''> =
   Str extends `${string} ${infer Rest}`
   ? (
