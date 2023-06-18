@@ -56,7 +56,7 @@ type _ParsePEToPEStruct<PE extends string, EANs extends AnyExpressionAttributeNa
     : (
       Start extends ","
       ? (
-        CurrProp extends `` | `${number}]` | `${string}${AlphaNumericCharacters}`
+        CurrProp extends `` | `${string}${AlphaNumericCharacters}` | `[${number}]`
         ? CurrProp extends "" // special case where index access terminates the PE
         ? _ParsePEToPEStruct<Rest, EANs, '', [], _AddToPEStructAcc<ReplaceEANsInFinalClause<CurrClause, EANs>, Acc>>
         : _ParsePEToPEStruct<Rest, EANs, '', [], _AddToPEStructAcc<ReplaceEANsInFinalClause<[...CurrClause, CurrProp], EANs>, Acc>>

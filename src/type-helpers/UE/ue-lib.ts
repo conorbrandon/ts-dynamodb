@@ -54,8 +54,8 @@ type WalkThroughUppercaseUEClauses<Str extends string, Acc extends string = ''> 
 export type UppercaseUEClauses<UE extends string> =
   WalkThroughUppercaseUEClauses<
     StringReplaceAll<StringReplaceAll<UE, { '\n': ' '; '\t': ' '; '\r': ' ' }>, {
-      't#': 't #'; 'T#': 'T #'; // for SET
-      'e#': 'e #'; 'E#': 'E #'; // for REMOVE and DELETE
-      'd#': 'd #'; 'D#': 'D #'; // for ADD
+      't#': 't #'; 'T#': 'T #'; ']t': '] t'; ']T': '] T'; ')t': ') t'; ')T': ') T'; // for SET
+      'e#': 'e #'; 'E#': 'E #'; ']e': '] e'; ']E': '] E'; ')e': ') e'; ')E': ') E'; // for REMOVE and DELETE
+      'd#': 'd #'; 'D#': 'D #'; ']d': '] d'; ']D': '] D'; ')d': ') d'; ')D': ') D'; // for ADD
     }>
   >;

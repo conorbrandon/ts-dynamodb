@@ -636,11 +636,9 @@ thebig.#d.myRestArray[2].boo=thebig.#d.myRestArray[2].boo+:boo,
 #rest=list_append(#rest,:rest),
 nest[1][0]=if_not_exists(nest[1][0],:nest),
 thebig.#d.foo=if_not_exists(#map.hi.hello,:doobedoo),
-pure=list_append(if_not_exists(pure,:emptyList),if_not_exists(pure,:pure)),
 thebig.#d.#set=:set,
-#datumStr=:datumStr
-
-  add
+#datumStr=:datumStr,
+pure=list_append(if_not_exists(pure,:emptyList),if_not_exists(pure,:pure))add
 #map.#hi.#exists :doobedoo,
 thebig.#d.myRestArray[0] :doobedoo,
 myNumberSet :numberSet,
@@ -655,9 +653,7 @@ thebig.#d.#rI[4],
 prop[0].strange,
 thebig.#d.product,
 thebig.#d.myRestArray[1],
-thebig.#d.#rI[1000]
-
-  delete
+thebig.#d.#rI[1000]delete
 thebig.#d.myStringSet :stringSet`,
       ExpressionAttributeNames: {
         '#map': 'map',
