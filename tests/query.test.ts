@@ -30,7 +30,7 @@ test('ExtractKeyFromKCE', () => {
   >>()
     .toEqualTypeOf<{
       threeID: 3;
-      hoo: string;
+      hoo: { begins_with_extractor: "between_hijack"; eav1: string; eav2: string };
     }>();
 
   expectTypeOf<ExtractKeyFromKCE<
@@ -47,7 +47,7 @@ test('ExtractKeyFromKCE', () => {
   >>()
     .toEqualTypeOf<{
       threeID: 3;
-      hoo: `id_0` | `id_1`;
+      hoo: { begins_with_extractor: "between_hijack"; eav1: `id_0`; eav2: `id_1` };
     }>();
 
   expectTypeOf<ExtractKeyFromKCE<
@@ -81,7 +81,7 @@ test('ExtractKeyFromKCE', () => {
   >>()
     .toEqualTypeOf<{
       threeID: 3;
-      hoo: `eek`
+      hoo: { begins_with_extractor: `eek` }
     }>();
 
   expectTypeOf<ExtractKeyFromKCE<

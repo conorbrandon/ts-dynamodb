@@ -7,6 +7,7 @@ import { Join, Split, StringReplaceAll, Trim } from "../string";
 import { ArrayContainsNever, DeepSimplifyObject, IsNever, NarrowerExtract, NoUndefined } from "../utils";
 import { ProjectGSIQuery } from "./gsi-lib";
 import { ProjectLSIQuery } from "./lsi-lib";
+import { BeginsWith as BeginsWithChecker } from "../begins-with";
 
 /** Take a key name in the KCE and map it to the EAN name if it is an EAN, otherwise leave it alone */
 type ExtractKeyConditionFieldFromEANs<Field extends string, EAN extends AnyExpressionAttributeNames> =
@@ -155,6 +156,8 @@ export type NarrowExtractedTypesKeyFieldsToWidenedKeyValues<Types extends object
   : never;
 
 export type BeginsWithExtractor = { begins_with_extractor: string };
+/** The reason we can't combine both into one union is we need to make sure both BETWEEN operands can be reasonably matched. With the distributivity of the current {@link BeginsWithChecker} type, there's no way to tell if _both_, or just one, match. */
+export type BetweenExtractor = { begins_with_extractor: "between_hijack"; eav1: string; eav2: string };
 
 type ResolveKCStruct<KCStruct extends KCStructs, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, PartitionKeyField extends string> =
   ExtractKeyConditionFieldFromEANs<KCStruct['path'], EAN> extends infer kCKeyPath extends string
@@ -168,7 +171,14 @@ type ResolveKCStruct<KCStruct extends KCStructs, EAN extends AnyExpressionAttrib
       : (
         KCStruct extends LooseComparison
         ? (
-          { [K in kCKeyPath]: ExtractKeyConditionFieldFromEAVs<KCStruct['eav'], EAV> }
+          { [K in kCKeyPath]:
+            ExtractKeyConditionFieldFromEAVs<KCStruct['eav'], EAV> extends infer eav
+            // I don't _think_ this will cause issues for binary indexed columns if both eavs are strings? This is because the aws-sdk client doesn't _actually_ allow strings as Binary values, despite what their typings say.
+            ? eav extends string
+            ? { begins_with_extractor: eav }
+            : eav
+            : never
+          }
         )
         : (
           KCStruct extends Between
@@ -178,7 +188,12 @@ type ResolveKCStruct<KCStruct extends KCStructs, EAN extends AnyExpressionAttrib
               [K in kCKeyPath]:
               (ExtractKeyConditionFieldFromEAVs<KCStruct['eav1'], EAV> extends infer right1Val extends DynamoDBKeyValue ? right1Val : never) extends infer eav1
               ? (ExtractKeyConditionFieldFromEAVs<KCStruct['eav2'], EAV> extends infer right2Val extends DynamoDBKeyValue ? right2Val : never) extends infer eav2
-              ? eav1 | eav2
+              ? (
+                // I don't _think_ this will cause issues for binary indexed columns if both eavs are strings? This is because the aws-sdk client doesn't _actually_ allow strings as Binary values, despite what their typings say.
+                (eav1 | eav2) extends string
+                ? { begins_with_extractor: "between_hijack"; eav1: eav1; eav2: eav2 }
+                : eav1 | eav2
+              )
               : never
               : never
             }
@@ -251,31 +266,26 @@ export type ExtractKeyFromKCE<KCE extends string, EAN extends AnyExpressionAttri
   )
   : never;
 
-type StartsWithForBeginsWithExtractor<ExtractedS extends string, Pre extends string> =
-  string extends ExtractedS // special condition to accomodate the primitive `string` type, only string extends string
-  ? true
-  : (
-    Pre extends ExtractedS // this will capture something like `id_8` extends `id_${number}`
-    ? true
-    : (
-      ExtractedS extends string // can't hurt (I think...) to distribute ExtractedS
-      ? ExtractedS extends `${Pre}${string}` // this will capture exact matches on template literals, and something like `id_${number}` extends `id_${string}` where `id_` is the :eav in the KCE (i.e. Pre) (this is provided for maximum flexibility in using begins_with, I'm not sure if there are other checks I can add to make it even more flexible). And probably other stuff, but is absolutely not exhaustive and will miss some things
-      ? true
-      : never
-      : never
-    )
-  );
 /** Initially extract only types that fit the BeginsWithExtractor constraint, then feed back into CommonExtractTypeForKCEKey without the BeginsWithExtractorKey */
 type FilterForBeginsWithExtractor<AllTypesForTable extends object, HasBeginsWithKey extends Record<string, BeginsWithExtractor>, NoBeginsWithKey extends Record<string, DynamoDBKeyValue>> =
   AllTypesForTable extends object
   ? (
     keyof HasBeginsWithKey extends keyof AllTypesForTable
     ? (
-      NoUndefined<AllTypesForTable[keyof HasBeginsWithKey]> extends string
+      // we need no undefined here for optional attributes of GSIs or LSIs (obviously, not all Items in a table need all Indices' attributes)
+      NoUndefined<AllTypesForTable[keyof HasBeginsWithKey]> extends infer NonUndefTableTypeAttr extends string
       ? (
-        IsNever<StartsWithForBeginsWithExtractor<NoUndefined<AllTypesForTable[keyof HasBeginsWithKey]>, HasBeginsWithKey[keyof HasBeginsWithKey]['begins_with_extractor']>> extends true
-        ? never
-        : CommonExtractTypeForKCEKey<AllTypesForTable, NoBeginsWithKey>
+        HasBeginsWithKey extends Record<string, BetweenExtractor>
+        ? (
+          [1, 1] extends [BeginsWithChecker<NonUndefTableTypeAttr, HasBeginsWithKey[keyof HasBeginsWithKey]['eav1']>, BeginsWithChecker<NonUndefTableTypeAttr, HasBeginsWithKey[keyof HasBeginsWithKey]['eav2']>]
+          ? CommonExtractTypeForKCEKey<AllTypesForTable, NoBeginsWithKey>
+          : never
+        )
+        : (
+          1 extends BeginsWithChecker<NonUndefTableTypeAttr, HasBeginsWithKey[keyof HasBeginsWithKey]['begins_with_extractor']>
+          ? CommonExtractTypeForKCEKey<AllTypesForTable, NoBeginsWithKey>
+          : never
+        )
       )
       : never
     )

@@ -100,3 +100,10 @@ export type Branded<S extends string, Type> = {
 export type UnbrandRecord<T extends Record<string, any> & Branded<string, object>> = {
   [K in keyof T as K extends typeof BRAND ? never : K]: T[K];
 };
+
+/**
+ * Comes with some pitfalls, see https://github.com/microsoft/TypeScript/issues/27024#issuecomment-421529650
+ */
+export type Equals<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends
+  (<T>() => T extends Y ? 1 : 2) ? true : false;

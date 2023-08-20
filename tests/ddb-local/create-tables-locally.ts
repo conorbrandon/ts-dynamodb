@@ -22,7 +22,11 @@ const myTable: DynamoDB.CreateTableInput = {
     {
       AttributeName: "s0",
       AttributeType: "S"
-    }
+    },
+    // {
+    //   AttributeName: "b",
+    //   AttributeType: "B"
+    // }
   ],
   KeySchema: [
     {
@@ -34,7 +38,22 @@ const myTable: DynamoDB.CreateTableInput = {
       KeyType: "RANGE"
     }
   ],
-  ProvisionedThroughput
+  ProvisionedThroughput,
+  // GlobalSecondaryIndexes: [
+  //   {
+  //     IndexName: "bbb",
+  //     ProvisionedThroughput,
+  //     KeySchema: [
+  //       {
+  //         AttributeName: "b",
+  //         KeyType: 'HASH'
+  //       }
+  //     ],
+  //     Projection: {
+  //       ProjectionType: 'ALL'
+  //     }
+  //   }
+  // ]
 };
 
 const cicdTable: DynamoDB.CreateTableInput = {
