@@ -1,7 +1,7 @@
 {
   "name": "ts-dynamodb",
   "description": "Typesafe DynamoDB DocumentClient type definitions for single-table designs",
-  "version": "1.2.4",
+  "version": "1.2.4-beta1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
