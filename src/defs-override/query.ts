@@ -419,7 +419,7 @@ export type QueryKeyPEOutput<
       >[]
     )
     : string extends PE
-    ? (
+    ? DeepPartial<(
       IsNever<TableIndex> extends true
       ? ProjectNonIndexQuery<
         never,
@@ -442,7 +442,7 @@ export type QueryKeyPEOutput<
         string,
         Key extends Record<string, DynamoDBKeyValue> ? Key : never
       >[]
-    )
+    )>
     : PE extends string
     ? (
       IsNever<TableIndex> extends true
