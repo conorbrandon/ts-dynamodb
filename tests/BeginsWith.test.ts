@@ -94,6 +94,15 @@ test('BeginsWith', () => {
     | BeginsWith<"abc 123 def 456", `${string}`>;
   expectTypeOf<testt>().toEqualTypeOf<1>();
 
+  type testu =
+    //  ^?
+    // technically, the "any string" part may be `${number}`
+    | BeginsWith<`${number}${number}`, `1${string}`>
+    // technically, the "any string" part may be empty (which means `${number}` can begin with "1")
+    | BeginsWith<`${number}`, `1${string}`>;
+  expectTypeOf<testu>().toEqualTypeOf<1>();
+
+
   type ISOString = `${number}${number}${number}${number}-${number}${number}-${number}${number}T${number}${number}:${number}${number}.${number}${number}${number}Z`;
   type testiso1 =
     //   ^?
