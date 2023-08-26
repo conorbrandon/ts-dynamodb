@@ -28,10 +28,10 @@ type _DeepValidateShapev2<Obj, Shape> =
   : (
     Obj extends Shape // first we check if all the required fields are on Obj, and the correct types
     ? (
-      Obj extends Primitive | NativeJSBinaryTypes | DocumentClient.DynamoDbSet | Set<any> // accept branded types and template literal types
+      Obj extends Primitive | NativeJSBinaryTypes | DocumentClient.DynamoDbSet | Set<any> | ReadonlySet<any> // accept branded types and template literal types
       ? Obj
       : Obj extends any[] // delegate this to a helper type, hopefully allowing it to preserve an array type, instead of doing all sorts of annoying things and turning it into an object
-      ? DeepValidateArray<Obj, Shape> // this must come before the Exclude thing below, because Obj might be a tuple, while Shape is an array, resulting in a `${number}` key not being excluded
+      ? DeepValidateArray<Obj, Shape>
       : (
         Obj extends object // we should have gotten rid of all the types that extend object but that aren't really what most people thing of as "objects" above
         ? (
@@ -43,7 +43,7 @@ type _DeepValidateShapev2<Obj, Shape> =
           }
           : never
         )
-        : Obj // Obj must be a boolean, null, bigint, undefined or something else (not sure that'd be though)
+        : Obj // Obj must be something else (not sure that'd be though)
       )
     )
     : never
