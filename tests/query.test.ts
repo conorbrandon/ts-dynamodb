@@ -406,6 +406,30 @@ test('WidenKeyToTypesItExtracted', () => {
     datum: number;
     datumStr: `datum_${string}`;
   }>();
+
+});
+test('WidenKeyToTypesItExtracted', () => {
+
+  type Key = ExtractKeyFromKCE<
+    '#datum = :datum and begins_with(datumStr, :datumStr)',
+    {
+      '#datum': 'datum'
+    },
+    {
+      ':datum': 0,
+      ':datumStr': 'datum_0'
+    },
+    'datum'
+  >;
+
+  expectTypeOf<WidenKeyToTypesItExtracted<Key, {
+    datum: number;
+    datumStr: `datum_${string & z.BRAND<"FOO">}` | `datum_${number}`;
+  }>>().toEqualTypeOf<{
+    datum: number;
+    datumStr: `datum_${number}`;
+  }>();
+
 });
 
 test('NarrowExtractedTypesKeyFieldsToWidenedKeyValues', () => {
