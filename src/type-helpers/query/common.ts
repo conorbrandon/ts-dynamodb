@@ -130,16 +130,31 @@ type SplitKeyConditionOnOperator<KC extends string> =
  */
 export type WidenKeyToTypesItExtracted<Key extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>, T extends object> = {
   [K in keyof Key]:
-  (Key[K] extends BeginsWithExtractor ? Key[K]['begins_with_extractor'] : Key[K]) extends infer tkey
+  K extends keyof T // just a formality
+  ? T[K] extends infer tkey // for distributivity purposes
   ? (
-    K extends keyof T // just a formality
-    ? NarrowerExtract<tkey, T[K]>
-    : never
+    Key[K] extends BeginsWithExtractor
+    ? (
+      tkey extends string
+      ? (
+        1 extends BeginsWithChecker<tkey, Key[K]['begins_with_extractor']>
+        ? tkey // if T[K] could begin with Key[K], keep it
+        : never // otherwise, discard it
+      )
+      : never // any types in T[K] that aren't strings should be discarded, since if Key[K] is a BeginsWithExtractor, we're targeting something that's a string.
+    )
+    : NarrowerExtract<Key[K], tkey>
   )
+  : never
   : never;
 };
 /**
  * For use with `WidenKeyToTypesItExtracted`. Instead of intersecting the Key with the table types, this results in cleaner types.
+ * 
+ * NOTE for future, if confused about what the difference between this and {@link WidenKeyToTypesItExtracted}:
+ * This type operates on output _Items_, narrowing their Key fields to more accurately reveal what union member actually caused the extracted type to, well, be extracted.
+ * {@link WidenKeyToTypesItExtracted} operates on _Keys_, transforming prefix types (i.e. begins_with_extractor) into the full Key field it extracted, or extracting from an Item's Key fields the union member the Key extracted.
+ * Succinctly, the main difference is what each type is operating on: Keys vs. Items.
  */
 export type NarrowExtractedTypesKeyFieldsToWidenedKeyValues<Types extends object, WidenedKey extends Record<string, DynamoDBKeyValue>> =
   Types extends object

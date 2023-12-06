@@ -32,6 +32,10 @@ type _BW<SplitToExtend extends string[], ExtendingSplit extends string[]> =
   );
 type _BeginsWith<StrToExtend extends string, ExtendingStr extends string> = _BW<Split<StrToExtend, "">, Split<ExtendingStr, "">>;
 
+/**
+ * TODO, possible improvement:  if returning `1`, could return here (and in {@link _BeginsWith}) the type that is actually able to begin with `Pattern`.
+ * That could transform a `"begins_with_extractor"` to the thing it actually extracted instead of doing __double__ work in `WidenKeyToTypesItExtracted`.
+ */
 export type BeginsWith<Str extends string, Pattern extends string> =
   string extends Str
   ? 1
