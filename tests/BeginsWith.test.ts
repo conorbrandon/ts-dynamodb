@@ -27,10 +27,10 @@ test('BeginsWith', () => {
   //    ^?
   expectTypeOf<testf>().toEqualTypeOf<0>();
 
-  // I mean, it could begin with literally anything because it's just a string
+  // this is evaluated greedily, and thus the third characters won't match (one is empty, the other is "b")
   type testg = BeginsWith<`${string}${number}`, "a1b">;
   //   ^?
-  expectTypeOf<testg>().toEqualTypeOf<0 | 1>();
+  expectTypeOf<testg>().toEqualTypeOf<0>();
 
   // this one is a bit confusing, but given the premise that a string with 5 digits or more in a sequence satisfies the requirement that there are at least _4_ digits in a row in a sequence, it could
   type testh = BeginsWith<`${number}${number}${number}${number}`, `${number}${number}${number}${number}${number}`>;
