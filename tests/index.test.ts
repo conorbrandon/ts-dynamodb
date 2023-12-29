@@ -308,7 +308,7 @@ describe('createStrict*', () => {
             wack: {
               odd: 0,
               modulo: '%',
-              // @ts-expect-error this is so annoying, it's not erroring for the updateSimpleSET call because of https://github.com/microsoft/TypeScript/issues/52267
+              // @ts-expect-error add extra property to test DeepValidateShapev2
               extra: null
             },
             peculiar: ['', null]
@@ -320,6 +320,7 @@ describe('createStrict*', () => {
     } as const satisfies t;
 
     const updateSimpleSETCICDSmaller = tsDdb.createStrictUpdateSimpleSET(CiCdTable.name)<CICDSmaller>();
+    // @ts-expect-error TS version 5.3.2 correctly errors on this as it should (tracked here: https://github.com/microsoft/TypeScript/issues/52267)
     const { Attributes: simpleUpdated } = await updateSimpleSETCICDSmaller({
       Key,
       Item: simpleUpdateItem,

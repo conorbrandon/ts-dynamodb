@@ -413,7 +413,7 @@ myWackySet.values`;
         "2": boolean;
       } | undefined;
     }>();
-    // @ts-expect-error 2 should be "2" per the type above
+    // @ts-expect-error 2 should be "2" per the type above (see https://github.com/mmkal/expect-type/issues/34)
     expectTypeOf<test3>().toEqualTypeOf<{
       foo: {
         1: boolean;
