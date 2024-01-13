@@ -15,7 +15,7 @@ import { TSDdbSet } from "./type-helpers/sets/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
 import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
-import { BatchGetKeysAndAttributesInput } from "./defs-override/batchGet";
+import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 
 export type ProjectAllIndex = {
   project: 'all';
@@ -99,7 +99,7 @@ export type ExtractTableItemForKey<T extends Record<string, any>, Key extends Re
     : never
   )
   : never;
-type ExtractTableItemForKeys<T extends Record<string, any>, Keys extends readonly Record<string, any>[]> = {
+export type ExtractTableItemForKeys<T extends Record<string, any>, Keys extends readonly Record<string, any>[]> = {
   [Key in keyof Keys]: ExtractTableItemForKey<T, Keys[Key]>;
 }[number];
 
@@ -1255,20 +1255,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   }
 
   async batchGetAll<
-    const M extends {
-      [K in TableName<TS>]?: {
-        Keys: readonly TableKey<TS, K>[];
-        ProjectionExpression?: string;
-        ExpressionAttributeNames?: DocumentClient.ExpressionAttributeNameMap;
-        ConsistentRead?: DocumentClient.ConsistentRead;
-      }
-    }
-  >(request: { RequestItems: M }) {
-    const requestEntries = Object.entries(request.RequestItems as unknown as Record<string, Omit<DocumentClient.KeysAndAttributes, 'AttributesToGet'>>);
+    Request extends BatchGetAllRequest<TS, any[], string>
+  >(request: Request) {
+    const requests = (request as any).requests as BatchGetAllRequestRequests;
     const tableNamesToRequests: Record<string, Omit<DocumentClient.KeysAndAttributes, 'Keys'>> = {};
     const tableNamesAndKeys: { TableName: string; Key: DocumentClient.Key }[] = [];
     const tableNamesToResponses: DocumentClient.BatchGetResponseMap = {};
-    for (const [TableName, { Keys, ...restOfRequest }] of requestEntries) {
+    for (const { TableName, Keys, ...restOfRequest } of requests) {
       tableNamesToRequests[TableName] = restOfRequest;
       tableNamesToResponses[TableName] = [];
       tableNamesAndKeys.push(...Keys.map(Key => ({
@@ -1305,19 +1298,10 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
         }
       }
     }
-    return tableNamesToResponses;
+    return tableNamesToResponses as BatchGetAllRequestOutput<Request>;
   }
-  batchGetTableRequestItem<
-    TN extends TableName<TS>,
-    Keys extends readonly TableKey<TS, TN>[],
-    TypeOfItem extends ExtractTableItemForKeys<TableItem<TS, TN>, Keys>,
-    PE extends string,
-    GAK extends GetAllKeys<TypeOfItem>,
-    EANs extends ExtractEAsFromString<PE>['ean'],
-    const EAN extends Record<EANs, GAK>,
-    const DummyEAN extends undefined
-  >(tableName: TN, v: BatchGetKeysAndAttributesInput<Keys, PE, EANs, GAK, EAN, DummyEAN>): { [P in TN]: { [Q in P]: typeof v } }[TN] {
-    return { [tableName]: v } as any;
+  createBatchGetAllRequest() {
+    return new BatchGetAllRequest<TS, [], never>([]);
   }
 
   /** Convenience helper to create and return a DynamoDB.DocumentClient.StringSet set */
@@ -1493,6 +1477,29 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   private myInspect(object: any) {
     return inspect(object, this.inspectOptions ?? {});
+  }
+
+}
+
+export class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, TableNamesAlreadySet extends string> {
+
+  // obscure to external callers, but allow accessing through type assertion for the library implementation
+  private readonly requests: BatchGetAllRequestRequests;
+  constructor(incomingRequests: Requests) {
+    this.requests = incomingRequests;
+  }
+
+  addTable<
+    TN extends Exclude<TableName<TS>, TableNamesAlreadySet>,
+    Keys extends readonly TableKey<TS, TN>[],
+    TypeOfItem extends ExtractTableItemForKeys<TableItem<TS, TN>, Keys>,
+    PE extends string,
+    GAK extends GetAllKeys<TypeOfItem>,
+    EANs extends ExtractEAsFromString<PE>['ean'],
+    const EAN extends Record<EANs, GAK>,
+    const DummyEAN extends undefined
+  >(request: CreateBatchGetAllRequestAddTableInput<TN, Keys, PE, EANs, GAK, EAN, DummyEAN>) {
+    return new BatchGetAllRequest<TS, [...Requests, typeof request], TableNamesAlreadySet | TN>([...this.requests, request] as any);
   }
 
 }

@@ -1,12 +1,22 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { FilterUnusedEANOrVs, UseAllExpressionAttributeNamesInString } from "../type-helpers/string";
 import { AnyExpressionAttributeNames, EANString } from "../dynamodb-types";
-import { NotEmptyWithMessage } from "../type-helpers/record";
+import { NotEmptyWithMessage, UnionToIntersection } from "../type-helpers/record";
 import { OnlyStrings } from "../type-helpers/utils";
+import { BatchGetAllRequest, ExtractTableItemForKeys, TableItem } from "../lib";
 import { ProjectProjectionExpressionStruct } from "../type-helpers/PE2/pe-lib";
 import { TSDdbSet } from "../type-helpers/sets/utils";
 
-export type BatchGetKeysAndAttributesInput<
+export type BatchGetAllRequestRequests = readonly {
+  TableName: string;
+  Keys: readonly object[];
+  ConsistentRead?: DocumentClient.ConsistentRead;
+  ProjectionExpression?: string;
+  ExpressionAttributeNames?: AnyExpressionAttributeNames;
+}[];
+
+export type CreateBatchGetAllRequestAddTableInput<
+  TN extends string,
   Keys extends readonly object[],
   PE extends string,
   EANs extends string,
@@ -14,6 +24,7 @@ export type BatchGetKeysAndAttributesInput<
   EAN extends Record<EANs, GAK>,
   DummyEAN extends undefined
 > = {
+  TableName: TN;
   Keys: Keys;
   ConsistentRead?: DocumentClient.ConsistentRead;
   ProjectionExpression?: PE extends UseAllExpressionAttributeNamesInString<EAN, true> ? PE : `Error ❌ unused EANs: ${FilterUnusedEANOrVs<PE, OnlyStrings<keyof EAN>>}`;
@@ -27,23 +38,26 @@ export type BatchGetKeysAndAttributesInput<
     }
   );
 
-export type BatchGetOutput<
-  O extends {
-    [tableName: string]: {
-      TypeOfItem: Record<string, any>;
-      PE: string;
-      EAN: AnyExpressionAttributeNames;
-    }
-  }
-> = {
-    [tableName in keyof O]:
-    [
-      O[tableName]['TypeOfItem'],
-      O[tableName]['PE'],
-      O[tableName]['EAN']
-    ] extends [infer TypeOfItem extends Record<string, any>, infer PE extends string, infer EAN extends AnyExpressionAttributeNames]
-    ? string extends PE
-    ? TSDdbSet<TypeOfItem>
-    : ProjectProjectionExpressionStruct<TypeOfItem, PE, EAN>
-    : never
-  };
+export type BatchGetAllRequestOutput<Request extends BatchGetAllRequest<any, any, any>> = Request extends BatchGetAllRequest<infer TS, infer Requests extends BatchGetAllRequestRequests, any>
+  ? UnionToIntersection<
+    {
+      [K in keyof Requests]:
+      Requests[K] extends {
+        TableName: infer TN extends string;
+        Keys: infer Keys extends readonly object[];
+        ProjectionExpression?: infer PE extends string;
+        ExpressionAttributeNames?: infer EAN extends AnyExpressionAttributeNames;
+      }
+      ? ExtractTableItemForKeys<TableItem<TS, TN>, Keys> extends infer TypeOfItem extends Record<string, any>
+      ? {
+        [_ in TN]: (
+          string extends PE
+          ? TSDdbSet<TypeOfItem>
+          : ProjectProjectionExpressionStruct<TypeOfItem, PE, EAN>
+        )[];
+      }
+      : never
+      : never
+    }[number]
+  >
+  : never;
