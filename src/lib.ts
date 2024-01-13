@@ -1454,7 +1454,28 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     const EAN extends Record<EANs, GAK>,
     const DummyEAN extends undefined
   >(request: CreateBatchGetAllRequestAddTableInput<TN, Keys, PE, EANs, GAK, EAN, DummyEAN>) {
-    return new BatchGetAllRequest<TS, [...Requests, typeof request], TableNamesAlreadySet | TN>(this.#client, [...this.#requests, request] as any);
+    type NewRequests = [...Requests, typeof request];
+    const newRequests = [...this.#requests, request];
+    return new BatchGetAllRequest<TS, NewRequests, TableNamesAlreadySet | TN>(this.#client, newRequests as NewRequests);
+  }
+
+  addKeys<
+    TN extends TableNamesAlreadySet,
+    Keys extends readonly TableKey<TS, TN>[],
+  >({ TableName, Keys }: { TableName: TN; Keys: Keys }) {
+    type NewRequests = {
+      [K in keyof Requests]:
+      Requests[K]['TableName'] extends TN
+      ? Omit<Requests[K], 'Keys'> & { Keys: [...Requests[K]['Keys'], ...Keys] }
+      : Requests[K]
+    };
+    const newRequests = this.#requests.map(request => {
+      if (request.TableName === TableName) {
+        request.Keys = [...request.Keys, ...Keys];
+      }
+      return request;
+    });
+    return new BatchGetAllRequest<TS, NewRequests, TableNamesAlreadySet>(this.#client, newRequests as NewRequests);
   }
 
   async execute() {

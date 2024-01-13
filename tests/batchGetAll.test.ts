@@ -30,11 +30,20 @@ test('', async () => {
           rangeKey: 'small-cicd'
         },
       ],
-      ProjectionExpression: '#datum, #thebig.#datum',
+      ProjectionExpression: '#datum, #thebig.#datum, rangeKey',
       ExpressionAttributeNames: {
         '#datum': 'datum',
         '#thebig': 'thebig'
       }
+    })
+    .addKeys({
+      TableName: CiCdTable.name,
+      Keys: [
+        {
+          hashKey: '---',
+          rangeKey: 'big-cicd'
+        }
+      ]
     })
     .execute();
   const { [MyTable.name]: myTableItems = [], [CiCdTable.name]: ciCdTableItems = [] } = response;
