@@ -16,6 +16,7 @@ import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-overrid
 import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
+import { AWSError } from "aws-sdk";
 
 export type ProjectAllIndex = {
   project: 'all';
@@ -1254,12 +1255,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     >['Items']>;
   }
 
-  createBatchGetAllRequest({ maxAttempts = 5, baseDelayMs = 1000 }: { maxAttempts?: number; baseDelayMs?: number } = {}) {
+  createBatchGetAllRequest({ maxAttempts = 5, baseDelayMs = 1000, showProvisionedThroughputExceededExceptionError }: { maxAttempts?: number; baseDelayMs?: number; showProvisionedThroughputExceededExceptionError?: boolean | ((error: AWSError) => unknown) } = {}) {
     return new BatchGetAllRequest<TS, [], never>({
       client: this.client,
       incomingRequests: [],
       maxAttempts,
-      baseDelayMs
+      baseDelayMs,
+      showProvisionedThroughputExceededExceptionError: showProvisionedThroughputExceededExceptionError ?? false
     });
   }
 
@@ -1447,23 +1449,27 @@ export class BatchGetAllMaxAttemptsExceededError<TS extends AnyGenericTable, Req
   }
 }
 const binaryExponentialBackoff = (attemptNum: number, delayMs: number) => new Promise(resolve => setTimeout(resolve, (2 ** attemptNum) * delayMs));
+const isAWSError = (error: unknown): error is AWSError => error instanceof Error && "code" in error && "time" in error && error.time instanceof Date;
 class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, TableNamesAlreadySet extends string> {
 
   readonly #client: DocumentClient;
   readonly #requests: BatchGetAllRequestRequests;
   readonly #maxAttempts: number;
   readonly #baseDelayMs: number;
+  readonly #showPTEEE: boolean | ((error: AWSError) => unknown);
   #attemptsExceededError: BatchGetAllMaxAttemptsExceededError<TS, Requests> | undefined;
   constructor({
     client,
     incomingRequests,
     maxAttempts,
-    baseDelayMs
-  }: { client: DocumentClient; incomingRequests: Requests; maxAttempts: number; baseDelayMs: number }) {
+    baseDelayMs,
+    showProvisionedThroughputExceededExceptionError
+  }: { client: DocumentClient; incomingRequests: Requests; maxAttempts: number; baseDelayMs: number; showProvisionedThroughputExceededExceptionError: boolean | ((error: AWSError) => unknown) }) {
     this.#client = client;
     this.#requests = incomingRequests;
     this.#maxAttempts = maxAttempts;
     this.#baseDelayMs = baseDelayMs;
+    this.#showPTEEE = showProvisionedThroughputExceededExceptionError;
   }
 
   addTable<
@@ -1482,7 +1488,8 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       client: this.#client,
       incomingRequests: newRequests as NewRequests,
       maxAttempts: this.#maxAttempts,
-      baseDelayMs: this.#baseDelayMs
+      baseDelayMs: this.#baseDelayMs,
+      showProvisionedThroughputExceededExceptionError: this.#showPTEEE
     });
   }
 
@@ -1506,7 +1513,8 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       client: this.#client,
       incomingRequests: newRequests as NewRequests,
       maxAttempts: this.#maxAttempts,
-      baseDelayMs: this.#baseDelayMs
+      baseDelayMs: this.#baseDelayMs,
+      showProvisionedThroughputExceededExceptionError: this.#showPTEEE
     });
   }
 
@@ -1555,7 +1563,13 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
           }
         }
       } catch (error) {
-        if (error instanceof Error && "code" in error && error.code === "ProvisionedThroughputExceededException") {
+        if (isAWSError(error) && error.code === "ProvisionedThroughputExceededException") {
+          if (this.#showPTEEE instanceof Function) {
+            console.error(this.#showPTEEE(error));
+          } else if (this.#showPTEEE) {
+            console.error(error);
+          }
+
           attemptNum++;
           tableNamesAndKeys.push(...keysForThisBatch);
         } else {
@@ -1581,7 +1595,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     return this.#baseDelayMs;
   }
 
-  isBatchGetAllMaxAttemptsExceededErrorFromThisExecution(error: unknown): error is BatchGetAllMaxAttemptsExceededError<TS, Requests> {
+  isMaxAttemptsExceededErrorFromThisExecution(error: unknown): error is BatchGetAllMaxAttemptsExceededError<TS, Requests> {
     return error instanceof BatchGetAllMaxAttemptsExceededError && error === this.#attemptsExceededError;
   }
 
