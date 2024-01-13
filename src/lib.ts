@@ -15,6 +15,7 @@ import { TSDdbSet } from "./type-helpers/sets/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
 import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
+import { BatchGetKeysAndAttributesInput } from "./defs-override/batchGet";
 
 export type ProjectAllIndex = {
   project: 'all';
@@ -98,6 +99,9 @@ export type ExtractTableItemForKey<T extends Record<string, any>, Key extends Re
     : never
   )
   : never;
+type ExtractTableItemForKeys<T extends Record<string, any>, Keys extends readonly Record<string, any>[]> = {
+  [Key in keyof Keys]: ExtractTableItemForKey<T, Keys[Key]>;
+}[number];
 
 /** Extract a union of all indices[string] IndexFromValue objects */
 export type TableInidicesUnion<Tables, TN extends string> =
@@ -1248,6 +1252,72 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       TableIndex<TS, TN, IndexName>,
       PE
     >['Items']>;
+  }
+
+  async batchGetAll<
+    const M extends {
+      [K in TableName<TS>]?: {
+        Keys: readonly TableKey<TS, K>[];
+        ProjectionExpression?: string;
+        ExpressionAttributeNames?: DocumentClient.ExpressionAttributeNameMap;
+        ConsistentRead?: DocumentClient.ConsistentRead;
+      }
+    }
+  >(request: { RequestItems: M }) {
+    const requestEntries = Object.entries(request.RequestItems as unknown as Record<string, Omit<DocumentClient.KeysAndAttributes, 'AttributesToGet'>>);
+    const tableNamesToRequests: Record<string, Omit<DocumentClient.KeysAndAttributes, 'Keys'>> = {};
+    const tableNamesAndKeys: { TableName: string; Key: DocumentClient.Key }[] = [];
+    const tableNamesToResponses: DocumentClient.BatchGetResponseMap = {};
+    for (const [TableName, { Keys, ...restOfRequest }] of requestEntries) {
+      tableNamesToRequests[TableName] = restOfRequest;
+      tableNamesToResponses[TableName] = [];
+      tableNamesAndKeys.push(...Keys.map(Key => ({
+        TableName,
+        Key
+      })));
+    }
+
+    while (tableNamesAndKeys.length) {
+      const keysForThisBatch = tableNamesAndKeys.splice(0, 100);
+      const RequestItems: DocumentClient.BatchGetRequestMap = {};
+      for (const { TableName, Key } of keysForThisBatch) {
+        let tableEntry = RequestItems[TableName];
+        if (!tableEntry) {
+          tableEntry = RequestItems[TableName] = {
+            ...tableNamesToRequests[TableName],
+            Keys: []
+          };
+        }
+        tableEntry.Keys.push(Key);
+      }
+      const { Responses, UnprocessedKeys } = await this.client.batchGet({ RequestItems }).promise();
+      if (Responses) {
+        Object.entries(Responses).forEach(([TableName, Response]) => tableNamesToResponses[TableName]?.push(...Response));
+      }
+      if (UnprocessedKeys) {
+        const unprocessedKeysEntries = Object.entries(UnprocessedKeys);
+        for (const [TableName, { Keys }] of unprocessedKeysEntries) {
+          console.log(`hit unprocessed keys for ${TableName}!`, { UnprocessedKeys: UnprocessedKeys[TableName]?.Keys.map(({ s0 }) => Number(s0)).sort((a, b) => a - b) });
+          tableNamesAndKeys.push(...Keys.map(Key => ({
+            TableName,
+            Key
+          })));
+        }
+      }
+    }
+    return tableNamesToResponses;
+  }
+  batchGetTableRequestItem<
+    TN extends TableName<TS>,
+    Keys extends readonly TableKey<TS, TN>[],
+    TypeOfItem extends ExtractTableItemForKeys<TableItem<TS, TN>, Keys>,
+    PE extends string,
+    GAK extends GetAllKeys<TypeOfItem>,
+    EANs extends ExtractEAsFromString<PE>['ean'],
+    const EAN extends Record<EANs, GAK>,
+    const DummyEAN extends undefined
+  >(tableName: TN, v: BatchGetKeysAndAttributesInput<Keys, PE, EANs, GAK, EAN, DummyEAN>): { [P in TN]: { [Q in P]: typeof v } }[TN] {
+    return { [tableName]: v } as any;
   }
 
   /** Convenience helper to create and return a DynamoDB.DocumentClient.StringSet set */
