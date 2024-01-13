@@ -1254,54 +1254,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     >['Items']>;
   }
 
-  async batchGetAll<
-    Request extends BatchGetAllRequest<TS, any[], string>
-  >(request: Request) {
-    const requests = (request as any).requests as BatchGetAllRequestRequests;
-    const tableNamesToRequests: Record<string, Omit<DocumentClient.KeysAndAttributes, 'Keys'>> = {};
-    const tableNamesAndKeys: { TableName: string; Key: DocumentClient.Key }[] = [];
-    const tableNamesToResponses: DocumentClient.BatchGetResponseMap = {};
-    for (const { TableName, Keys, ...restOfRequest } of requests) {
-      tableNamesToRequests[TableName] = restOfRequest;
-      tableNamesToResponses[TableName] = [];
-      tableNamesAndKeys.push(...Keys.map(Key => ({
-        TableName,
-        Key
-      })));
-    }
-
-    while (tableNamesAndKeys.length) {
-      const keysForThisBatch = tableNamesAndKeys.splice(0, 100);
-      const RequestItems: DocumentClient.BatchGetRequestMap = {};
-      for (const { TableName, Key } of keysForThisBatch) {
-        let tableEntry = RequestItems[TableName];
-        if (!tableEntry) {
-          tableEntry = RequestItems[TableName] = {
-            ...tableNamesToRequests[TableName],
-            Keys: []
-          };
-        }
-        tableEntry.Keys.push(Key);
-      }
-      const { Responses, UnprocessedKeys } = await this.client.batchGet({ RequestItems }).promise();
-      if (Responses) {
-        Object.entries(Responses).forEach(([TableName, Response]) => tableNamesToResponses[TableName]?.push(...Response));
-      }
-      if (UnprocessedKeys) {
-        const unprocessedKeysEntries = Object.entries(UnprocessedKeys);
-        for (const [TableName, { Keys }] of unprocessedKeysEntries) {
-          console.log(`hit unprocessed keys for ${TableName}!`, { UnprocessedKeys: UnprocessedKeys[TableName]?.Keys.map(({ s0 }) => Number(s0)).sort((a, b) => a - b) });
-          tableNamesAndKeys.push(...Keys.map(Key => ({
-            TableName,
-            Key
-          })));
-        }
-      }
-    }
-    return tableNamesToResponses as BatchGetAllRequestOutput<Request>;
-  }
   createBatchGetAllRequest() {
-    return new BatchGetAllRequest<TS, [], never>([]);
+    return new BatchGetAllRequest<TS, [], never>(this.client, []);
   }
 
   /** Convenience helper to create and return a DynamoDB.DocumentClient.StringSet set */
@@ -1481,12 +1435,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
 }
 
-export class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, TableNamesAlreadySet extends string> {
+class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, TableNamesAlreadySet extends string> {
 
-  // obscure to external callers, but allow accessing through type assertion for the library implementation
-  private readonly requests: BatchGetAllRequestRequests;
-  constructor(incomingRequests: Requests) {
-    this.requests = incomingRequests;
+  readonly #client: DocumentClient;
+  readonly #requests: BatchGetAllRequestRequests;
+  constructor(client: DocumentClient, incomingRequests: Requests) {
+    this.#client = client;
+    this.#requests = incomingRequests;
   }
 
   addTable<
@@ -1499,7 +1454,50 @@ export class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends Bat
     const EAN extends Record<EANs, GAK>,
     const DummyEAN extends undefined
   >(request: CreateBatchGetAllRequestAddTableInput<TN, Keys, PE, EANs, GAK, EAN, DummyEAN>) {
-    return new BatchGetAllRequest<TS, [...Requests, typeof request], TableNamesAlreadySet | TN>([...this.requests, request] as any);
+    return new BatchGetAllRequest<TS, [...Requests, typeof request], TableNamesAlreadySet | TN>(this.#client, [...this.#requests, request] as any);
+  }
+
+  async execute() {
+    const tableNamesToRequests: Record<string, Omit<DocumentClient.KeysAndAttributes, 'Keys'>> = {};
+    const tableNamesAndKeys: { TableName: string; Key: DocumentClient.Key }[] = [];
+    const tableNamesToResponses: DocumentClient.BatchGetResponseMap = {};
+    for (const { TableName, Keys, ...restOfRequest } of this.#requests) {
+      tableNamesToRequests[TableName] = restOfRequest;
+      tableNamesToResponses[TableName] = [];
+      tableNamesAndKeys.push(...Keys.map(Key => ({
+        TableName,
+        Key
+      })));
+    }
+
+    while (tableNamesAndKeys.length) {
+      const keysForThisBatch = tableNamesAndKeys.splice(0, 100);
+      const RequestItems: DocumentClient.BatchGetRequestMap = {};
+      for (const { TableName, Key } of keysForThisBatch) {
+        let tableEntry = RequestItems[TableName];
+        if (!tableEntry) {
+          tableEntry = RequestItems[TableName] = {
+            ...tableNamesToRequests[TableName],
+            Keys: []
+          };
+        }
+        tableEntry.Keys.push(Key);
+      }
+      const { Responses, UnprocessedKeys } = await this.#client.batchGet({ RequestItems }).promise();
+      if (Responses) {
+        Object.entries(Responses).forEach(([TableName, Response]) => tableNamesToResponses[TableName]?.push(...Response));
+      }
+      if (UnprocessedKeys) {
+        const unprocessedKeysEntries = Object.entries(UnprocessedKeys);
+        for (const [TableName, { Keys }] of unprocessedKeysEntries) {
+          tableNamesAndKeys.push(...Keys.map(Key => ({
+            TableName,
+            Key
+          })));
+        }
+      }
+    }
+    return tableNamesToResponses as BatchGetAllRequestOutput<TS, Requests>;
   }
 
 }

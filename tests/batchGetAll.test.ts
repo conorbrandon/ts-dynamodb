@@ -3,7 +3,7 @@ import { CiCdTable, MyTable } from "./lib/tables";
 
 test('', async () => {
 
-  const batchGetRequest = tsDdb.createBatchGetAllRequest()
+  const response = await tsDdb.createBatchGetAllRequest()
     .addTable({
       TableName: MyTable.name,
       Keys: [
@@ -35,9 +35,8 @@ test('', async () => {
         '#datum': 'datum',
         '#thebig': 'thebig'
       }
-    });
-
-  const response = await tsDdb.batchGetAll(batchGetRequest);
+    })
+    .execute();
   const { [MyTable.name]: myTableItems = [], [CiCdTable.name]: ciCdTableItems = [] } = response;
   console.log({
     myTableItems,

@@ -3,7 +3,7 @@ import { FilterUnusedEANOrVs, UseAllExpressionAttributeNamesInString } from "../
 import { AnyExpressionAttributeNames, EANString } from "../dynamodb-types";
 import { NotEmptyWithMessage, UnionToIntersection } from "../type-helpers/record";
 import { OnlyStrings } from "../type-helpers/utils";
-import { BatchGetAllRequest, ExtractTableItemForKeys, TableItem } from "../lib";
+import { ExtractTableItemForKeys, TableItem } from "../lib";
 import { ProjectProjectionExpressionStruct } from "../type-helpers/PE2/pe-lib";
 import { TSDdbSet } from "../type-helpers/sets/utils";
 
@@ -38,8 +38,8 @@ export type CreateBatchGetAllRequestAddTableInput<
     }
   );
 
-export type BatchGetAllRequestOutput<Request extends BatchGetAllRequest<any, any, any>> = Request extends BatchGetAllRequest<infer TS, infer Requests extends BatchGetAllRequestRequests, any>
-  ? UnionToIntersection<
+export type BatchGetAllRequestOutput<TS, Requests extends BatchGetAllRequestRequests> =
+  UnionToIntersection<
     {
       [K in keyof Requests]:
       Requests[K] extends {
@@ -59,5 +59,4 @@ export type BatchGetAllRequestOutput<Request extends BatchGetAllRequest<any, any
       : never
       : never
     }[number]
-  >
-  : never;
+  >;
