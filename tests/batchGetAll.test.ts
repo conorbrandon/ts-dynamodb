@@ -129,7 +129,7 @@ test('createBatchGetAllRequest', async () => {
     .addTable(MyTable.name, {
       Keys: [
         {
-          p0: '---',
+          p0: randomUUID(),
           s0: 'b'
         }
       ],
@@ -142,11 +142,11 @@ test('createBatchGetAllRequest', async () => {
     .addTable(CiCdTable.name, {
       Keys: [
         {
-          hashKey: '---',
+          hashKey: randomUUID(),
           rangeKey: 'mini-cicd'
         },
         {
-          hashKey: '---',
+          hashKey: randomUUID(),
           rangeKey: 'small-cicd'
         },
       ],
@@ -159,7 +159,7 @@ test('createBatchGetAllRequest', async () => {
     .addKeys(CiCdTable.name, {
       Keys: [
         {
-          hashKey: '---',
+          hashKey: randomUUID(),
           rangeKey: 'big-cicd'
         }
       ]
