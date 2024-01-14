@@ -18,12 +18,13 @@ export type PutTwiInput<
   EAN extends Record<EANs, GAK>,
   DummyEAN extends undefined,
   EAV extends Record<EAVs, any>,
-  DummyEAV extends undefined
+  DummyEAV extends undefined,
+  RV extends ReturnValuesOnConditionCheckFailureValues
 > = {
   TableName: TN;
   Item: Item extends DeepValidateShapev2<Item, TypeOfItem> ? Item : { Error: `Error: the type of the Item provided to \`put\` does not match a known table item type. Please verify you are not providing any extra keys or incorrect types of values.` };
   ConditionExpression?: CE extends UseAllExpressionAttributesInString<EAN, EAV> ? CE : `Error ❌ unused EANs or EAVs: ${FilterUnusedEANOrVs<CE, OnlyStrings<keyof EAN | keyof EAV>>}`;
-  ReturnValuesOnConditionCheckFailure?: ReturnValuesOnConditionCheckFailureValues;
+  ReturnValuesOnConditionCheckFailure?: RV;
 } & (
     CE extends EANString
     ? {
@@ -50,7 +51,8 @@ export type UpdateTwiInput<
   EAVs extends string,
   GAK extends string,
   EAN extends Record<EANs, GAK>,
-  EAV extends Record<EAVs, any>
+  EAV extends Record<EAVs, any>,
+  RV extends ReturnValuesOnConditionCheckFailureValues
 > = {
   TableName: TN;
   Key: Key;
@@ -65,7 +67,7 @@ export type UpdateTwiInput<
   ) : `Error ❌ unused EAs in UE and/or CE: ${FilterUnusedEANOrVs<`${UE}${CE}`, OnlyStrings<keyof EAN | keyof EAV>>}`;
   // This needs the Error check on both, because CE or UE can both exist standalone.
   ConditionExpression?: `${UE}${CE}` extends UseAllExpressionAttributesInString<EAN, EAV> ? CE : `Error ❌ unused EAs in UE and/or CE: ${FilterUnusedEANOrVs<`${UE}${CE}`, OnlyStrings<keyof EAN | keyof EAV>>}`;
-  ReturnValuesOnConditionCheckFailure?: ReturnValuesOnConditionCheckFailureValues;
+  ReturnValuesOnConditionCheckFailure?: RV;
 };
 
 export type DeleteTwiInput<
@@ -78,12 +80,13 @@ export type DeleteTwiInput<
   EAN extends Record<EANs, GAK>,
   DummyEAN extends undefined,
   EAV extends Record<EAVs, any>,
-  DummyEAV extends undefined
+  DummyEAV extends undefined,
+  RV extends ReturnValuesOnConditionCheckFailureValues
 > = {
   TableName: TN;
   Key: Key;
   ConditionExpression?: CE extends UseAllExpressionAttributesInString<EAN, EAV> ? CE : `Error ❌ unused EANs or EAVs: ${FilterUnusedEANOrVs<CE, OnlyStrings<keyof EAN | keyof EAV>>}`;
-  ReturnValuesOnConditionCheckFailure?: ReturnValuesOnConditionCheckFailureValues;
+  ReturnValuesOnConditionCheckFailure?: RV;
 } & (
     CE extends EANString
     ? {
@@ -110,12 +113,13 @@ export type ConditionCheckTwiInput<
   EAN extends Record<EANs, GAK>,
   DummyEAN extends undefined,
   EAV extends Record<EAVs, any>,
-  DummyEAV extends undefined
+  DummyEAV extends undefined,
+  RV extends ReturnValuesOnConditionCheckFailureValues
 > = {
   TableName: TN;
   Key: Key;
   ConditionExpression: CE extends UseAllExpressionAttributesInString<EAN, EAV> ? CE : `Error ❌ unused EANs or EAVs: ${FilterUnusedEANOrVs<CE, OnlyStrings<keyof EAN | keyof EAV>>}`;
-  ReturnValuesOnConditionCheckFailure?: ReturnValuesOnConditionCheckFailureValues;
+  ReturnValuesOnConditionCheckFailure?: RV;
 } & (
     CE extends EANString
     ? {
@@ -132,7 +136,14 @@ export type ConditionCheckTwiInput<
     }
   );
 
-export type TransactWriteRequestOutput<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE"> =
+export type GetReturnValuesListValue<TypeOfItem extends Record<string, any>, CE extends string, RV extends ReturnValuesOnConditionCheckFailureValues> =
+  string extends CE
+  ? "NO_ITEM"
+  : RV extends 'NONE'
+  ? "NO_ITEM"
+  : TypeOfItem;
+
+type TwiResponse<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE"> =
   & {}
   & (
     RCC extends 'NONE'
@@ -144,3 +155,24 @@ export type TransactWriteRequestOutput<RCC extends "INDEXES" | "TOTAL" | "NONE",
     ? unknown
     : Required<Pick<DocumentClient.TransactWriteItemsOutput, 'ItemCollectionMetrics'>>
   );
+
+type UnknownReason = {
+  Code: string;
+  Message?: string;
+};
+type ConditionCheckFailedReason<Item extends Record<string, unknown>> = {
+  Code: "ConditionalCheckFailed";
+  Message: string;
+  Item: Item | undefined;
+};
+type ParsedCancellationReason<Item extends Record<string, unknown> | "NO_ITEM"> = (
+  Item extends "NO_ITEM"
+  ? UnknownReason
+  : ConditionCheckFailedReason<Exclude<Item, "NO_ITEM">>
+) | undefined;
+export type ParsedCancellationReasons<ReturnValuesList extends Record<string, unknown> | "NO_ITEM" = Record<string, unknown> | "NO_ITEM"> =
+  | ParsedCancellationReason<ReturnValuesList>[]
+  | undefined;
+export type TwiOutput<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValuesList extends Record<string, unknown> | "NO_ITEM"> =
+  | { success: true; response: TwiResponse<RCC, RICM> }
+  | { success: false; CancellationReasons: ParsedCancellationReasons<ReturnValuesList> | undefined; error: unknown };
