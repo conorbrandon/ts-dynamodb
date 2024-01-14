@@ -1257,13 +1257,24 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   createBatchGetAllRequest({
     maxFailedAttempts = 10,
+    base = 2,
     baseDelayMs = 100,
     jitter = false,
     showProvisionedThroughputExceededExceptionError
   }: {
     maxFailedAttempts?: number;
+    base?: number;
     baseDelayMs?: number;
     jitter?: boolean;
+    /**
+     * If `undefined` or `false`, `ProvisionedThroughputExceededException` errors are not printed.
+     * 
+     * If `true`, `ProvisionedThroughputExceededException` errors are printed to `stderr`.
+     * 
+     * If a function, `ProvisionedThroughputExceededException` errors are provided to your function and the return value printed to `stderr`.
+     * 
+     * {@link console.error} is used to print to `stderr`.
+     */
     showProvisionedThroughputExceededExceptionError?: boolean | ((error: AWSError) => unknown);
   } = {}) {
     if (maxFailedAttempts < 1) {
@@ -1276,6 +1287,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       client: this.client,
       incomingRequests: [],
       maxFailedAttempts,
+      base,
       baseDelayMs,
       jitter,
       showProvisionedThroughputExceededExceptionError: showProvisionedThroughputExceededExceptionError ?? false,
@@ -1466,8 +1478,8 @@ export class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTabl
     super();
   }
 }
-const binaryExponentialBackoff = (attemptNum: number, baseDelayMs: number, jitter: boolean) => {
-  let delayMs = (2 ** attemptNum) * baseDelayMs;
+const binaryExponentialBackoff = (base: number, numFailedAttempts: number, baseDelayMs: number, jitter: boolean) => {
+  let delayMs = (base ** numFailedAttempts) * baseDelayMs;
   if (jitter) {
     delayMs *= Math.random();
   }
@@ -1479,6 +1491,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
   readonly #client: DocumentClient;
   readonly #requests: BatchGetAllRequestRequests;
   readonly #maxFailedAttempts: number;
+  readonly #base: number;
   readonly #baseDelayMs: number;
   readonly #jitter: boolean;
   readonly #showPTEEE: boolean | ((error: AWSError) => unknown);
@@ -1487,6 +1500,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     client,
     incomingRequests,
     maxFailedAttempts,
+    base,
     baseDelayMs,
     jitter,
     showProvisionedThroughputExceededExceptionError,
@@ -1495,6 +1509,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     client: DocumentClient;
     incomingRequests: Requests;
     maxFailedAttempts: number;
+    base: number;
     baseDelayMs: number;
     jitter: boolean;
     showProvisionedThroughputExceededExceptionError: boolean | ((error: AWSError) => unknown);
@@ -1503,6 +1518,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     this.#client = client;
     this.#requests = incomingRequests;
     this.#maxFailedAttempts = maxFailedAttempts;
+    this.#base = base;
     this.#baseDelayMs = baseDelayMs;
     this.#jitter = jitter;
     this.#showPTEEE = showProvisionedThroughputExceededExceptionError;
@@ -1529,6 +1545,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       client: this.#client,
       incomingRequests: newRequests as NewRequests,
       maxFailedAttempts: this.#maxFailedAttempts,
+      base: this.#base,
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
@@ -1556,6 +1573,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       client: this.#client,
       incomingRequests: newRequests as NewRequests,
       maxFailedAttempts: this.#maxFailedAttempts,
+      base: this.#base,
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
@@ -1625,7 +1643,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
         throw new BatchGetAllMaxFailedAttemptsExceededError(this.#id, tableNamesToResponses as BatchGetAllRequestOutput<TS, Requests>);
       }
       if (numFailedAttempts !== -1) {
-        await binaryExponentialBackoff(numFailedAttempts, this.#baseDelayMs, this.#jitter);
+        await binaryExponentialBackoff(this.#base, numFailedAttempts, this.#baseDelayMs, this.#jitter);
       }
     }
     return tableNamesToResponses as BatchGetAllRequestOutput<TS, Requests>;
@@ -1633,6 +1651,10 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
 
   get maxFailedAttempts() {
     return this.#maxFailedAttempts;
+  }
+
+  get base() {
+    return this.#base;
   }
 
   get baseDelayMs() {
