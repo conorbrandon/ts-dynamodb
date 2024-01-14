@@ -1273,7 +1273,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * the number of failed attempts is 2. The function will sleep for 200 milliseconds.
    * If the third attempt succeeds, the number of failed attempts is 1 again, and the function will sleep for 100 milliseconds before trying
    * the fourth attempt. If the fourth attempt succeeds, the function will immediately try the fifth attempt.
-   * This flow can be monitored by using {@link preBackoffCb}.
+   * This flow can be monitored by using {@link preBackoffCb}. (Note: `preBackoffCb` is only called if the function actually needs to back off, i.e., `preBackoffCb` will never be called with `numFailedAttempts` equal to 0.)
    * 
    * By default, `UnprocessedKeys` are pushed (i.e., retried later). This behavior can be customized by providing {@link unprocessedKeysRetryBehavior}
    * to instead unshift (i.e. retried immediately in the next batch).
