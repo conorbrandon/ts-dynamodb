@@ -1273,6 +1273,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * the number of failed attempts is 2. The function will sleep for 200 milliseconds.
    * If the third attempt succeeds, the number of failed attempts is 1 again, and the function will sleep for 100 milliseconds before trying
    * the fourth attempt. If the fourth attempt succeeds, the function will immediately try the fifth attempt.
+   * This flow can be monitored by using {@link preBackoffCb}.
    * 
    * By default, `UnprocessedKeys` are pushed (i.e., retried later). This behavior can be customized by providing {@link unprocessedKeysRetryBehavior}
    * to instead unshift (i.e. retried immediately in the next batch).
@@ -1283,6 +1284,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     baseDelayMs = 100,
     jitter = false,
     unprocessedKeysRetryBehavior = 'push',
+    preBackoffCb,
     showProvisionedThroughputExceededExceptionError
   }: {
     maxFailedAttempts?: number;
@@ -1290,6 +1292,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     baseDelayMs?: number;
     jitter?: boolean;
     unprocessedKeysRetryBehavior?: 'push' | 'unshift';
+    /** A function that takes configured backoff parameters and the actual delayMs and logs them (or even performs some other side effect). */
+    preBackoffCb?: PreBackoffCb;
     /**
      * If `undefined` or `false`, `ProvisionedThroughputExceededException` errors are not printed.
      * 
@@ -1315,6 +1319,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       baseDelayMs,
       jitter,
       unprocessedKeysRetryBehavior,
+      preBackoffCb,
       showProvisionedThroughputExceededExceptionError: showProvisionedThroughputExceededExceptionError ?? false,
       id: Symbol()
     });
@@ -1503,10 +1508,39 @@ export class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTabl
     super();
   }
 }
-const binaryExponentialBackoff = (base: number, numFailedAttempts: number, baseDelayMs: number, jitter: boolean) => {
+type BackoffCbArgs = {
+  numFailedAttempts: number;
+  base: number;
+  baseDelayMs: number;
+  jitter: boolean;
+  delayMs: number;
+};
+type PreBackoffCb = (args: BackoffCbArgs) => (void | Promise<void>);
+const exponentialBackoff = async ({
+  base,
+  numFailedAttempts,
+  baseDelayMs,
+  jitter,
+  preBackoffCb
+}: {
+  base: number;
+  numFailedAttempts: number;
+  baseDelayMs: number;
+  jitter: boolean;
+  preBackoffCb: PreBackoffCb | undefined;
+}) => {
   let delayMs = (base ** numFailedAttempts) * baseDelayMs;
   if (jitter) {
     delayMs *= Math.random();
+  }
+  if (preBackoffCb) {
+    await preBackoffCb({
+      numFailedAttempts: numFailedAttempts + 1,
+      base,
+      baseDelayMs,
+      jitter,
+      delayMs
+    });
   }
   return new Promise(resolve => setTimeout(resolve, delayMs));
 };
@@ -1520,6 +1554,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
   readonly #baseDelayMs: number;
   readonly #jitter: boolean;
   readonly #unprocessedKeysRetryBehavior: 'push' | 'unshift';
+  readonly #preBackoffCb: PreBackoffCb | undefined;
   readonly #showPTEEE: boolean | ((error: AWSError) => unknown);
   readonly #id: symbol;
   constructor({
@@ -1530,6 +1565,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     baseDelayMs,
     jitter,
     unprocessedKeysRetryBehavior,
+    preBackoffCb,
     showProvisionedThroughputExceededExceptionError,
     id
   }: {
@@ -1540,6 +1576,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     baseDelayMs: number;
     jitter: boolean;
     unprocessedKeysRetryBehavior: 'push' | 'unshift';
+    preBackoffCb: PreBackoffCb | undefined;
     showProvisionedThroughputExceededExceptionError: boolean | ((error: AWSError) => unknown);
     id: symbol;
   }) {
@@ -1549,6 +1586,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     this.#base = base;
     this.#baseDelayMs = baseDelayMs;
     this.#jitter = jitter;
+    this.#preBackoffCb = preBackoffCb;
     this.#unprocessedKeysRetryBehavior = unprocessedKeysRetryBehavior;
     this.#showPTEEE = showProvisionedThroughputExceededExceptionError;
     this.#id = id;
@@ -1578,6 +1616,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
       unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
+      preBackoffCb: this.#preBackoffCb,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
       id: this.#id
     });
@@ -1607,6 +1646,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
       unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
+      preBackoffCb: this.#preBackoffCb,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
       id: this.#id
     });
@@ -1678,7 +1718,13 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
         throw new BatchGetAllMaxFailedAttemptsExceededError(this.#id, tableNamesToResponses as BatchGetAllRequestOutput<TS, Requests>);
       }
       if (numFailedAttempts !== -1) {
-        await binaryExponentialBackoff(this.#base, numFailedAttempts, this.#baseDelayMs, this.#jitter);
+        await exponentialBackoff({
+          base: this.#base,
+          numFailedAttempts,
+          baseDelayMs: this.#baseDelayMs,
+          jitter: this.#jitter,
+          preBackoffCb: this.#preBackoffCb
+        });
       }
     }
     return tableNamesToResponses as BatchGetAllRequestOutput<TS, Requests>;

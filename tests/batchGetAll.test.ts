@@ -112,11 +112,18 @@ test('invalid args', () => {
   expect(() => tsDdb.createBatchGetAllRequest({ baseDelayMs: 0 })).not.toThrow();
 });
 
-test('', async () => {
+test('createBatchGetAllRequest', async () => {
 
+  const numFailedAttemptsStore: number[] = [];
+  const delayMsStore = new Set<number>();
   const request = tsDdb.createBatchGetAllRequest({
     showProvisionedThroughputExceededExceptionError: (error) => error.message,
-    jitter: true
+    jitter: true,
+    preBackoffCb: ({ numFailedAttempts, delayMs }) => {
+      numFailedAttemptsStore.push(numFailedAttempts);
+      delayMsStore.add(delayMs);
+      console.log({ numFailedAttempts, delayMs });
+    }
   })
     .addTable(MyTable.name, {
       Keys: [
@@ -184,5 +191,8 @@ test('', async () => {
       console.log(error.partialResponse);
     }
   }
+
+  expect(numFailedAttemptsStore).toStrictEqual([1, 2, 1, 2, 1]);
+  expect(delayMsStore.size).toBeGreaterThan(1);
 
 });
