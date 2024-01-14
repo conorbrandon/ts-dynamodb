@@ -21,7 +21,7 @@ beforeAll(async () => {
           prop2: Math.random(),
           prop3: {}
         },
-        prop1: new Array(100).fill(`${Math.random()}`),
+        prop1: new Array(10000).fill(`${Math.random()}`),
         record: {},
         record1: {}
       };
@@ -48,7 +48,7 @@ beforeAll(async () => {
         hashKey: randomUUID(),
         rangeKey: 'big-cicd',
         data: {
-          myRestArray: [0, ...new Array(100).fill(`${Math.random()}`)],
+          myRestArray: [0, ...new Array(10000).fill(`${Math.random()}`)],
           myTuple: [{ tup1: null }, { tup2: randomUUID(), myBinarySet: tsDdb.createBinarySet([Buffer.from(new Array(100).fill(`${Math.random()}`))]) }],
           relatedItems: [],
           bar: randomUUID(),
@@ -103,8 +103,7 @@ afterAll(async () => {
 test('', async () => {
 
   const request = tsDdb.createBatchGetAllRequest({ showProvisionedThroughputExceededExceptionError: (error) => error.message })
-    .addTable({
-      TableName: MyTable.name,
+    .addTable(MyTable.name, {
       Keys: [
         {
           p0: '---',
@@ -117,8 +116,7 @@ test('', async () => {
         '#obj': 'obj'
       }
     })
-    .addTable({
-      TableName: CiCdTable.name,
+    .addTable(CiCdTable.name, {
       Keys: [
         {
           hashKey: '---',
@@ -135,8 +133,7 @@ test('', async () => {
         '#thebig': 'thebig'
       }
     })
-    .addKeys({
-      TableName: CiCdTable.name,
+    .addKeys(CiCdTable.name, {
       Keys: [
         {
           hashKey: '---',
@@ -144,16 +141,13 @@ test('', async () => {
         }
       ]
     })
-    .addKeys({
-      TableName: MyTable.name,
+    .addKeys(MyTable.name, {
       Keys: myTableItems.map(({ p0, s0 }) => ({ p0, s0 }))
     })
-    .addKeys({
-      TableName: CiCdTable.name,
+    .addKeys(CiCdTable.name, {
       Keys: ciCdTableItems.map(({ hashKey, rangeKey }) => ({ hashKey, rangeKey }))
     })
-    .addTable({
-      TableName: Table3.name,
+    .addTable(Table3.name, {
       Keys: table3TableItems.map(({ threeID, otherID }) => ({ threeID, otherID })),
       ProjectionExpression: 'threeID, #otherID',
       ExpressionAttributeNames: {
@@ -171,7 +165,7 @@ test('', async () => {
     expect(ciCdTableItems).toHaveLength(200);
     expect(table3Items).toHaveLength(200);
   } catch (error) {
-    if (request.isMaxAttemptsExceededErrorFromThisExecution(error)) {
+    if (request.isMaxFailedAttemptsExceededErrorFromThisExecution(error)) {
       console.log(error.partialResponse);
     }
   }

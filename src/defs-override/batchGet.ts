@@ -16,7 +16,6 @@ export type BatchGetAllRequestRequests = readonly {
 }[];
 
 export type CreateBatchGetAllRequestAddTableInput<
-  TN extends string,
   Keys extends readonly object[],
   PE extends string,
   EANs extends string,
@@ -24,7 +23,6 @@ export type CreateBatchGetAllRequestAddTableInput<
   EAN extends Record<EANs, GAK>,
   DummyEAN extends undefined
 > = {
-  TableName: TN;
   Keys: Keys;
   ConsistentRead?: DocumentClient.ConsistentRead;
   ProjectionExpression?: PE extends UseAllExpressionAttributeNamesInString<EAN, true> ? PE : `Error ❌ unused EANs: ${FilterUnusedEANOrVs<PE, OnlyStrings<keyof EAN>>}`;
