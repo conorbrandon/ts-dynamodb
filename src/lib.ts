@@ -1266,6 +1266,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     jitter?: boolean;
     showProvisionedThroughputExceededExceptionError?: boolean | ((error: AWSError) => unknown);
   } = {}) {
+    if (maxFailedAttempts < 1) {
+      throw Error("maxFailedAttempts must be >= 1!");
+    }
+    if (baseDelayMs < 0) {
+      throw Error("baseDelayMs must be >= 0!");
+    }
     return new BatchGetAllRequest<TS, [], never>({
       client: this.client,
       incomingRequests: [],

@@ -100,6 +100,13 @@ afterAll(async () => {
   ]);
 });
 
+test('invalid args', () => {
+  expect(() => tsDdb.createBatchGetAllRequest({ maxFailedAttempts: 0 })).toThrow(new Error("maxFailedAttempts must be >= 1!"));
+  expect(() => tsDdb.createBatchGetAllRequest({ maxFailedAttempts: 1 })).not.toThrow();
+  expect(() => tsDdb.createBatchGetAllRequest({ baseDelayMs: -1 })).toThrow(new Error("baseDelayMs must be >= 0!"));
+  expect(() => tsDdb.createBatchGetAllRequest({ baseDelayMs: 0 })).not.toThrow();
+});
+
 test('', async () => {
 
   const request = tsDdb.createBatchGetAllRequest({ showProvisionedThroughputExceededExceptionError: (error) => error.message })
