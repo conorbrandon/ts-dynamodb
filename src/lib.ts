@@ -17,6 +17,7 @@ import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
+import { ConditionCheckTwiInput, DeleteTwiInput, PutTwiInput, TransactWriteRequestOutput, UpdateTwiInput } from "./defs-override/transactWrite";
 
 export type ProjectAllIndex = {
   project: 'all';
@@ -143,6 +144,7 @@ export type UpdateSimpleSETOutputHelper<Item extends Record<string, any>, TypeOf
       [K in keyof Item]: TypeOfItem[K & keyof TypeOfItem]
     }>> | undefined
   ) : RN extends 'UPDATED_NEW' ? DeepSimplifyObject<TSDdbSet<Item, true>> | undefined : never;
+export type ReturnValuesOnConditionCheckFailureValues = 'NONE' | 'ALL_OLD';
 
 /** 
  * A barebones interface to replace the core DocumentClient methods (`get`, `put`, `update`, `delete`, `query`, and `scan`) with typesafe versions. Validate all `ExpressionAttribute*s` are used, deeply nested `ProjectionExpressions`, ensure updates are following your type contract _exactly_, extract the types returned in `query.Items` based on the `KeyConditionExpression`, and more.
@@ -1326,6 +1328,16 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     });
   }
 
+  createTransactWriteItemsRequest() {
+    return new TransactWriteItemsRequest<TS, 'NONE', 'NONE'>({
+      client: this.client,
+      incomingTransactItems: [],
+      ClientRequestToken: undefined,
+      ReturnConsumedCapacity: "NONE",
+      ReturnItemCollectionMetrics: "NONE"
+    }) as Omit<TransactWriteItemsRequest<TS, 'NONE', 'NONE'>, 'execute'>; // Disallow calling execute if the list is empty
+  }
+
   /** Convenience helper to create and return a DynamoDB.DocumentClient.StringSet set */
   createStringSet<L extends [string, ...string[]]>(list: L, options?: DocumentClient.CreateSetOptions) {
     return this.client.createSet(list, options) as DocumentClient.StringSet;
@@ -1789,6 +1801,138 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
 
   isMaxFailedAttemptsExceededErrorFromThisRequest(error: unknown): error is BatchGetAllMaxFailedAttemptsExceededError<TS, Requests, RCC> {
     return error instanceof BatchGetAllMaxFailedAttemptsExceededError && error.id === this.#id;
+  }
+
+}
+
+class TransactWriteItemArray extends Array<DocumentClient.TransactWriteItem> {
+  override push(...items: DocumentClient.TransactWriteItemList) {
+    if (this.length > 100) {
+      throw Error("TransactItems already contains 100 Items!");
+    }
+    return super.push(...items);
+  }
+}
+class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE"> {
+
+  readonly #client: DocumentClient;
+  readonly #transactItems: TransactWriteItemArray;
+  #ClientRequestToken: string | undefined;
+  #ReturnConsumedCapacity: RCC;
+  #ReturnItemCollectionMetrics: RICM;
+  constructor({
+    client,
+    incomingTransactItems,
+    ClientRequestToken,
+    ReturnConsumedCapacity,
+    ReturnItemCollectionMetrics
+  }: {
+    client: DocumentClient;
+    incomingTransactItems: DocumentClient.TransactWriteItemList;
+    ClientRequestToken: string | undefined;
+    ReturnConsumedCapacity: RCC;
+    ReturnItemCollectionMetrics: RICM;
+  }) {
+    this.#client = client;
+    this.#transactItems = incomingTransactItems;
+    this.#ClientRequestToken = ClientRequestToken;
+    this.#ReturnConsumedCapacity = ReturnConsumedCapacity;
+    this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics;
+  }
+
+  addPut<
+    TN extends TableName<TS>,
+    Item extends TableItem<TS, TN>,
+    // we must pick across if the Item is a union
+    Key extends PickAcrossUnionOfRecords<Item, OnlyStrings<keyof TableKey<TS, TN>>>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
+    CE extends string,
+    EAs extends ExtractEAsFromString<CE>,
+    GAK extends GetAllKeys<TypeOfItem>,
+    const EAN extends Record<EAs['ean'], GAK>,
+    const DummyEAN extends undefined,
+    const EAV extends Record<EAs['eav'], any>,
+    const DummyEAV extends undefined
+  >(Put: PutTwiInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, DummyEAN, EAV, DummyEAV>) {
+    this.#transactItems.push({ Put });
+    return this;
+  }
+
+  addUpdate<
+    TN extends TableName<TS>,
+    Key extends TableKey<TS, TN>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
+    UE extends string,
+    CE extends string,
+    UEEAs extends ExtractEAsFromString<UE>,
+    CEEAs extends ExtractEAsFromString<CE>,
+    GAK extends GetAllKeys<TypeOfItem>,
+    const EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
+    const EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>
+  >(Update: UpdateTwiInput<TN, Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV>) {
+    this.#transactItems.push({ Update });
+    return this;
+  }
+
+  addDelete<
+    TN extends TableName<TS>,
+    Key extends TableKey<TS, TN>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
+    CE extends string,
+    EAs extends ExtractEAsFromString<CE>,
+    GAK extends GetAllKeys<TypeOfItem>,
+    const EAN extends Record<EAs['ean'], GAK>,
+    const DummyEAN extends undefined,
+    const EAV extends Record<EAs['eav'], any>,
+    const DummyEAV extends undefined
+  >(Delete: DeleteTwiInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV>) {
+    this.#transactItems.push({ Delete });
+    return this;
+  }
+
+  addConditionCheck<
+    TN extends TableName<TS>,
+    Key extends TableKey<TS, TN>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
+    CE extends string,
+    EAs extends ExtractEAsFromString<CE>,
+    GAK extends GetAllKeys<TypeOfItem>,
+    const EAN extends Record<EAs['ean'], GAK>,
+    const DummyEAN extends undefined,
+    const EAV extends Record<EAs['eav'], any>,
+    const DummyEAV extends undefined
+  >(ConditionCheck: ConditionCheckTwiInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV>) {
+    this.#transactItems.push({ ConditionCheck });
+    return this;
+  }
+
+  async execute() {
+    const response = await this.#client.transactWrite({ TransactItems: this.#transactItems, ClientRequestToken: this.#ClientRequestToken, ReturnConsumedCapacity: this.#ReturnConsumedCapacity, ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics }).promise();
+    return response as TransactWriteRequestOutput<RCC, RICM>;
+  }
+
+  get ClientRequestToken() {
+    return this.#ClientRequestToken;
+  }
+  setClientRequestToken(ClientRequestToken: string) {
+    this.#ClientRequestToken = ClientRequestToken;
+    return this;
+  }
+
+  get ReturnConsumedCapacity() {
+    return this.#ReturnConsumedCapacity;
+  }
+  setReturnConsumedCapacity<_RCC extends "INDEXES" | "TOTAL" | "NONE">(ReturnConsumedCapacity: _RCC) {
+    this.#ReturnConsumedCapacity = ReturnConsumedCapacity as unknown as RCC;
+    return this as unknown as TransactWriteItemsRequest<TS, _RCC, RICM>;
+  }
+
+  get ReturnItemCollectionMetrics() {
+    return this.#ReturnItemCollectionMetrics;
+  }
+  setReturnItemCollectionMetrics<_RICM extends "SIZE" | "NONE">(ReturnItemCollectionMetrics: _RICM) {
+    this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics as unknown as RICM;
+    return this as unknown as TransactWriteItemsRequest<TS, RCC, _RICM>;
   }
 
 }
