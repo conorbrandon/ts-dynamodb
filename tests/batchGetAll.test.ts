@@ -12,7 +12,7 @@ let table3TableItems: Type3b[];
 
 beforeAll(async () => {
   myTableItems = [
-    ...new Array(100).fill(0).map((_): C => {
+    ...new Array(100).fill(0).map((): C => {
       return {
         p0: randomUUID(),
         s0: 'a',
@@ -26,7 +26,7 @@ beforeAll(async () => {
         record1: {}
       };
     }),
-    ...new Array(100).fill(0).map((_): C => {
+    ...new Array(100).fill(0).map((): C => {
       return {
         p0: randomUUID(),
         s0: 'b'
@@ -34,7 +34,7 @@ beforeAll(async () => {
     })
   ];
   ciCdTableItems = [
-    ...new Array(100).fill(0).map((_): CICD => {
+    ...new Array(100).fill(0).map((): CICD => {
       return {
         hashKey: randomUUID(),
         rangeKey: 'mini-cicd',
@@ -43,7 +43,7 @@ beforeAll(async () => {
         datumStr: undefined
       };
     }),
-    ...new Array(100).fill(0).map((_): CICD => {
+    ...new Array(100).fill(0).map((): CICD => {
       return {
         hashKey: randomUUID(),
         rangeKey: 'big-cicd',
@@ -165,7 +165,7 @@ test('', async () => {
     expect(ciCdTableItems).toHaveLength(200);
     expect(table3Items).toHaveLength(200);
   } catch (error) {
-    if (request.isMaxFailedAttemptsExceededErrorFromThisExecution(error)) {
+    if (request.isMaxFailedAttemptsExceededErrorFromThisRequest(error)) {
       console.log(error.partialResponse);
     }
   }
