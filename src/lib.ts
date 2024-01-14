@@ -1515,8 +1515,8 @@ type BackoffCbArgs = {
   jitter: boolean;
   delayMs: number;
 };
-type PreBackoffCb = (args: BackoffCbArgs) => (void | Promise<void>);
-const exponentialBackoff = async ({
+type PreBackoffCb = (args: BackoffCbArgs) => void;
+const exponentialBackoff = ({
   base,
   numFailedAttempts,
   baseDelayMs,
@@ -1534,7 +1534,7 @@ const exponentialBackoff = async ({
     delayMs *= Math.random();
   }
   if (preBackoffCb) {
-    await preBackoffCb({
+    preBackoffCb({
       numFailedAttempts: numFailedAttempts + 1,
       base,
       baseDelayMs,
