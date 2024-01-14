@@ -1311,7 +1311,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     if (baseDelayMs < 0) {
       throw Error("baseDelayMs must be >= 0!");
     }
-    return new BatchGetAllRequest<TS, [], never>({
+    return new BatchGetAllRequest<TS, [], never, "NONE">({
       client: this.client,
       incomingRequests: [],
       maxFailedAttempts,
@@ -1321,7 +1321,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       unprocessedKeysRetryBehavior,
       preBackoffCb,
       showProvisionedThroughputExceededExceptionError: showProvisionedThroughputExceededExceptionError ?? false,
-      id: Symbol()
+      id: Symbol(),
+      ReturnConsumedCapacity: "NONE"
     });
   }
 
@@ -1502,9 +1503,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
 }
 
-export class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests> extends Error {
+export class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> extends Error {
   override name = "BatchGetAllMaxFailedAttemptsExceededError" as const;
-  constructor(public id: symbol, public partialResponse: BatchGetAllRequestOutput<TS, Requests>) {
+  constructor(public id: symbol, public partialResponse: BatchGetAllRequestOutput<TS, Requests, RCC>) {
     super();
   }
 }
@@ -1545,10 +1546,10 @@ const exponentialBackoff = ({
   return new Promise(resolve => setTimeout(resolve, delayMs));
 };
 const isAWSError = (error: unknown): error is AWSError => error instanceof Error && "code" in error && "time" in error && error.time instanceof Date;
-class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, TableNamesAlreadySet extends string> {
+class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, TableNamesAlreadySet extends string, RCC extends "INDEXES" | "TOTAL" | "NONE"> {
 
   readonly #client: DocumentClient;
-  readonly #requests: BatchGetAllRequestRequests;
+  readonly #requests: Requests;
   readonly #maxFailedAttempts: number;
   readonly #base: number;
   readonly #baseDelayMs: number;
@@ -1557,6 +1558,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
   readonly #preBackoffCb: PreBackoffCb | undefined;
   readonly #showPTEEE: boolean | ((error: AWSError) => unknown);
   readonly #id: symbol;
+  #ReturnConsumedCapacity: RCC;
   constructor({
     client,
     incomingRequests,
@@ -1567,7 +1569,8 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     unprocessedKeysRetryBehavior,
     preBackoffCb,
     showProvisionedThroughputExceededExceptionError,
-    id
+    id,
+    ReturnConsumedCapacity
   }: {
     client: DocumentClient;
     incomingRequests: Requests;
@@ -1579,6 +1582,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     preBackoffCb: PreBackoffCb | undefined;
     showProvisionedThroughputExceededExceptionError: boolean | ((error: AWSError) => unknown);
     id: symbol;
+    ReturnConsumedCapacity: RCC;
   }) {
     this.#client = client;
     this.#requests = incomingRequests;
@@ -1590,6 +1594,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     this.#unprocessedKeysRetryBehavior = unprocessedKeysRetryBehavior;
     this.#showPTEEE = showProvisionedThroughputExceededExceptionError;
     this.#id = id;
+    this.#ReturnConsumedCapacity = ReturnConsumedCapacity;
   }
 
   addTable<
@@ -1608,7 +1613,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     };
     type NewRequests = [...Requests, typeof requestWithTableName];
     const newRequests = [...this.#requests, requestWithTableName] satisfies BatchGetAllRequestRequests;
-    return new BatchGetAllRequest<TS, NewRequests, TableNamesAlreadySet | TN>({
+    return new BatchGetAllRequest<TS, NewRequests, TableNamesAlreadySet | TN, RCC>({
       client: this.#client,
       incomingRequests: newRequests as NewRequests,
       maxFailedAttempts: this.#maxFailedAttempts,
@@ -1618,7 +1623,8 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
       preBackoffCb: this.#preBackoffCb,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
-      id: this.#id
+      id: this.#id,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity
     });
   }
 
@@ -1638,7 +1644,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       }
       return request;
     });
-    return new BatchGetAllRequest<TS, NewRequests, TableNamesAlreadySet>({
+    return new BatchGetAllRequest<TS, NewRequests, TableNamesAlreadySet, RCC>({
       client: this.#client,
       incomingRequests: newRequests as NewRequests,
       maxFailedAttempts: this.#maxFailedAttempts,
@@ -1648,7 +1654,24 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
       preBackoffCb: this.#preBackoffCb,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
-      id: this.#id
+      id: this.#id,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity
+    });
+  }
+
+  setReturnConsumedCapacity<RCC extends "INDEXES" | "TOTAL" | "NONE">(ReturnConsumedCapacity: RCC) {
+    return new BatchGetAllRequest<TS, Requests, TableNamesAlreadySet, RCC>({
+      client: this.#client,
+      incomingRequests: this.#requests,
+      maxFailedAttempts: this.#maxFailedAttempts,
+      base: this.#base,
+      baseDelayMs: this.#baseDelayMs,
+      jitter: this.#jitter,
+      unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
+      preBackoffCb: this.#preBackoffCb,
+      showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
+      id: this.#id,
+      ReturnConsumedCapacity
     });
   }
 
@@ -1656,6 +1679,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     const tableNamesToRequests: Record<string, Omit<DocumentClient.KeysAndAttributes, 'Keys'>> = {};
     const tableNamesAndKeys: { TableName: string; Key: DocumentClient.Key }[] = [];
     const tableNamesToResponses: DocumentClient.BatchGetResponseMap = {};
+    const allConsumedCapacity: DocumentClient.ConsumedCapacityMultiple | undefined = this.#ReturnConsumedCapacity !== 'NONE' ? [] : undefined;
     for (const { TableName, Keys, ...restOfRequest } of this.#requests) {
       tableNamesToRequests[TableName] = restOfRequest;
       tableNamesToResponses[TableName] = [];
@@ -1680,7 +1704,8 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
         tableEntry.Keys.push(Key);
       }
       try {
-        const { Responses, UnprocessedKeys } = await this.#client.batchGet({ RequestItems }).promise();
+        const { Responses, UnprocessedKeys, ConsumedCapacity } = await this.#client.batchGet({ RequestItems, ReturnConsumedCapacity: this.#ReturnConsumedCapacity }).promise();
+        allConsumedCapacity?.push(...ConsumedCapacity ?? []);
         if (Responses) {
           Object.entries(Responses).forEach(([TableName, Response]) => tableNamesToResponses[TableName]?.push(...Response));
         }
@@ -1715,7 +1740,11 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
         }
       }
       if (numFailedAttempts === this.#maxFailedAttempts - 1) {
-        throw new BatchGetAllMaxFailedAttemptsExceededError(this.#id, tableNamesToResponses as BatchGetAllRequestOutput<TS, Requests>);
+        const partialResponse = {
+          Responses: tableNamesToResponses,
+          ConsumedCapacity: allConsumedCapacity
+        } satisfies { Responses: DocumentClient.BatchGetResponseMap; ConsumedCapacity: DocumentClient.ConsumedCapacityMultiple | undefined };
+        throw new BatchGetAllMaxFailedAttemptsExceededError(this.#id, partialResponse as unknown as BatchGetAllRequestOutput<TS, Requests, RCC>);
       }
       if (numFailedAttempts !== -1) {
         await exponentialBackoff({
@@ -1727,7 +1756,11 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
         });
       }
     }
-    return tableNamesToResponses as BatchGetAllRequestOutput<TS, Requests>;
+    const response = {
+      Responses: tableNamesToResponses,
+      ConsumedCapacity: allConsumedCapacity
+    } satisfies { Responses: DocumentClient.BatchGetResponseMap; ConsumedCapacity: DocumentClient.ConsumedCapacityMultiple | undefined };
+    return response as unknown as BatchGetAllRequestOutput<TS, Requests, RCC>;
   }
 
   get maxFailedAttempts() {
@@ -1750,7 +1783,11 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     return this.#unprocessedKeysRetryBehavior;
   }
 
-  isMaxFailedAttemptsExceededErrorFromThisRequest(error: unknown): error is BatchGetAllMaxFailedAttemptsExceededError<TS, Requests> {
+  get ReturnConsumedCapacity() {
+    return this.#ReturnConsumedCapacity;
+  }
+
+  isMaxFailedAttemptsExceededErrorFromThisRequest(error: unknown): error is BatchGetAllMaxFailedAttemptsExceededError<TS, Requests, RCC> {
     return error instanceof BatchGetAllMaxFailedAttemptsExceededError && error.id === this.#id;
   }
 

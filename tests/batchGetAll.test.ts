@@ -3,6 +3,7 @@ import { tsDdb } from "./lib/lib";
 import { CiCdTable, MyTable, Table3 } from "./lib/tables";
 import { C, CICD, Type3b } from "./lib/types";
 import { inspect } from "util";
+import { expectTypeOf } from "expect-type";
 
 jest.setTimeout(100_000);
 
@@ -176,16 +177,68 @@ test('createBatchGetAllRequest', async () => {
         '#otherID': 'otherID'
       }
     });
+
+  type DoesNotReturnCC = keyof Awaited<ReturnType<typeof request.execute>>;
+  expectTypeOf<DoesNotReturnCC>().toEqualTypeOf<"Responses">();
+
+  const requestCC = request.setReturnConsumedCapacity('TOTAL');
   try {
-    const response = await request.execute();
-    const { [MyTable.name]: myTableItems = [], [CiCdTable.name]: ciCdTableItems = [], [Table3.name]: table3Items = [] } = response;
+    const response = await requestCC.execute();
+    const {
+      Responses: {
+        [MyTable.name]: myTableItems = [],
+        [CiCdTable.name]: ciCdTableItems = [],
+        [Table3.name]: table3Items = []
+      },
+      ConsumedCapacity
+    } = response;
     const shouldInspect = false;
     if (shouldInspect) {
       console.log(inspect({ myTableItems, ciCdTableItems, table3Items }, { maxArrayLength: null }));
     }
+
     expect(myTableItems).toHaveLength(200);
+    const onlyContainsMyTableItems = myTableItems.reduce((acc, curr) => acc && typeof curr.p0 === "string", true);
+    expect(onlyContainsMyTableItems).toStrictEqual(true);
+    expectTypeOf<typeof myTableItems>().toEqualTypeOf<{
+      p0: `${string}-${string}-${string}-${string}`;
+      s0: "b";
+      obj: {
+        prop4: number;
+        prop5: [number];
+        prop6: string[];
+      } | undefined;
+    }[]>();
+
     expect(ciCdTableItems).toHaveLength(200);
+    const onlyContainsCiCdTableItems = ciCdTableItems.reduce((acc, curr) => acc && typeof curr.rangeKey === "string", true);
+    expect(onlyContainsCiCdTableItems).toStrictEqual(true);
+    expectTypeOf<typeof ciCdTableItems>().toEqualTypeOf<({
+      datum: string | undefined;
+      rangeKey: "big-cicd";
+      thebig: undefined;
+    } | {
+      datum: number;
+      thebig: {
+        datum: string | undefined;
+      } | undefined;
+      rangeKey: "small-cicd";
+    } | {
+      datum: number;
+      rangeKey: "mini-cicd";
+      thebig: undefined;
+    })[]>();
+
     expect(table3Items).toHaveLength(200);
+    const onlyContainsTable3Items = table3Items.reduce((acc, curr) => acc && typeof curr.threeID === "number", true);
+    expect(onlyContainsTable3Items).toStrictEqual(true);
+    expectTypeOf<typeof table3Items>().toEqualTypeOf<{
+      otherID: `id_${number}`;
+      threeID: number;
+    }[]>();
+
+    expect(ConsumedCapacity).toBeInstanceOf(Array);
+    expect(ConsumedCapacity.length).toBeGreaterThan(1);
   } catch (error) {
     if (request.isMaxFailedAttemptsExceededErrorFromThisRequest(error)) {
       console.log(error.partialResponse);

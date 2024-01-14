@@ -36,8 +36,8 @@ export type CreateBatchGetAllRequestAddTableInput<
     }
   );
 
-export type BatchGetAllRequestOutput<TS, Requests extends BatchGetAllRequestRequests> =
-  UnionToIntersection<
+export type BatchGetAllRequestOutput<TS, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> = {
+  Responses: UnionToIntersection<
     {
       [K in keyof Requests]:
       Requests[K] extends {
@@ -58,3 +58,10 @@ export type BatchGetAllRequestOutput<TS, Requests extends BatchGetAllRequestRequ
       : never
     }[number]
   >;
+} & (
+    RCC extends 'NONE'
+    ? unknown
+    : {
+      ConsumedCapacity: DocumentClient.ConsumedCapacityMultiple;
+    }
+  );
