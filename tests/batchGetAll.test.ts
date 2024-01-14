@@ -29,7 +29,12 @@ beforeAll(async () => {
     ...new Array(100).fill(0).map((): C => {
       return {
         p0: randomUUID(),
-        s0: 'b'
+        s0: 'b',
+        obj: {
+          prop4: Math.random(),
+          prop5: [Math.random()],
+          prop6: new Array(10000).fill(`${Math.random()}`)
+        }
       };
     })
   ];
@@ -109,7 +114,10 @@ test('invalid args', () => {
 
 test('', async () => {
 
-  const request = tsDdb.createBatchGetAllRequest({ showProvisionedThroughputExceededExceptionError: (error) => error.message })
+  const request = tsDdb.createBatchGetAllRequest({
+    showProvisionedThroughputExceededExceptionError: (error) => error.message,
+    jitter: true
+  })
     .addTable(MyTable.name, {
       Keys: [
         {

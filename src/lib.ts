@@ -1255,17 +1255,41 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     >['Items']>;
   }
 
+  /**
+   * Creates a `BatchGetAllRequest`. A `BatchGetAllRequest` iterates through all `Keys` across all tables a maximum of
+   * 100 at a time (so you can add as many `Keys` as you want!)
+   * and calls {@link DocumentClient.batchGet} on each batch of 100 `Keys`.
+   * 
+   * `Keys` and `ProjectionExpressions` for a table can be added using `addTable`.
+   * `Keys` can still be added after a table is added using `addKeys`. When you are ready to send the request, call `execute`.
+   * 
+   * If `batchGet` returns {@link DocumentClient.BatchGetItemOutput.UnprocessedKeys} or a `ProvisionedThroughputExceededException` is thrown 
+   * (both of which are considered a "failed attempt"), exponential backoff with {@link base} is used to retry up to {@link maxFailedAttempts}. 
+   * Note that the number of failed attempts is decremented after a "successful attempt" 
+   * (defined as a `batchGet` call that does not return `UnprocessedKeys` __and__ does not throw a `ProvisionedThroughputExceededException`).
+   * 
+   * For example (assuming `base` = 2 and {@link baseDelayMs} = 100), if the first attempt fails, the number of failed attempts is now 1.
+   * The function will sleep for 100 milliseconds. If the second attempt also fails,
+   * the number of failed attempts is 2. The function will sleep for 200 milliseconds.
+   * If the third attempt succeeds, the number of failed attempts is 1 again, and the function will sleep for 100 milliseconds before trying
+   * the fourth attempt. If the fourth attempt succeeds, the function will immediately try the fifth attempt.
+   * 
+   * By default, `UnprocessedKeys` are pushed (i.e., retried later). This behavior can be customized by providing {@link unprocessedKeysRetryBehavior}
+   * to instead unshift (i.e. retried immediately in the next batch).
+   */
   createBatchGetAllRequest({
     maxFailedAttempts = 10,
     base = 2,
     baseDelayMs = 100,
     jitter = false,
+    unprocessedKeysRetryBehavior = 'push',
     showProvisionedThroughputExceededExceptionError
   }: {
     maxFailedAttempts?: number;
     base?: number;
     baseDelayMs?: number;
     jitter?: boolean;
+    unprocessedKeysRetryBehavior?: 'push' | 'unshift';
     /**
      * If `undefined` or `false`, `ProvisionedThroughputExceededException` errors are not printed.
      * 
@@ -1290,6 +1314,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       base,
       baseDelayMs,
       jitter,
+      unprocessedKeysRetryBehavior,
       showProvisionedThroughputExceededExceptionError: showProvisionedThroughputExceededExceptionError ?? false,
       id: Symbol()
     });
@@ -1494,6 +1519,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
   readonly #base: number;
   readonly #baseDelayMs: number;
   readonly #jitter: boolean;
+  readonly #unprocessedKeysRetryBehavior: 'push' | 'unshift';
   readonly #showPTEEE: boolean | ((error: AWSError) => unknown);
   readonly #id: symbol;
   constructor({
@@ -1503,6 +1529,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     base,
     baseDelayMs,
     jitter,
+    unprocessedKeysRetryBehavior,
     showProvisionedThroughputExceededExceptionError,
     id
   }: {
@@ -1512,6 +1539,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     base: number;
     baseDelayMs: number;
     jitter: boolean;
+    unprocessedKeysRetryBehavior: 'push' | 'unshift';
     showProvisionedThroughputExceededExceptionError: boolean | ((error: AWSError) => unknown);
     id: symbol;
   }) {
@@ -1521,6 +1549,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     this.#base = base;
     this.#baseDelayMs = baseDelayMs;
     this.#jitter = jitter;
+    this.#unprocessedKeysRetryBehavior = unprocessedKeysRetryBehavior;
     this.#showPTEEE = showProvisionedThroughputExceededExceptionError;
     this.#id = id;
   }
@@ -1548,6 +1577,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       base: this.#base,
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
+      unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
       id: this.#id
     });
@@ -1576,6 +1606,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       base: this.#base,
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
+      unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
       id: this.#id
     });
@@ -1611,19 +1642,23 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       try {
         const { Responses, UnprocessedKeys } = await this.#client.batchGet({ RequestItems }).promise();
         if (Responses) {
-          // TODO: should attemptNum be reset here? _If_ it should be reset, should it only be reset if UnprocessedKeys is entirely empty?
-          // Regardless, if I decide I want to reset it here, make sure to change condition in if statement above to include " && Object.keys(Responses).length"!!!
           Object.entries(Responses).forEach(([TableName, Response]) => tableNamesToResponses[TableName]?.push(...Response));
         }
+        let gotUnprocessedKeys = false;
         if (UnprocessedKeys && Object.keys(UnprocessedKeys).length) {
-          numFailedAttempts++;
+          gotUnprocessedKeys = true;
           const unprocessedKeysEntries = Object.entries(UnprocessedKeys);
           for (const [TableName, { Keys }] of unprocessedKeysEntries) {
-            tableNamesAndKeys.push(...Keys.map(Key => ({
+            tableNamesAndKeys[this.#unprocessedKeysRetryBehavior](...Keys.map(Key => ({
               TableName,
               Key
             })));
           }
+        }
+        if (gotUnprocessedKeys) {
+          numFailedAttempts++;
+        } else if (numFailedAttempts > -1) {
+          numFailedAttempts--;
         }
       } catch (error) {
         if (isAWSError(error) && error.code === "ProvisionedThroughputExceededException") {
@@ -1634,7 +1669,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
           }
 
           numFailedAttempts++;
-          tableNamesAndKeys.push(...keysForThisBatch);
+          tableNamesAndKeys[this.#unprocessedKeysRetryBehavior](...keysForThisBatch);
         } else {
           throw error;
         }
@@ -1663,6 +1698,10 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
 
   get jitter() {
     return this.#jitter;
+  }
+
+  get unprocessedKeysRetryBehavior() {
+    return this.#unprocessedKeysRetryBehavior;
   }
 
   isMaxFailedAttemptsExceededErrorFromThisRequest(error: unknown): error is BatchGetAllMaxFailedAttemptsExceededError<TS, Requests> {
