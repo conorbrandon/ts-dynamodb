@@ -1333,13 +1333,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   }
 
   createTransactWriteItemsRequest() {
-    return new TransactWriteItemsRequest<TS, 'NONE', 'NONE', never>({
+    return new TransactWriteItemsRequest<TS, false, 'NONE', 'NONE', never>({
       client: this.client,
       incomingTransactItems: [],
       ClientRequestToken: undefined,
       ReturnConsumedCapacity: "NONE",
       ReturnItemCollectionMetrics: "NONE"
-    }) as Omit<TransactWriteItemsRequest<TS, 'NONE', 'NONE', never>, 'execute'>; // Disallow calling execute if the list is empty
+    });
   }
 
   /** Convenience helper to create and return a DynamoDB.DocumentClient.StringSet set */
@@ -1821,7 +1821,7 @@ const conditionalCheckFailedReasonHasItem = (reason: Record<string, unknown> & {
   return "Item" in reason && typeof reason['Item'] === 'object' && !!reason['Item'];
 };
 
-class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
+class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends boolean, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
 
   readonly #client: DocumentClient;
   readonly #transactItems: readonly DocumentClient.TransactWriteItem[];
@@ -1841,6 +1841,9 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     ReturnConsumedCapacity: RCC;
     ReturnItemCollectionMetrics: RICM;
   }) {
+    if (incomingTransactItems.length > 25) {
+      throw Error("TransactItems must have length less than or equal to 25");
+    }
     this.#client = client;
     this.#transactItems = incomingTransactItems;
     this.#ClientRequestToken = ClientRequestToken;
@@ -1860,7 +1863,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>({
+    return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1881,7 +1884,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>({
+    return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1902,7 +1905,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>({
+    return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1923,7 +1926,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>({
+    return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1932,7 +1935,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     });
   }
 
-  async execute(): Promise<TwiOutput<RCC, RICM, ReturnValues>> {
+  async #execute(): Promise<TwiOutput<RCC, RICM, ReturnValues>> {
     const transactionRequest = this.#client.transactWrite({
       TransactItems: this.#transactItems as DocumentClient.TransactWriteItem[],
       ClientRequestToken: this.#ClientRequestToken,
@@ -1999,12 +2002,13 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
       } as any;
     }
   }
+  execute: CanExecute extends true ? () => Promise<TwiOutput<RCC, RICM, ReturnValues>> : never = (() => this.#execute()) as any;
 
   get ClientRequestToken() {
     return this.#ClientRequestToken;
   }
   setClientRequestToken(ClientRequestToken: string) {
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>({
+    return new TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>({
       client: this.#client,
       incomingTransactItems: this.#transactItems,
       ClientRequestToken,
@@ -2017,7 +2021,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     return this.#ReturnConsumedCapacity;
   }
   setReturnConsumedCapacity<RCC extends "INDEXES" | "TOTAL" | "NONE">(ReturnConsumedCapacity: RCC) {
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>({
+    return new TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>({
       client: this.#client,
       incomingTransactItems: this.#transactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -2030,7 +2034,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     return this.#ReturnItemCollectionMetrics;
   }
   setReturnItemCollectionMetrics<RICM extends "SIZE" | "NONE">(ReturnItemCollectionMetrics: RICM) {
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>({
+    return new TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>({
       client: this.#client,
       incomingTransactItems: this.#transactItems,
       ClientRequestToken: this.#ClientRequestToken,

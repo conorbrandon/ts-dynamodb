@@ -18,12 +18,12 @@ type TwiResponse<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" |
   & (
     RCC extends 'NONE'
     ? unknown
-    : Required<Pick<DocumentClient.TransactWriteItemsOutput, 'ConsumedCapacity'>>
+    : Pick<DocumentClient.TransactWriteItemsOutput, 'ConsumedCapacity'>
   )
   & (
     RICM extends 'NONE'
     ? unknown
-    : Required<Pick<DocumentClient.TransactWriteItemsOutput, 'ItemCollectionMetrics'>>
+    : Pick<DocumentClient.TransactWriteItemsOutput, 'ItemCollectionMetrics'>
   );
 
 // https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-dynamodb/Class/TransactionCanceledException/
