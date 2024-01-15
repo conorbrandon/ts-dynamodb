@@ -17,7 +17,7 @@ import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
-import { GetReturnValuesListValueFromInputs, ParsedCancellationReasons, TwiOutput } from "./defs-override/transactWrite/helpers";
+import { GetReturnValuesValueFromInputs, ParsedCancellationReasons, TwiOutput } from "./defs-override/transactWrite/helpers";
 import { PutVariadicTwiBase, ValidatePutVariadicTwiInputs } from "./defs-override/transactWrite/put";
 import { UpdateVariadicTwiBase, ValidateUpdateVariadicTwiInputs } from "./defs-override/transactWrite/update";
 import { DeleteVariadicTwiBase, ValidateDeleteVariadicTwiInputs } from "./defs-override/transactWrite/delete";
@@ -1821,7 +1821,7 @@ const conditionalCheckFailedReasonHasItem = (reason: Record<string, unknown> & {
   return "Item" in reason && typeof reason['Item'] === 'object' && !!reason['Item'];
 };
 
-class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValuesList extends Record<string, unknown> | "NO_ITEM"> {
+class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
 
   readonly #client: DocumentClient;
   readonly #transactItems: readonly DocumentClient.TransactWriteItem[];
@@ -1853,14 +1853,14 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
       ...this.#transactItems,
       ...Puts.map(Put => ({ Put }))
     ];
-    type newReturnValues = GetReturnValuesListValueFromInputs<{
+    type newReturnValues = GetReturnValuesValueFromInputs<{
       [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Item']>,
         Inputs[K]['ConditionExpression'],
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>({
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1874,14 +1874,14 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
       ...this.#transactItems,
       ...Updates.map(Update => ({ Update }))
     ];
-    type newReturnValues = GetReturnValuesListValueFromInputs<{
+    type newReturnValues = GetReturnValuesValueFromInputs<{
       [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
         Inputs[K]['ConditionExpression'],
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>({
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1895,14 +1895,14 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
       ...this.#transactItems,
       ...Deletes.map(Delete => ({ Delete }))
     ];
-    type newReturnValues = GetReturnValuesListValueFromInputs<{
+    type newReturnValues = GetReturnValuesValueFromInputs<{
       [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
         Inputs[K]['ConditionExpression'],
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>({
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1916,14 +1916,14 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
       ...this.#transactItems,
       ...ConditionChecks.map(ConditionCheck => ({ ConditionCheck }))
     ];
-    type newReturnValues = GetReturnValuesListValueFromInputs<{
+    type newReturnValues = GetReturnValuesValueFromInputs<{
       [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
         Inputs[K]['ConditionExpression'],
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>({
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1932,7 +1932,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     });
   }
 
-  async execute(): Promise<TwiOutput<RCC, RICM, ReturnValuesList>> {
+  async execute(): Promise<TwiOutput<RCC, RICM, ReturnValues>> {
     const transactionRequest = this.#client.transactWrite({
       TransactItems: this.#transactItems as DocumentClient.TransactWriteItem[],
       ClientRequestToken: this.#ClientRequestToken,
@@ -1948,26 +1948,34 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
       if (!Array.isArray(maybeCancellationReasons)) {
         return;
       }
-      CancellationReasons = maybeCancellationReasons.map((reason: unknown) => {
-        if (!reasonHasCode(reason)) {
-          return undefined;
-        }
-        if (!isConditionalCheckFailedReason(reason)) {
-          return reason as { Code: string; Message?: string };
-        }
-        if (!conditionalCheckFailedReasonHasItem(reason)) {
-          return reason;
-        }
-        try {
-          const convertedItem = converter.unmarshall(reason.Item);
-          return {
-            ...reason,
-            Item: convertedItem
-          };
-        } catch (error) {
-          return reason;
-        }
-      });
+      CancellationReasons = maybeCancellationReasons
+        .map((reason: unknown) => {
+          if (!reasonHasCode(reason)) {
+            return undefined;
+          }
+          if (!isConditionalCheckFailedReason(reason)) {
+            return reason as { Code: string; Message?: string };
+          }
+          if (!conditionalCheckFailedReasonHasItem(reason)) {
+            return reason;
+          }
+          try {
+            const convertedItem = converter.unmarshall(reason.Item);
+            return {
+              ...reason,
+              Item: convertedItem
+            };
+          } catch (error) {
+            return {
+              ...reason,
+              // If we can't unmarshall an Item, don't return it at all. 
+              // This is because a "marshalled" Item will pass "in" checks (for example), 
+              // but because it is still marshalled, the narrowed type will be inaccurate.
+              Item: undefined
+            };
+          }
+        })
+        .filter((reason): reason is NonNullable<typeof reason> => !!reason);
     });
     const p = new Promise<DocumentClient.TransactWriteItemsOutput>((resolve, reject) => {
       transactionRequest.send((error, response) => {
@@ -1996,7 +2004,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     return this.#ClientRequestToken;
   }
   setClientRequestToken(ClientRequestToken: string) {
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList>({
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>({
       client: this.#client,
       incomingTransactItems: this.#transactItems,
       ClientRequestToken,
@@ -2009,7 +2017,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     return this.#ReturnConsumedCapacity;
   }
   setReturnConsumedCapacity<RCC extends "INDEXES" | "TOTAL" | "NONE">(ReturnConsumedCapacity: RCC) {
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList>({
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>({
       client: this.#client,
       incomingTransactItems: this.#transactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -2022,7 +2030,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     return this.#ReturnItemCollectionMetrics;
   }
   setReturnItemCollectionMetrics<RICM extends "SIZE" | "NONE">(ReturnItemCollectionMetrics: RICM) {
-    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList>({
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>({
       client: this.#client,
       incomingTransactItems: this.#transactItems,
       ClientRequestToken: this.#ClientRequestToken,
