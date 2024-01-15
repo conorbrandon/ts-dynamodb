@@ -99,7 +99,7 @@ test('createTransactWriteItemsRequest', async () => {
     } = response;
     console.log(JSON.stringify({ CancellationReasons }, null, 2));
     const sortKeysOfReasonItems = CancellationReasons.map(reason => {
-      if (reason?.Code === "ConditionalCheckFailed") {
+      if (reason.Code === "ConditionalCheckFailed") {
         const { Item } = reason;
         if (!Item) {
           return undefined;
