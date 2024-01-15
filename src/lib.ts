@@ -17,8 +17,11 @@ import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
-import { ConditionCheckTwiInput, DeleteTwiInput, GetReturnValuesListValue, ParsedCancellationReasons, PutTwiInput, TwiOutput, UpdateTwiInput } from "./defs-override/transactWrite";
+import { GetReturnValuesListValueFromInputs, ParsedCancellationReasons, TwiOutput } from "./defs-override/transactWrite/helpers";
 import { PutVariadicTwiBase, ValidatePutVariadicTwiInputs } from "./defs-override/transactWrite/put";
+import { UpdateVariadicTwiBase, ValidateUpdateVariadicTwiInputs } from "./defs-override/transactWrite/update";
+import { DeleteVariadicTwiBase, ValidateDeleteVariadicTwiInputs } from "./defs-override/transactWrite/delete";
+import { ConditionCheckVariadicTwiBase, ValidateConditionCheckVariadicTwiInputs } from "./defs-override/transactWrite/condition-check";
 
 export type ProjectAllIndex = {
   project: 'all';
@@ -1853,86 +1856,52 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics;
   }
 
-  addPutVariadic<const Inputs extends readonly PutVariadicTwiBase<TS>[]>(...Puts: ValidatePutVariadicTwiInputs<TS, Inputs>) {
+  addPut<const Inputs extends readonly PutVariadicTwiBase<TS>[]>(...Puts: ValidatePutVariadicTwiInputs<TS, Inputs>) {
     this.#transactItems.push(...Puts.map(Put => ({ Put })));
-    type newReturnValues = {
-      [K in keyof Inputs]: GetReturnValuesListValue<
+    type newReturnValues = GetReturnValuesListValueFromInputs<{
+      [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Item']>,
         Inputs[K]['ConditionExpression'],
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
-      >
-    }[number];
+      ]
+    }>;
     return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
   }
 
-  addPut<
-    TN extends TableName<TS>,
-    Item extends TableItem<TS, TN>,
-    // we must pick across if the Item is a union
-    Key extends PickAcrossUnionOfRecords<Item, OnlyStrings<keyof TableKey<TS, TN>>>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    CE extends string,
-    EAs extends ExtractEAsFromString<CE>,
-    GAK extends GetAllKeys<TypeOfItem>,
-    const EAN extends Record<EAs['ean'], GAK>,
-    const DummyEAN extends undefined,
-    const EAV extends Record<EAs['eav'], any>,
-    const DummyEAV extends undefined,
-    RV extends ReturnValuesOnConditionCheckFailureValues = 'NONE'
-  >(Put: PutTwiInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, DummyEAN, EAV, DummyEAV, RV>) {
-    this.#transactItems.push({ Put });
-    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | GetReturnValuesListValue<TypeOfItem, CE, RV>>;
+  addUpdate<const Inputs extends readonly UpdateVariadicTwiBase<TS>[]>(...Updates: ValidateUpdateVariadicTwiInputs<TS, Inputs>) {
+    this.#transactItems.push(...Updates.map(Update => ({ Update })));
+    type newReturnValues = GetReturnValuesListValueFromInputs<{
+      [K in keyof Inputs]: [
+        ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
+        Inputs[K]['ConditionExpression'],
+        Inputs[K]['ReturnValuesOnConditionCheckFailure']
+      ]
+    }>;
+    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
   }
 
-  addUpdate<
-    TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    UE extends string,
-    CE extends string,
-    UEEAs extends ExtractEAsFromString<UE>,
-    CEEAs extends ExtractEAsFromString<CE>,
-    GAK extends GetAllKeys<TypeOfItem>,
-    const EAN extends Record<UEEAs['ean'] | CEEAs['ean'], GAK>,
-    const EAV extends Record<UEEAs['eav'] | CEEAs['eav'], any>,
-    RV extends ReturnValuesOnConditionCheckFailureValues = 'NONE'
-  >(Update: UpdateTwiInput<TN, Key, TypeOfItem, UE, CE, UEEAs['ean'] | CEEAs['ean'], UEEAs['eav'] | CEEAs['eav'], GAK, EAN, EAV, RV>) {
-    this.#transactItems.push({ Update });
-    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | GetReturnValuesListValue<TypeOfItem, CE, RV>>;
+  addDelete<const Inputs extends readonly DeleteVariadicTwiBase<TS>[]>(...Deletes: ValidateDeleteVariadicTwiInputs<TS, Inputs>) {
+    this.#transactItems.push(...Deletes.map(Delete => ({ Delete })));
+    type newReturnValues = GetReturnValuesListValueFromInputs<{
+      [K in keyof Inputs]: [
+        ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
+        Inputs[K]['ConditionExpression'],
+        Inputs[K]['ReturnValuesOnConditionCheckFailure']
+      ]
+    }>;
+    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
   }
 
-  addDelete<
-    TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    CE extends string,
-    EAs extends ExtractEAsFromString<CE>,
-    GAK extends GetAllKeys<TypeOfItem>,
-    const EAN extends Record<EAs['ean'], GAK>,
-    const DummyEAN extends undefined,
-    const EAV extends Record<EAs['eav'], any>,
-    const DummyEAV extends undefined,
-    RV extends ReturnValuesOnConditionCheckFailureValues = 'NONE'
-  >(Delete: DeleteTwiInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RV>) {
-    this.#transactItems.push({ Delete });
-    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | GetReturnValuesListValue<TypeOfItem, CE, RV>>;
-  }
-
-  addConditionCheck<
-    TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    CE extends string,
-    EAs extends ExtractEAsFromString<CE>,
-    GAK extends GetAllKeys<TypeOfItem>,
-    const EAN extends Record<EAs['ean'], GAK>,
-    const DummyEAN extends undefined,
-    const EAV extends Record<EAs['eav'], any>,
-    const DummyEAV extends undefined,
-    RV extends ReturnValuesOnConditionCheckFailureValues = 'NONE'
-  >(ConditionCheck: ConditionCheckTwiInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RV>) {
-    this.#transactItems.push({ ConditionCheck });
-    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | GetReturnValuesListValue<TypeOfItem, CE, RV>>;
+  addConditionCheck<const Inputs extends readonly ConditionCheckVariadicTwiBase<TS>[]>(...ConditionChecks: ValidateConditionCheckVariadicTwiInputs<TS, Inputs>) {
+    this.#transactItems.push(...ConditionChecks.map(ConditionCheck => ({ ConditionCheck })));
+    type newReturnValues = GetReturnValuesListValueFromInputs<{
+      [K in keyof Inputs]: [
+        ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
+        Inputs[K]['ConditionExpression'],
+        Inputs[K]['ReturnValuesOnConditionCheckFailure']
+      ]
+    }>;
+    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
   }
 
   async execute(): Promise<TwiOutput<RCC, RICM, ReturnValuesList>> {
