@@ -1574,7 +1574,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
   readonly #preBackoffCb: PreBackoffCb | undefined;
   readonly #showPTEEE: boolean | ((error: AWSError) => unknown);
   readonly #id: symbol;
-  #ReturnConsumedCapacity: RCC;
+  readonly #ReturnConsumedCapacity: RCC;
   constructor({
     client,
     incomingRequests,
@@ -1615,7 +1615,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
 
   addTable<
     TN extends Exclude<TableName<TS>, TableNamesAlreadySet>,
-    Keys extends readonly TableKey<TS, TN>[],
+    const Keys extends readonly TableKey<TS, TN>[],
     TypeOfItem extends ExtractTableItemForKeys<TableItem<TS, TN>, Keys>,
     PE extends string,
     GAK extends GetAllKeys<TypeOfItem>,
@@ -1646,7 +1646,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
 
   addKeys<
     TN extends TableNamesAlreadySet,
-    Keys extends readonly TableKey<TS, TN>[],
+    const Keys extends readonly TableKey<TS, TN>[],
   >(TableName: TN, { Keys }: { Keys: Keys }) {
     type NewRequests = {
       [K in keyof Requests]:
@@ -1821,21 +1821,13 @@ const conditionalCheckFailedReasonHasItem = (reason: Record<string, unknown> & {
   return "Item" in reason && typeof reason['Item'] === 'object' && !!reason['Item'];
 };
 
-class TransactWriteItemArray extends Array<DocumentClient.TransactWriteItem> {
-  override push(...items: DocumentClient.TransactWriteItemList) {
-    if (this.length > 100) {
-      throw Error("TransactItems already contains 100 Items!");
-    }
-    return super.push(...items);
-  }
-}
 class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValuesList extends Record<string, unknown> | "NO_ITEM"> {
 
   readonly #client: DocumentClient;
-  readonly #transactItems: TransactWriteItemArray;
-  #ClientRequestToken: string | undefined;
-  #ReturnConsumedCapacity: RCC;
-  #ReturnItemCollectionMetrics: RICM;
+  readonly #transactItems: readonly DocumentClient.TransactWriteItem[];
+  readonly #ClientRequestToken: string | undefined;
+  readonly #ReturnConsumedCapacity: RCC;
+  readonly #ReturnItemCollectionMetrics: RICM;
   constructor({
     client,
     incomingTransactItems,
@@ -1844,7 +1836,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     ReturnItemCollectionMetrics
   }: {
     client: DocumentClient;
-    incomingTransactItems: DocumentClient.TransactWriteItemList;
+    incomingTransactItems: readonly DocumentClient.TransactWriteItem[];
     ClientRequestToken: string | undefined;
     ReturnConsumedCapacity: RCC;
     ReturnItemCollectionMetrics: RICM;
@@ -1857,7 +1849,10 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
   }
 
   addPut<const Inputs extends readonly PutVariadicTwiBase<TS>[]>(...Puts: ValidatePutVariadicTwiInputs<TS, Inputs>) {
-    this.#transactItems.push(...Puts.map(Put => ({ Put })));
+    const incomingTransactItems = [
+      ...this.#transactItems,
+      ...Puts.map(Put => ({ Put }))
+    ];
     type newReturnValues = GetReturnValuesListValueFromInputs<{
       [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Item']>,
@@ -1865,11 +1860,20 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>({
+      client: this.#client,
+      incomingTransactItems,
+      ClientRequestToken: this.#ClientRequestToken,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
+      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
+    });
   }
 
   addUpdate<const Inputs extends readonly UpdateVariadicTwiBase<TS>[]>(...Updates: ValidateUpdateVariadicTwiInputs<TS, Inputs>) {
-    this.#transactItems.push(...Updates.map(Update => ({ Update })));
+    const incomingTransactItems = [
+      ...this.#transactItems,
+      ...Updates.map(Update => ({ Update }))
+    ];
     type newReturnValues = GetReturnValuesListValueFromInputs<{
       [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
@@ -1877,11 +1881,20 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>({
+      client: this.#client,
+      incomingTransactItems,
+      ClientRequestToken: this.#ClientRequestToken,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
+      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
+    });
   }
 
   addDelete<const Inputs extends readonly DeleteVariadicTwiBase<TS>[]>(...Deletes: ValidateDeleteVariadicTwiInputs<TS, Inputs>) {
-    this.#transactItems.push(...Deletes.map(Delete => ({ Delete })));
+    const incomingTransactItems = [
+      ...this.#transactItems,
+      ...Deletes.map(Delete => ({ Delete }))
+    ];
     type newReturnValues = GetReturnValuesListValueFromInputs<{
       [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
@@ -1889,11 +1902,20 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>({
+      client: this.#client,
+      incomingTransactItems,
+      ClientRequestToken: this.#ClientRequestToken,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
+      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
+    });
   }
 
   addConditionCheck<const Inputs extends readonly ConditionCheckVariadicTwiBase<TS>[]>(...ConditionChecks: ValidateConditionCheckVariadicTwiInputs<TS, Inputs>) {
-    this.#transactItems.push(...ConditionChecks.map(ConditionCheck => ({ ConditionCheck })));
+    const incomingTransactItems = [
+      ...this.#transactItems,
+      ...ConditionChecks.map(ConditionCheck => ({ ConditionCheck }))
+    ];
     type newReturnValues = GetReturnValuesListValueFromInputs<{
       [K in keyof Inputs]: [
         ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
@@ -1901,11 +1923,22 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         Inputs[K]['ReturnValuesOnConditionCheckFailure']
       ]
     }>;
-    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>({
+      client: this.#client,
+      incomingTransactItems,
+      ClientRequestToken: this.#ClientRequestToken,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
+      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
+    });
   }
 
   async execute(): Promise<TwiOutput<RCC, RICM, ReturnValuesList>> {
-    const transactionRequest = this.#client.transactWrite({ TransactItems: this.#transactItems, ClientRequestToken: this.#ClientRequestToken, ReturnConsumedCapacity: this.#ReturnConsumedCapacity, ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics });
+    const transactionRequest = this.#client.transactWrite({
+      TransactItems: this.#transactItems as DocumentClient.TransactWriteItem[],
+      ClientRequestToken: this.#ClientRequestToken,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
+      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
+    });
     let CancellationReasons: ParsedCancellationReasons;
     transactionRequest.on('extractError', response => {
       let maybeCancellationReasons;
@@ -1963,24 +1996,39 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     return this.#ClientRequestToken;
   }
   setClientRequestToken(ClientRequestToken: string) {
-    this.#ClientRequestToken = ClientRequestToken;
-    return this;
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList>({
+      client: this.#client,
+      incomingTransactItems: this.#transactItems,
+      ClientRequestToken,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
+      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
+    });
   }
 
   get ReturnConsumedCapacity() {
     return this.#ReturnConsumedCapacity;
   }
-  setReturnConsumedCapacity<_RCC extends "INDEXES" | "TOTAL" | "NONE">(ReturnConsumedCapacity: _RCC) {
-    this.#ReturnConsumedCapacity = ReturnConsumedCapacity as unknown as RCC;
-    return this as unknown as TransactWriteItemsRequest<TS, _RCC, RICM, ReturnValuesList>;
+  setReturnConsumedCapacity<RCC extends "INDEXES" | "TOTAL" | "NONE">(ReturnConsumedCapacity: RCC) {
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList>({
+      client: this.#client,
+      incomingTransactItems: this.#transactItems,
+      ClientRequestToken: this.#ClientRequestToken,
+      ReturnConsumedCapacity,
+      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
+    });
   }
 
   get ReturnItemCollectionMetrics() {
     return this.#ReturnItemCollectionMetrics;
   }
-  setReturnItemCollectionMetrics<_RICM extends "SIZE" | "NONE">(ReturnItemCollectionMetrics: _RICM) {
-    this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics as unknown as RICM;
-    return this as unknown as TransactWriteItemsRequest<TS, RCC, _RICM, ReturnValuesList>;
+  setReturnItemCollectionMetrics<RICM extends "SIZE" | "NONE">(ReturnItemCollectionMetrics: RICM) {
+    return new TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList>({
+      client: this.#client,
+      incomingTransactItems: this.#transactItems,
+      ClientRequestToken: this.#ClientRequestToken,
+      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
+      ReturnItemCollectionMetrics
+    });
   }
 
 }
