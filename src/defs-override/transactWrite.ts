@@ -136,10 +136,12 @@ export type ConditionCheckTwiInput<
     }
   );
 
-export type GetReturnValuesListValue<TypeOfItem extends Record<string, any>, CE extends string, RV extends ReturnValuesOnConditionCheckFailureValues> =
-  string extends CE
+export type GetReturnValuesListValue<TypeOfItem extends Record<string, any>, CE extends string | undefined, RV extends ReturnValuesOnConditionCheckFailureValues | undefined> =
+  undefined extends CE
   ? "NO_ITEM"
-  : RV extends 'NONE'
+  : undefined extends RV
+  ? "NO_ITEM"
+  : "NONE" extends RV
   ? "NO_ITEM"
   : TypeOfItem;
 

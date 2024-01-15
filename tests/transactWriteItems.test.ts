@@ -40,13 +40,61 @@ test('createTransactWriteItemsRequest', async () => {
     })
     .setReturnItemCollectionMetrics('SIZE')
     .setReturnConsumedCapacity('TOTAL');
-  const twiRequest2 = ([] as Pick<Type3b, 'threeID' | 'otherID'>[]).map(Key => twiRequest.addDelete({
-    TableName: Table3.name,
-    Key,
-    ConditionExpression: 'attribute_exists(threeID)',
-    ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
-  }))[0] ?? twiRequest;
+
+  let twiRequest2;
+  const type3bKeys: Pick<Type3b, 'threeID' | 'otherID'>[] = [];
+  for (const Key of type3bKeys) {
+    twiRequest2 = twiRequest.addDelete({
+      TableName: Table3.name,
+      Key,
+      ConditionExpression: 'attribute_exists(threeID)',
+      ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+    });
+  }
+  twiRequest2 ??= twiRequest;
+
   const response = await twiRequest2.execute();
+  if (response.success) {
+    const {
+      ItemCollectionMetrics,
+      ConsumedCapacity
+    } = response.response;
+    console.log({
+      ItemCollectionMetrics,
+      ConsumedCapacity
+    });
+  } else {
+    const {
+      CancellationReasons,
+      error
+    } = response;
+    console.log(CancellationReasons);
+    console.log(error);
+  }
+
+});
+
+test('variadic', async () => {
+
+  const twiRequest = tsDdb
+    .createTransactWriteItemsRequest()
+    .setReturnConsumedCapacity('TOTAL')
+    .setReturnItemCollectionMetrics('SIZE')
+    .addPutVariadic(
+      {
+        TableName: CiCdTable.name,
+        Item: {
+          hashKey: randomUUID(),
+          rangeKey: 'big-cicd'
+        },
+        ConditionExpression: 'attribute_not_exists(#hashKey)',
+        ExpressionAttributeNames: {
+          '#hashKey': 'hashKey'
+        },
+        ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+      }
+    );
+  const response = await twiRequest.execute();
   if (response.success) {
     const {
       ItemCollectionMetrics,

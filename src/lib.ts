@@ -18,6 +18,7 @@ import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
 import { ConditionCheckTwiInput, DeleteTwiInput, GetReturnValuesListValue, ParsedCancellationReasons, PutTwiInput, TwiOutput, UpdateTwiInput } from "./defs-override/transactWrite";
+import { PutVariadicTwiBase, ValidatePutVariadicTwiInputs } from "./defs-override/transactWrite/put";
 
 export type ProjectAllIndex = {
   project: 'all';
@@ -80,7 +81,7 @@ export type Table<
     }
   )
   : never;
-type AnyGenericTable = Table<TableFromValue, Record<string, any>, string, string | undefined>;
+export type AnyGenericTable = Table<TableFromValue, Record<string, any>, string, string | undefined>;
 
 /** Produce a union of all table names from a union of Tables */
 export type TableName<Tables> = Tables extends AnyGenericTable ? Tables['name'] : never;
@@ -1850,6 +1851,18 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     this.#ClientRequestToken = ClientRequestToken;
     this.#ReturnConsumedCapacity = ReturnConsumedCapacity;
     this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics;
+  }
+
+  addPutVariadic<const Inputs extends readonly PutVariadicTwiBase<TS>[]>(...Puts: ValidatePutVariadicTwiInputs<TS, Inputs>) {
+    this.#transactItems.push(...Puts.map(Put => ({ Put })));
+    type newReturnValues = {
+      [K in keyof Inputs]: GetReturnValuesListValue<
+        ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Item']>,
+        Inputs[K]['ConditionExpression'],
+        Inputs[K]['ReturnValuesOnConditionCheckFailure']
+      >
+    }[number];
+    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValuesList | newReturnValues>;
   }
 
   addPut<
