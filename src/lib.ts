@@ -1269,6 +1269,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * `Keys` and `ProjectionExpressions` for a table can be added using `addTable`.
    * `Keys` can still be added after a table is added using `addKeys`. When you are ready to send the request, call `execute`.
    * 
+   * Please note the request is immutable. Each method call returns a new instance. This means you can chain method calls, or if not chaining,
+   * you must assign the request to a new variable or reassign the request back to itself after each method call.
+   * 
    * If `batchGet` returns {@link DocumentClient.BatchGetItemOutput.UnprocessedKeys} or a `ProvisionedThroughputExceededException` is thrown 
    * (both of which are considered a "failed attempt"), exponential backoff with {@link base} is used to retry up to {@link maxFailedAttempts}. 
    * Note that the number of failed attempts is decremented after a "successful attempt" 
@@ -1291,7 +1294,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     jitter = false,
     unprocessedKeysRetryBehavior = 'push',
     preBackoffCb,
-    showProvisionedThroughputExceededExceptionError
+    showProvisionedThroughputExceededExceptionError = false
   }: {
     maxFailedAttempts?: number;
     base?: number;
@@ -1326,12 +1329,36 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       jitter,
       unprocessedKeysRetryBehavior,
       preBackoffCb,
-      showProvisionedThroughputExceededExceptionError: showProvisionedThroughputExceededExceptionError ?? false,
+      showProvisionedThroughputExceededExceptionError,
       id: Symbol(),
       ReturnConsumedCapacity: "NONE"
     });
   }
 
+  /**
+   * Creates a `TransactWriteItemsRequest`. Add items to the underlying {@link DocumentClient.TransactWriteItemList} with `addPut`,
+   * `addUpdate`, `addDelete`, and `addConditionCheck`. Each `add*` method allows adding multiple items through rest parameters.
+   * 
+   * Other request options can be set using `setClientRequestToken`, `setReturnConsumedCapacity`, and `setReturnItemCollectionMetrics`.
+   * When you are ready to send the request, call `execute`. `execute` only becomes available after calling an `add*` method at least once,
+   * otherwise there are no items to transact! (You can still shoot yourself in the foot by calling an `add*` method with no arguments, however.)
+   * 
+   * Please note the request is immutable. Each method call returns a new instance. This means you can chain method calls, or if not chaining,
+   * you must assign the request to a new variable or reassign the request back to itself after each method call.
+   * 
+   * The response is a discriminated union. If the transaction succeeded, you will receive:
+  ```ts
+  { success: true; response: DocumentClient.TransactWriteItemsOutput }
+  ```
+   * If the transaction failed, you will receive:
+  ```ts
+  { success: false; CancellationReasons: [...]; error: AWSError }
+  ```
+   * `CancellationReasons` will contain reasons for all items, and is strongly typed such that only items that specified a
+   * `ConditionExpression` and `ReturnValuesOnConditionCheckFailure == 'ALL_OLD'` will appear on the `Item` property of a reason.
+   * However, `CancellationReasons` is not _typed_ such that the reasons are guaranteed to appear 
+   * in the order of items in the underlying `TransactWriteItemList` (i.e., a tuple), however at runtime they _should_ technically be in the same order.
+   */
   createTransactWriteItemsRequest() {
     return new TransactWriteItemsRequest<TS, false, 'NONE', 'NONE', never>({
       client: this.client,
