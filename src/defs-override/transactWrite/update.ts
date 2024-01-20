@@ -33,7 +33,7 @@ type MissingEANOrEAVFalseReportsFalseError<UEDefinedCE extends string, EAN, EAV>
     : 0
     : 0
   );
-type ValidateUpdateVariadicTwiInput<
+export type ValidateUpdateVariadicTwiInput<
   TS extends AnyGenericTable,
   TN extends string,
   Key extends Record<string, any>,
@@ -83,10 +83,3 @@ type ValidateUpdateVariadicTwiInput<
     }
   )
   : never;
-export type ValidateUpdateVariadicTwiInputs<TS extends AnyGenericTable, Inputs extends readonly UpdateVariadicTwiBase<TS>[]> =
-  // This weird conditional logic is required to perserve Inputs "const-ness".
-  [Inputs] extends [unknown]
-  ? {
-    readonly [K in keyof Inputs]: ValidateUpdateVariadicTwiInput<TS, Inputs[K]['TableName'], Inputs[K]['Key'], Inputs[K]['UpdateExpression'], Inputs[K]['ConditionExpression'], Inputs[K]['ExpressionAttributeNames'], Inputs[K]['ExpressionAttributeValues']>;
-  }
-  : Inputs;

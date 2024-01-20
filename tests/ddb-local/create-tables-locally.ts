@@ -1,10 +1,8 @@
 import { DynamoDB } from "aws-sdk";
 
 const ddb = new DynamoDB({
-  accessKeyId: 'fake-key',
   endpoint: `http://localhost:8001`,
   region: 'local',
-  secretAccessKey: 'fake-secret'
 });
 
 const ProvisionedThroughput = {

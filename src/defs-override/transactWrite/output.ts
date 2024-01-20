@@ -1,17 +1,4 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { ReturnValuesOnConditionCheckFailureValues } from "../../lib";
-
-type GetReturnValuesValue<TypeOfItem extends Record<string, any>, CE extends string | undefined, RV extends ReturnValuesOnConditionCheckFailureValues | undefined> =
-  undefined extends CE
-  ? never
-  : undefined extends RV
-  ? never
-  : "NONE" extends RV
-  ? never
-  : TypeOfItem;
-export type GetReturnValuesValueFromInputs<InputsTransformed extends readonly [TypeOfItem: Record<string, any>, CE: string | undefined, RV: ReturnValuesOnConditionCheckFailureValues | undefined][]> = {
-  [K in keyof InputsTransformed]: GetReturnValuesValue<InputsTransformed[K][0], InputsTransformed[K][1], InputsTransformed[K][2]>;
-}[number];
 
 type TwiResponse<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE"> =
   & {}

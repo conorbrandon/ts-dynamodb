@@ -9,7 +9,7 @@ export type DeleteVariadicTwiBase<TS extends AnyGenericTable> = Omit<DocumentCli
   TableName: TableName<TS>;
   ReturnValuesOnConditionCheckFailure?: ReturnValuesOnConditionCheckFailureValues;
 };
-type ValidateDeleteVariadicTwiInput<
+export type ValidateDeleteVariadicTwiInput<
   TS extends AnyGenericTable,
   TN extends string,
   Key extends Record<string, any>,
@@ -37,10 +37,3 @@ type ValidateDeleteVariadicTwiInput<
       ExpressionAttributeValues?: never;
     }
   );
-export type ValidateDeleteVariadicTwiInputs<TS extends AnyGenericTable, Inputs extends readonly DeleteVariadicTwiBase<TS>[]> =
-  // This weird conditional logic is required to perserve Inputs "const-ness".
-  [Inputs] extends [unknown]
-  ? {
-    readonly [K in keyof Inputs]: ValidateDeleteVariadicTwiInput<TS, Inputs[K]['TableName'], Inputs[K]['Key'], Inputs[K]['ConditionExpression']>;
-  }
-  : Inputs;

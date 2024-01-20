@@ -8,7 +8,7 @@ export type ConditionCheckVariadicTwiBase<TS extends AnyGenericTable> = Omit<Doc
   TableName: TableName<TS>;
   ReturnValuesOnConditionCheckFailure?: ReturnValuesOnConditionCheckFailureValues;
 };
-type ValidateConditionCheckVariadicTwiInput<
+export type ValidateConditionCheckVariadicTwiInput<
   TS extends AnyGenericTable,
   TN extends string,
   Key extends Record<string, any>,
@@ -36,10 +36,3 @@ type ValidateConditionCheckVariadicTwiInput<
       ExpressionAttributeValues?: never;
     }
   );
-export type ValidateConditionCheckVariadicTwiInputs<TS extends AnyGenericTable, Inputs extends readonly ConditionCheckVariadicTwiBase<TS>[]> =
-  // This weird conditional logic is required to perserve Inputs "const-ness".
-  [Inputs] extends [unknown]
-  ? {
-    readonly [K in keyof Inputs]: ValidateConditionCheckVariadicTwiInput<TS, Inputs[K]['TableName'], Inputs[K]['Key'], Inputs[K]['ConditionExpression']>;
-  }
-  : Inputs;

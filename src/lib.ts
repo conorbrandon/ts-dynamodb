@@ -17,11 +17,8 @@ import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
-import { GetReturnValuesValueFromInputs, ParsedCancellationReasons, TwiOutput } from "./defs-override/transactWrite/helpers";
-import { PutVariadicTwiBase, ValidatePutVariadicTwiInputs } from "./defs-override/transactWrite/put";
-import { UpdateVariadicTwiBase, ValidateUpdateVariadicTwiInputs } from "./defs-override/transactWrite/update";
-import { DeleteVariadicTwiBase, ValidateDeleteVariadicTwiInputs } from "./defs-override/transactWrite/delete";
-import { ConditionCheckVariadicTwiBase, ValidateConditionCheckVariadicTwiInputs } from "./defs-override/transactWrite/condition-check";
+import { ParsedCancellationReasons, TwiOutput } from "./defs-override/transactWrite/output";
+import { GetNewVariadicTwiReturnValues, ValidateVariadicTwiInputs, VariadicTwiBase } from "./defs-override/transactWrite/input";
 
 export type ProjectAllIndex = {
   project: 'all';
@@ -1868,8 +1865,8 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
     ReturnConsumedCapacity: RCC;
     ReturnItemCollectionMetrics: RICM;
   }) {
-    if (incomingTransactItems.length > 25) {
-      throw Error("TransactItems must have length less than or equal to 25");
+    if (incomingTransactItems.length > 100) {
+      throw Error("TransactItems must have length less than or equal to 100");
     }
     this.#client = client;
     this.#transactItems = incomingTransactItems;
@@ -1878,81 +1875,9 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
     this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics;
   }
 
-  addPut<const Inputs extends readonly PutVariadicTwiBase<TS>[]>(...Puts: ValidatePutVariadicTwiInputs<TS, Inputs>) {
-    const incomingTransactItems = [
-      ...this.#transactItems,
-      ...Puts.map(Put => ({ Put }))
-    ];
-    type newReturnValues = GetReturnValuesValueFromInputs<{
-      [K in keyof Inputs]: [
-        ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Item']>,
-        Inputs[K]['ConditionExpression'],
-        Inputs[K]['ReturnValuesOnConditionCheckFailure']
-      ]
-    }>;
-    return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
-      client: this.#client,
-      incomingTransactItems,
-      ClientRequestToken: this.#ClientRequestToken,
-      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
-      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
-    });
-  }
-
-  addUpdate<const Inputs extends readonly UpdateVariadicTwiBase<TS>[]>(...Updates: ValidateUpdateVariadicTwiInputs<TS, Inputs>) {
-    const incomingTransactItems = [
-      ...this.#transactItems,
-      ...Updates.map(Update => ({ Update }))
-    ];
-    type newReturnValues = GetReturnValuesValueFromInputs<{
-      [K in keyof Inputs]: [
-        ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
-        Inputs[K]['ConditionExpression'],
-        Inputs[K]['ReturnValuesOnConditionCheckFailure']
-      ]
-    }>;
-    return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
-      client: this.#client,
-      incomingTransactItems,
-      ClientRequestToken: this.#ClientRequestToken,
-      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
-      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
-    });
-  }
-
-  addDelete<const Inputs extends readonly DeleteVariadicTwiBase<TS>[]>(...Deletes: ValidateDeleteVariadicTwiInputs<TS, Inputs>) {
-    const incomingTransactItems = [
-      ...this.#transactItems,
-      ...Deletes.map(Delete => ({ Delete }))
-    ];
-    type newReturnValues = GetReturnValuesValueFromInputs<{
-      [K in keyof Inputs]: [
-        ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
-        Inputs[K]['ConditionExpression'],
-        Inputs[K]['ReturnValuesOnConditionCheckFailure']
-      ]
-    }>;
-    return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
-      client: this.#client,
-      incomingTransactItems,
-      ClientRequestToken: this.#ClientRequestToken,
-      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
-      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
-    });
-  }
-
-  addConditionCheck<const Inputs extends readonly ConditionCheckVariadicTwiBase<TS>[]>(...ConditionChecks: ValidateConditionCheckVariadicTwiInputs<TS, Inputs>) {
-    const incomingTransactItems = [
-      ...this.#transactItems,
-      ...ConditionChecks.map(ConditionCheck => ({ ConditionCheck }))
-    ];
-    type newReturnValues = GetReturnValuesValueFromInputs<{
-      [K in keyof Inputs]: [
-        ExtractTableItemForKey<TableItem<TS, Inputs[K]['TableName']>, Inputs[K]['Key']>,
-        Inputs[K]['ConditionExpression'],
-        Inputs[K]['ReturnValuesOnConditionCheckFailure']
-      ]
-    }>;
+  push<const Inputs extends readonly VariadicTwiBase<TS>[]>(...inputs: ValidateVariadicTwiInputs<TS, Inputs>) {
+    const incomingTransactItems = [...this.#transactItems, ...inputs];
+    type newReturnValues = GetNewVariadicTwiReturnValues<TS, Inputs>;
     return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
       client: this.#client,
       incomingTransactItems,
@@ -2068,6 +1993,10 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
       ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
       ReturnItemCollectionMetrics
     });
+  }
+
+  get isNonEmpty() {
+    return !!this.#transactItems.length;
   }
 
 }

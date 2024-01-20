@@ -8,7 +8,7 @@ jest.setTimeout(100_000);
 
 test('createTransactWriteItemsRequest success', async () => {
 
-  const table3Items = new Array(25).fill(0).map((): Type3b => {
+  const table3Items = new Array(100).fill(0).map((): Type3b => {
     return {
       threeID: Math.random(),
       otherID: `id_${Math.random()}`,
@@ -25,10 +25,12 @@ test('createTransactWriteItemsRequest success', async () => {
     .setClientRequestToken(randomUUID())
     .setReturnConsumedCapacity('TOTAL')
     .setReturnItemCollectionMetrics('SIZE')
-    .addPut(...table3Items.map(Item => {
+    .push(...table3Items.map(Item => {
       return {
-        TableName: Table3.name,
-        Item
+        Put: {
+          TableName: Table3.name,
+          Item
+        }
       };
     }))
     .execute();
@@ -74,54 +76,60 @@ test('createTransactWriteItemsRequest failure', async () => {
     .createTransactWriteItemsRequest()
     .setReturnConsumedCapacity('TOTAL')
     .setReturnItemCollectionMetrics('SIZE')
-    .addPut(
+    .push(
       {
-        TableName: CiCdTable.name,
-        Item,
-        ConditionExpression: 'attribute_not_exists(#hashKey)',
-        ExpressionAttributeNames: {
-          '#hashKey': 'hashKey'
-        },
-        ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
-      },
-      {
-        TableName: CiCdTable.name,
-        Item: {
-          hashKey: randomUUID(),
-          rangeKey: 'big-cicd'
-        },
-        ConditionExpression: 'attribute_not_exists(hashKey)'
-      },
-      {
-        TableName: CiCdTable.name,
-        Item: {
-          hashKey: randomUUID(),
-          rangeKey: 'big-cicd'
-        },
-        ConditionExpression: 'attribute_not_exists(hashKey)',
-        ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
-      }
-    )
-    .addUpdate(
-      {
-        TableName: CiCdTable.name,
-        Key: {
-          hashKey: randomUUID(),
-          rangeKey: 'big-cicd'
-        },
-        UpdateExpression: 'SET #datum = :datum',
-        ExpressionAttributeNames: {
-          '#datum': 'datum',
-        },
-        ExpressionAttributeValues: {
-          ':datum': randomUUID()
+        Put: {
+          TableName: CiCdTable.name,
+          Item,
+          ConditionExpression: 'attribute_not_exists(#hashKey)',
+          ExpressionAttributeNames: {
+            '#hashKey': 'hashKey'
+          },
+          ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
         }
-      }
-    )
-    .addDelete(
+      },
+      {
+        Put: {
+          TableName: CiCdTable.name,
+          Item: {
+            hashKey: randomUUID(),
+            rangeKey: 'big-cicd'
+          },
+          ConditionExpression: 'attribute_not_exists(hashKey)'
+        }
+      },
+      {
+        Put: {
+          TableName: CiCdTable.name,
+          Item: {
+            hashKey: randomUUID(),
+            rangeKey: 'big-cicd'
+          },
+          ConditionExpression: 'attribute_not_exists(hashKey)',
+          ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+        }
+      },
+      {
+        Update: {
+          TableName: CiCdTable.name,
+          Key: {
+            hashKey: randomUUID(),
+            rangeKey: 'big-cicd'
+          },
+          UpdateExpression: 'SET #datum = :datum',
+          ExpressionAttributeNames: {
+            '#datum': 'datum',
+          },
+          ExpressionAttributeValues: {
+            ':datum': randomUUID()
+          }
+        }
+      },
       ...type3bKeys.map(Key => ({
-        ...type3bKeyParams,
-        Key
+        Delete: {
+          ...type3bKeyParams,
+          Key
+        }
       }))
     );
 
@@ -188,21 +196,82 @@ test('createTransactWriteItemsRequest errors', () => {
   type execute = (typeof request)['execute'];
   expectTypeOf<execute>().toBeNever();
 
-  const table3Inputs = new Array(26).fill(0).map((): { TableName: typeof Table3.name; Item: Type3b } => {
+  const table3Inputs = new Array(101).fill(0).map((): { Put: { TableName: typeof Table3.name; Item: Type3b } } => {
     return {
-      TableName: Table3.name,
-      Item: {
-        threeID: Math.random(),
-        otherID: `id_${Math.random()}`,
-        obj: {
-          nah: 'fam',
-          duck: 'goose',
-          '💀': 'RIP'
-        },
-        record: {}
+      Put: {
+        TableName: Table3.name,
+        Item: {
+          threeID: Math.random(),
+          otherID: `id_${Math.random()}`,
+          obj: {
+            nah: 'fam',
+            duck: 'goose',
+            '💀': 'RIP'
+          },
+          record: {}
+        }
       }
     };
   });
-  expect(() => request.addPut(...table3Inputs)).toThrow(Error("TransactItems must have length less than or equal to 25"));
+  expect(() =>
+    request
+      .push({
+        Update: {
+          TableName: Table3.name,
+          Key: {
+            threeID: Math.random(),
+            otherID: `id_${Math.random()}`
+          },
+          UpdateExpression: 'SET record = :record',
+          ConditionExpression: 'size(#record) < :one',
+          ExpressionAttributeValues: {
+            ':record': {},
+            ':one': 1
+          },
+          // @ts-expect-error Missing EANs
+          ExpressionAttributeNames: {
+
+          }
+        }
+      })
+      .push({
+        Put: {
+          TableName: Table3.name,
+          Item: {
+            threeID: Math.random(),
+            otherID: `id_${Math.random()}`,
+            obj: {
+              nah: 'fam',
+              duck: 'goose',
+              '💀': 'RIP'
+            },
+            record: {}
+          },
+          ConditionExpression: 'attribute_exists(threeID)',
+          // @ts-expect-error Unused EANs
+          ExpressionAttributeNames: {
+            '#threeID': 'threeID'
+          }
+        }
+      })
+      .push({
+        Delete: {
+          // @ts-expect-error Invalid TableName
+          TableName: 'test'
+        }
+      })
+      .push({
+        Delete: {
+          TableName: CiCdTable.name,
+          Key: {
+            hashKey: randomUUID(),
+            rangeKey: 'big-cicd'
+          }
+        },
+        // @ts-expect-error Once valid, these become excess properties
+        ConditionCheck: undefined
+      })
+      .push(...table3Inputs)
+  ).toThrow(Error("TransactItems must have length less than or equal to 100"));
 
 });
