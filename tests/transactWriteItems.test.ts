@@ -35,7 +35,7 @@ test('createTransactWriteItemsRequest success', async () => {
     }))
     .execute();
   if (response.success) {
-    const { ConsumedCapacity, ItemCollectionMetrics } = response.response;
+    const { ConsumedCapacity, ItemCollectionMetrics } = response;
     console.log({
       ConsumedCapacity,
       ItemCollectionMetrics
@@ -138,7 +138,7 @@ test('createTransactWriteItemsRequest failure', async () => {
     const {
       ItemCollectionMetrics,
       ConsumedCapacity
-    } = response.response;
+    } = response;
     console.log({
       ItemCollectionMetrics,
       ConsumedCapacity

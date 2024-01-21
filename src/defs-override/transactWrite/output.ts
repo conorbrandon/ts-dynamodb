@@ -31,5 +31,5 @@ export type ParsedCancellationReasons<ReturnValues extends Record<string, unknow
   : never
 )[] | undefined;
 export type TwiOutput<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> =
-  | { success: true; response: TwiResponse<RCC, RICM> }
+  | { success: true } & TwiResponse<RCC, RICM>
   | { success: false; CancellationReasons: ParsedCancellationReasons<ReturnValues> | undefined; error: unknown };

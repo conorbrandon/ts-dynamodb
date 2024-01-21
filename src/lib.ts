@@ -1333,12 +1333,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   }
 
   /**
-   * Creates a `TransactWriteItemsRequest`. Add items to the underlying {@link DocumentClient.TransactWriteItemList} with `addPut`,
-   * `addUpdate`, `addDelete`, and `addConditionCheck`. Each `add*` method allows adding multiple items through rest parameters.
+   * Creates a `TransactWriteItemsRequest`. Add items to the underlying {@link DocumentClient.TransactWriteItemList} with `push`.
+   * `push` allows adding multiple items through rest parameters.
    * 
    * Other request options can be set using `setClientRequestToken`, `setReturnConsumedCapacity`, and `setReturnItemCollectionMetrics`.
-   * When you are ready to send the request, call `execute`. `execute` only becomes available after calling an `add*` method at least once,
-   * otherwise there are no items to transact! (You can still shoot yourself in the foot by calling an `add*` method with no arguments, however.)
+   * When you are ready to send the request, call `execute`. `execute` only becomes available after calling `push` at least once,
+   * otherwise there are no items to transact! (You can still shoot yourself in the foot by calling `push` with no arguments, however.)
    * 
    * Please note the request is immutable. Each method call returns a new instance. This means you can chain method calls, or if not chaining,
    * you must assign the request to a new variable or reassign the request back to itself after each method call.
@@ -1944,7 +1944,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
       const response = await p;
       return {
         success: true,
-        response
+        ...response
       } as any;
     } catch (error) {
       return {
