@@ -17,7 +17,7 @@ import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
-import { CancellationReasons, TwiOutput } from "./defs-override/transactWrite/output";
+import { CancellationReasons, TwiResponse } from "./defs-override/transactWrite/output";
 import { GetNewVariadicTwiReturnValues, ValidateVariadicTwiInputs, VariadicTwiBase } from "./defs-override/transactWrite/input";
 
 export type ProjectAllIndex = {
@@ -1342,37 +1342,35 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   }
 
   /**
-   * Creates a `TransactWriteItemsRequest`. Add items to the underlying {@link DocumentClient.TransactWriteItemList} with `push`.
+   * Creates a `TransactWriteItemsRequest`. Add items to the internal {@link DocumentClient.TransactWriteItemList} with `push`.
    * `push` allows adding multiple items through rest parameters.
    * 
    * Other request options can be set using `setClientRequestToken`, `setReturnConsumedCapacity`, and `setReturnItemCollectionMetrics`.
-   * When you are ready to send the request, call `execute`. `execute` only becomes available after calling `push` at least once (or `isNotEmpty` in the mutable flow, see below),
+   * When you are ready to send the request, call `execute`. `execute` only becomes available after calling `push` at least once (or {@link TransactWriteItemsRequest.isNotEmpty} in the mutable flow, see below),
    * otherwise there are no items to transact! (You can still shoot yourself in the foot by calling `push` with no arguments, however.)
    * 
    * Please note the request is _mutable_. Each method call returns the same instance (i.e. itself). This means you can chain method calls,
    * but you don't have to. This is a consideration for logic that needs to conditionally push items onto the request, as it would be burdensome
-   * to have to assign the request back to a variable after each push. (Please note: if you wish to process the `CancellationReasons` array
-   * upon transaction failure, you _must_ assign the request back to a new variable given the absence of [microsoft/TypeScript#10421](https://github.com/microsoft/TypeScript/issues/10421).)
+   * to have to assign the request back to a variable after each push. (Note: upon transaction failure, if you wish to process the `CancellationReasons` array in a `TransactWriteItemsParsedError` 
+   * in a strongly typed fashion wherein it includes _all_ possible items that set `ReturnValuesOnConditionCheckFailure`,
+   * you _must_ assign the request back to a new variable given the absence of [microsoft/TypeScript#10421](https://github.com/microsoft/TypeScript/issues/10421).)
    * 
-   * The response is a discriminated union. If the transaction succeeded, you will receive:
-  ```ts
-  { success: true } & DocumentClient.TransactWriteItemsOutput
-  ```
-   * If the transaction failed, you will receive:
-  ```ts
-  { success: false; CancellationReasons: [...]; error: AWSError }
-  ```
+   * If the transaction succeeds, the response is simply {@link DocumentClient.TransactWriteItemsOutput}.
+   * 
+   * If the transaction fails, a {@link TransactWriteItemsParsedError} is thrown. 
+   * You can strongly type this error by using {@link TransactWriteItemsRequest.isParsedErrorFromThisRequest} on the `TransactWriteItemsRequest` instance.
    * `CancellationReasons` will contain reasons for all items, and is strongly typed such that only items that specified a
    * `ConditionExpression` and `ReturnValuesOnConditionCheckFailure == 'ALL_OLD'` will appear on the `Item` property of a reason.
    * However, `CancellationReasons` is not _typed_ such that the reasons are guaranteed to appear 
-   * in the order of items in the underlying `TransactWriteItemList` (i.e., a tuple), however at runtime they _should_ technically be in the same order.
+   * in the order of items in the internal `TransactWriteItemList` (i.e., a tuple), however at runtime they _should_ technically be in the same order.
    */
   createTransactWriteItemsRequest() {
     return new TransactWriteItemsRequest({
       client: this.client,
       ClientRequestToken: undefined,
       ReturnConsumedCapacity: "NONE",
-      ReturnItemCollectionMetrics: "NONE"
+      ReturnItemCollectionMetrics: "NONE",
+      id: Symbol(),
     }) as Omit<TransactWriteItemsRequest<TS, 'NONE', 'NONE', never>, 'execute'>;
   }
 
@@ -1555,7 +1553,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
 export class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> extends Error {
   override name = "BatchGetAllMaxFailedAttemptsExceededError" as const;
-  constructor(public id: symbol, public partialResponse: BatchGetAllRequestOutput<TS, Requests, RCC>) {
+  constructor(public readonly id: symbol, public readonly partialResponse: BatchGetAllRequestOutput<TS, Requests, RCC>) {
     super();
   }
 }
@@ -1865,7 +1863,12 @@ const isConditionalCheckFailedReason = (reason: Record<string, unknown> & { Code
 const conditionalCheckFailedReasonHasItem = (reason: Record<string, unknown> & { Code: "ConditionalCheckFailed" }): reason is Record<string, unknown> & { Code: "ConditionalCheckFailed"; Item: Record<string, any> } => {
   return "Item" in reason && typeof reason['Item'] === 'object' && !!reason['Item'];
 };
-
+export class TransactWriteItemsParsedError<ReturnValues extends Record<string, unknown>> extends Error {
+  override name = "TransactWriteItemsParsedError" as const;
+  constructor(public readonly id: symbol, public readonly transactWriteError: unknown, public readonly CancellationReasons: CancellationReasons<ReturnValues>) {
+    super();
+  }
+}
 class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
 
   readonly #client: DocumentClient;
@@ -1873,22 +1876,26 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
   #ClientRequestToken: string | undefined;
   #ReturnConsumedCapacity: RCC;
   #ReturnItemCollectionMetrics: RICM;
+  readonly #id: symbol;
   constructor({
     client,
     ClientRequestToken,
     ReturnConsumedCapacity,
-    ReturnItemCollectionMetrics
+    ReturnItemCollectionMetrics,
+    id
   }: {
     client: DocumentClient;
     ClientRequestToken: string | undefined;
     ReturnConsumedCapacity: RCC;
     ReturnItemCollectionMetrics: RICM;
+    id: symbol;
   }) {
     this.#client = client;
     this.#transactItems = [];
     this.#ClientRequestToken = ClientRequestToken;
     this.#ReturnConsumedCapacity = ReturnConsumedCapacity;
     this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics;
+    this.#id = id;
   }
 
   push<const Inputs extends readonly VariadicTwiBase<TS>[]>(...inputs: ValidateVariadicTwiInputs<TS, Inputs>) {
@@ -1897,7 +1904,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>;
   }
 
-  async execute(): Promise<TwiOutput<RCC, RICM, ReturnValues>> {
+  async execute(): Promise<TwiResponse<RCC, RICM>> {
     const transactionRequest = this.#client.transactWrite({
       TransactItems: this.#transactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1951,17 +1958,9 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
       });
     });
     try {
-      const response = await p;
-      return {
-        success: true,
-        ...response
-      } as any;
+      return await p;
     } catch (error) {
-      return {
-        success: false,
-        CancellationReasons,
-        error
-      } as any;
+      throw new TransactWriteItemsParsedError(this.#id, error, CancellationReasons);
     }
   }
 
@@ -1996,6 +1995,10 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
 
   isNotEmpty(): this is TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues> {
     return this.#transactItems.length > 0;
+  }
+
+  isParsedErrorFromThisRequest(error: unknown): error is TransactWriteItemsParsedError<ReturnValues> {
+    return error instanceof TransactWriteItemsParsedError && error.id === this.#id;
   }
 
 }

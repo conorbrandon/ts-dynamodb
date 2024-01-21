@@ -1,6 +1,6 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
-type TwiResponse<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE"> =
+export type TwiResponse<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE"> =
   & {}
   & (
     RCC extends 'NONE'
@@ -27,6 +27,3 @@ type ConditionalCheckFailedReason<Item extends Record<string, unknown>> = {
 export type CancellationReasons<ReturnValues extends Record<string, unknown> = Record<string, unknown>> =
   | (ConditionalCheckFailedReason<ReturnValues> | UnknownReason)[]
   | undefined;
-export type TwiOutput<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> =
-  | { success: true } & TwiResponse<RCC, RICM>
-  | { success: false; CancellationReasons: CancellationReasons<ReturnValues> | undefined; error: unknown };

@@ -21,7 +21,7 @@ test('createTransactWriteItemsRequest success', async () => {
       record: {}
     };
   });
-  const response = await tsDdb
+  const request = tsDdb
     .createTransactWriteItemsRequest()
     .setClientRequestToken(randomUUID())
     .setReturnConsumedCapacity('TOTAL')
@@ -33,16 +33,20 @@ test('createTransactWriteItemsRequest success', async () => {
           Item
         }
       };
-    }))
-    .execute();
-  if (response.success) {
+    }));
+  try {
+    const response = await request.execute();
     const { ConsumedCapacity, ItemCollectionMetrics } = response;
     console.log({
       ConsumedCapacity,
       ItemCollectionMetrics
     });
-  } else {
-    const { CancellationReasons } = response;
+  } catch (error) {
+    if (!request.isParsedErrorFromThisRequest(error)) {
+      // eslint-disable-next-line no-undef
+      fail();
+    }
+    const { CancellationReasons } = error;
     type CRItem = NonNullable<typeof CancellationReasons>[number]['Item'];
     expectTypeOf<CRItem>().toBeUndefined();
     // eslint-disable-next-line no-undef
@@ -73,7 +77,7 @@ test('createTransactWriteItemsRequest failure', async () => {
     },
     ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
   } as const;
-  const twiRequest = tsDdb
+  const request = tsDdb
     .createTransactWriteItemsRequest()
     .setReturnConsumedCapacity('TOTAL')
     .setReturnItemCollectionMetrics('SIZE')
@@ -133,9 +137,8 @@ test('createTransactWriteItemsRequest failure', async () => {
         }
       }))
     );
-
-  const response = await twiRequest.execute();
-  if (response.success) {
+  try {
+    const response = await request.execute();
     const {
       ItemCollectionMetrics,
       ConsumedCapacity
@@ -144,11 +147,15 @@ test('createTransactWriteItemsRequest failure', async () => {
       ItemCollectionMetrics,
       ConsumedCapacity
     });
-  } else {
+  } catch (error) {
+    if (!request.isParsedErrorFromThisRequest(error)) {
+      // eslint-disable-next-line no-undef
+      fail();
+    }
     const {
       CancellationReasons = [],
-      error
-    } = response;
+      transactWriteError
+    } = error;
     console.log(JSON.stringify({ CancellationReasons }, null, 2));
     const sortKeysOfReasonItems = CancellationReasons.map(reason => {
       if (reason.Code === "ConditionalCheckFailed") {
@@ -164,7 +171,7 @@ test('createTransactWriteItemsRequest failure', async () => {
       return undefined;
     }).filter(Boolean);
     console.log({ sortKeysOfReasonItems });
-    console.log(error);
+    console.log(transactWriteError);
     expect(CancellationReasons).toStrictEqual([
       {
         Item: {
@@ -279,12 +286,17 @@ test('createTransactWriteItemsRequest errors', async () => {
     // eslint-disable-next-line no-undef
     fail();
   }
-  const response = await request.execute();
-  if (response.success) {
+  try {
+    await request.execute();
     // eslint-disable-next-line no-undef
     fail();
+  } catch (error) {
+    if (!request.isParsedErrorFromThisRequest(error)) {
+      // eslint-disable-next-line no-undef
+      fail();
+    }
+    console.log(error.transactWriteError);
+    expect((error.transactWriteError as AWSError).message).toStrictEqual("Member must have length less than or equal to 100");
   }
-  console.log(response.error);
-  expect((response.error as AWSError).message).toStrictEqual("Member must have length less than or equal to 100");
 
 });
