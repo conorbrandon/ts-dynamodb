@@ -194,8 +194,7 @@ test('createTransactWriteItemsRequest failure', async () => {
 test('createTransactWriteItemsRequest errors', async () => {
 
   const request = tsDdb.createTransactWriteItemsRequest();
-  type execute = (typeof request)['execute'];
-  expectTypeOf<execute>().toBeNever();
+  expectTypeOf<Extract<keyof typeof request, 'execute'>>().toBeNever();
 
   const table3Inputs = new Array(101).fill(0).map((): { Put: { TableName: typeof Table3.name; Item: Type3b } } => {
     return {
@@ -214,7 +213,7 @@ test('createTransactWriteItemsRequest errors', async () => {
       }
     };
   });
-  const response = await request
+  request
     .push({
       Update: {
         TableName: Table3.name,
@@ -275,8 +274,12 @@ test('createTransactWriteItemsRequest errors', async () => {
       // @ts-expect-error Once valid, these become excess properties
       ConditionCheck: undefined
     })
-    .push(...table3Inputs)
-    .execute();
+    .push(...table3Inputs);
+  if (!request.isNotEmpty()) {
+    // eslint-disable-next-line no-undef
+    fail();
+  }
+  const response = await request.execute();
   if (response.success) {
     // eslint-disable-next-line no-undef
     fail();

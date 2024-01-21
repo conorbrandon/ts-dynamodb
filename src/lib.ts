@@ -1337,7 +1337,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * `push` allows adding multiple items through rest parameters.
    * 
    * Other request options can be set using `setClientRequestToken`, `setReturnConsumedCapacity`, and `setReturnItemCollectionMetrics`.
-   * When you are ready to send the request, call `execute`. `execute` only becomes available after calling `push` at least once,
+   * When you are ready to send the request, call `execute`. `execute` only becomes available after calling `push` at least once (or `isNotEmpty` in the mutable flow, see below),
    * otherwise there are no items to transact! (You can still shoot yourself in the foot by calling `push` with no arguments, however.)
    * 
    * Please note the request is _mutable_. Each method call returns the same instance (i.e. itself). This means you can chain method calls,
@@ -1359,12 +1359,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * in the order of items in the underlying `TransactWriteItemList` (i.e., a tuple), however at runtime they _should_ technically be in the same order.
    */
   createTransactWriteItemsRequest() {
-    return new TransactWriteItemsRequest<TS, false, 'NONE', 'NONE', never>({
+    return new TransactWriteItemsRequest({
       client: this.client,
       ClientRequestToken: undefined,
       ReturnConsumedCapacity: "NONE",
       ReturnItemCollectionMetrics: "NONE"
-    });
+    }) as Omit<TransactWriteItemsRequest<TS, 'NONE', 'NONE', never>, 'execute'>;
   }
 
   /** Convenience helper to create and return a DynamoDB.DocumentClient.StringSet set */
@@ -1846,7 +1846,7 @@ const conditionalCheckFailedReasonHasItem = (reason: Record<string, unknown> & {
   return "Item" in reason && typeof reason['Item'] === 'object' && !!reason['Item'];
 };
 
-class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends boolean, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
+class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
 
   readonly #client: DocumentClient;
   readonly #transactItems: DocumentClient.TransactWriteItem[];
@@ -1874,10 +1874,10 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
   push<const Inputs extends readonly VariadicTwiBase<TS>[]>(...inputs: ValidateVariadicTwiInputs<TS, Inputs>) {
     this.#transactItems.push(...inputs);
     type newReturnValues = GetNewVariadicTwiReturnValues<TS, Inputs>;
-    return this as TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>;
+    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>;
   }
 
-  async #execute(): Promise<TwiOutput<RCC, RICM, ReturnValues>> {
+  async execute(): Promise<TwiOutput<RCC, RICM, ReturnValues>> {
     const transactionRequest = this.#client.transactWrite({
       TransactItems: this.#transactItems,
       ClientRequestToken: this.#ClientRequestToken,
@@ -1944,7 +1944,6 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
       } as any;
     }
   }
-  execute: CanExecute extends true ? () => Promise<TwiOutput<RCC, RICM, ReturnValues>> : never = (() => this.#execute()) as any;
 
   get ClientRequestToken() {
     return this.#ClientRequestToken;
@@ -1959,7 +1958,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
   }
   setReturnConsumedCapacity<RCC extends "INDEXES" | "TOTAL" | "NONE">(ReturnConsumedCapacity: RCC) {
     this.#ReturnConsumedCapacity = ReturnConsumedCapacity as any;
-    return this as unknown as TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>;
+    return this as unknown as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>;
   }
 
   get ReturnItemCollectionMetrics() {
@@ -1967,12 +1966,16 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
   }
   setReturnItemCollectionMetrics<RICM extends "SIZE" | "NONE">(ReturnItemCollectionMetrics: RICM) {
     this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics as any;
-    return this as unknown as TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>;
+    return this as unknown as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>;
   }
 
   /** Returns the length of the internal {@link DocumentClient.TransactWriteItemList} array. */
   get length(): number {
     return this.#transactItems.length;
+  }
+
+  isNotEmpty(): this is TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues> {
+    return this.#transactItems.length > 0;
   }
 
 }
