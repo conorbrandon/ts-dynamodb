@@ -17,7 +17,7 @@ import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
-import { ParsedCancellationReasons, TwiOutput } from "./defs-override/transactWrite/output";
+import { CancellationReasons, TwiOutput } from "./defs-override/transactWrite/output";
 import { GetNewVariadicTwiReturnValues, ValidateVariadicTwiInputs, VariadicTwiBase } from "./defs-override/transactWrite/input";
 
 export type ProjectAllIndex = {
@@ -1260,8 +1260,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   /**
    * Creates a `BatchGetAllRequest`. A `BatchGetAllRequest` iterates through all `Keys` across all tables a maximum of
-   * 100 at a time (so you can add as many `Keys` as you want!)
-   * and calls {@link DocumentClient.batchGet} on each batch of 100 `Keys`.
+   * {@link batchSize} (defaults to 100) at a time (so you can add as many `Keys` as you want!)
+   * and calls {@link DocumentClient.batchGet} on each batch of `Keys`.
    * 
    * `Keys` and `ProjectionExpressions` for a table can be added using `addTable`.
    * `Keys` can still be added after a table is added using `addKeys`. When you are ready to send the request, call `execute`.
@@ -1290,6 +1290,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     baseDelayMs = 100,
     jitter = false,
     unprocessedKeysRetryBehavior = 'push',
+    batchSize = 100,
     preBackoffCb,
     showProvisionedThroughputExceededExceptionError = false
   }: {
@@ -1298,6 +1299,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     baseDelayMs?: number;
     jitter?: boolean;
     unprocessedKeysRetryBehavior?: 'push' | 'unshift';
+    batchSize?: number;
     /** A function that takes configured backoff parameters and the actual delayMs and logs them (or even performs some other side effect). */
     preBackoffCb?: PreBackoffCb;
     /**
@@ -1314,8 +1316,14 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     if (maxFailedAttempts < 1) {
       throw Error("maxFailedAttempts must be >= 1!");
     }
+    if (base < 0) {
+      throw Error("base must be >= 0!");
+    }
     if (baseDelayMs < 0) {
       throw Error("baseDelayMs must be >= 0!");
+    }
+    if (batchSize < 1 || batchSize > 100) {
+      throw Error("batchSize must be >= 1 and <= 100!");
     }
     return new BatchGetAllRequest<TS, [], never, "NONE">({
       client: this.client,
@@ -1325,6 +1333,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       baseDelayMs,
       jitter,
       unprocessedKeysRetryBehavior,
+      batchSize,
       preBackoffCb,
       showProvisionedThroughputExceededExceptionError,
       id: Symbol(),
@@ -1596,6 +1605,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
   readonly #baseDelayMs: number;
   readonly #jitter: boolean;
   readonly #unprocessedKeysRetryBehavior: 'push' | 'unshift';
+  readonly #batchSize: number;
   readonly #preBackoffCb: PreBackoffCb | undefined;
   readonly #showPTEEE: boolean | ((error: AWSError) => unknown);
   readonly #id: symbol;
@@ -1608,6 +1618,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     baseDelayMs,
     jitter,
     unprocessedKeysRetryBehavior,
+    batchSize,
     preBackoffCb,
     showProvisionedThroughputExceededExceptionError,
     id,
@@ -1620,6 +1631,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     baseDelayMs: number;
     jitter: boolean;
     unprocessedKeysRetryBehavior: 'push' | 'unshift';
+    batchSize: number;
     preBackoffCb: PreBackoffCb | undefined;
     showProvisionedThroughputExceededExceptionError: boolean | ((error: AWSError) => unknown);
     id: symbol;
@@ -1633,6 +1645,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     this.#jitter = jitter;
     this.#preBackoffCb = preBackoffCb;
     this.#unprocessedKeysRetryBehavior = unprocessedKeysRetryBehavior;
+    this.#batchSize = batchSize;
     this.#showPTEEE = showProvisionedThroughputExceededExceptionError;
     this.#id = id;
     this.#ReturnConsumedCapacity = ReturnConsumedCapacity;
@@ -1662,6 +1675,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
       unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
+      batchSize: this.#batchSize,
       preBackoffCb: this.#preBackoffCb,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
       id: this.#id,
@@ -1693,6 +1707,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
       unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
+      batchSize: this.#batchSize,
       preBackoffCb: this.#preBackoffCb,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
       id: this.#id,
@@ -1709,6 +1724,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
       baseDelayMs: this.#baseDelayMs,
       jitter: this.#jitter,
       unprocessedKeysRetryBehavior: this.#unprocessedKeysRetryBehavior,
+      batchSize: this.#batchSize,
       preBackoffCb: this.#preBackoffCb,
       showProvisionedThroughputExceededExceptionError: this.#showPTEEE,
       id: this.#id,
@@ -1732,7 +1748,7 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
 
     let numFailedAttempts = -1;
     while (tableNamesAndKeys.length) {
-      const keysForThisBatch = tableNamesAndKeys.splice(0, 100);
+      const keysForThisBatch = tableNamesAndKeys.splice(0, this.#batchSize);
       const RequestItems: DocumentClient.BatchGetRequestMap = {};
       for (const { TableName, Key } of keysForThisBatch) {
         let tableEntry = RequestItems[TableName];
@@ -1824,6 +1840,10 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
     return this.#unprocessedKeysRetryBehavior;
   }
 
+  get batchSize() {
+    return this.#batchSize;
+  }
+
   get ReturnConsumedCapacity() {
     return this.#ReturnConsumedCapacity;
   }
@@ -1884,7 +1904,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
       ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
       ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
     });
-    let CancellationReasons: ParsedCancellationReasons;
+    let CancellationReasons: CancellationReasons;
     transactionRequest.on('extractError', response => {
       let maybeCancellationReasons;
       try {

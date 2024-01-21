@@ -43,8 +43,8 @@ test('createTransactWriteItemsRequest success', async () => {
     });
   } else {
     const { CancellationReasons } = response;
-    type CR = NonNullable<(typeof CancellationReasons)>;
-    expectTypeOf<CR>().toEqualTypeOf<never[]>();
+    type CRItem = NonNullable<typeof CancellationReasons>[number]['Item'];
+    expectTypeOf<CRItem>().toBeUndefined();
     // eslint-disable-next-line no-undef
     fail();
   }

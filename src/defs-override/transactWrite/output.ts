@@ -24,12 +24,9 @@ type ConditionalCheckFailedReason<Item extends Record<string, unknown>> = {
   Message?: string;
   Item?: Item;
 };
-type ParsedCancellationReason<Item extends Record<string, unknown>> = ConditionalCheckFailedReason<Item> | UnknownReason;
-export type ParsedCancellationReasons<ReturnValues extends Record<string, unknown> = Record<string, unknown>> = (
-  ReturnValues extends ReturnValues
-  ? ParsedCancellationReason<ReturnValues>
-  : never
-)[] | undefined;
+export type CancellationReasons<ReturnValues extends Record<string, unknown> = Record<string, unknown>> =
+  | (ConditionalCheckFailedReason<ReturnValues> | UnknownReason)[]
+  | undefined;
 export type TwiOutput<RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> =
   | { success: true } & TwiResponse<RCC, RICM>
-  | { success: false; CancellationReasons: ParsedCancellationReasons<ReturnValues> | undefined; error: unknown };
+  | { success: false; CancellationReasons: CancellationReasons<ReturnValues> | undefined; error: unknown };
