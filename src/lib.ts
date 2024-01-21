@@ -1266,7 +1266,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * `Keys` and `ProjectionExpressions` for a table can be added using `addTable`.
    * `Keys` can still be added after a table is added using `addKeys`. When you are ready to send the request, call `execute`.
    * 
-   * Please note the request is immutable. Each method call returns a new instance. This means you can chain method calls, or if not chaining,
+   * Please note the request is _immutable_. Each method call returns a new instance. This means you can chain method calls, or if not chaining,
    * you must assign the request to a new variable or reassign the request back to itself after each method call.
    * 
    * If `batchGet` returns {@link DocumentClient.BatchGetItemOutput.UnprocessedKeys} or a `ProvisionedThroughputExceededException` is thrown 
@@ -1340,12 +1340,14 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * When you are ready to send the request, call `execute`. `execute` only becomes available after calling `push` at least once,
    * otherwise there are no items to transact! (You can still shoot yourself in the foot by calling `push` with no arguments, however.)
    * 
-   * Please note the request is immutable. Each method call returns a new instance. This means you can chain method calls, or if not chaining,
-   * you must assign the request to a new variable or reassign the request back to itself after each method call.
+   * Please note the request is _mutable_. Each method call returns the same instance (i.e. itself). This means you can chain method calls,
+   * but you don't have to. This is a consideration for logic that needs to conditionally push items onto the request, as it would be burdensome
+   * to have to assign the request back to a variable after each push. (Please note: if you wish to process the `CancellationReasons` array
+   * upon transaction failure, you _must_ assign the request back to a new variable given the absence of [microsoft/TypeScript#10421](https://github.com/microsoft/TypeScript/issues/10421).)
    * 
    * The response is a discriminated union. If the transaction succeeded, you will receive:
   ```ts
-  { success: true; response: DocumentClient.TransactWriteItemsOutput }
+  { success: true } & DocumentClient.TransactWriteItemsOutput
   ```
    * If the transaction failed, you will receive:
   ```ts
@@ -1359,7 +1361,6 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   createTransactWriteItemsRequest() {
     return new TransactWriteItemsRequest<TS, false, 'NONE', 'NONE', never>({
       client: this.client,
-      incomingTransactItems: [],
       ClientRequestToken: undefined,
       ReturnConsumedCapacity: "NONE",
       ReturnItemCollectionMetrics: "NONE"
@@ -1848,48 +1849,37 @@ const conditionalCheckFailedReasonHasItem = (reason: Record<string, unknown> & {
 class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends boolean, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
 
   readonly #client: DocumentClient;
-  readonly #transactItems: readonly DocumentClient.TransactWriteItem[];
-  readonly #ClientRequestToken: string | undefined;
-  readonly #ReturnConsumedCapacity: RCC;
-  readonly #ReturnItemCollectionMetrics: RICM;
+  readonly #transactItems: DocumentClient.TransactWriteItem[];
+  #ClientRequestToken: string | undefined;
+  #ReturnConsumedCapacity: RCC;
+  #ReturnItemCollectionMetrics: RICM;
   constructor({
     client,
-    incomingTransactItems,
     ClientRequestToken,
     ReturnConsumedCapacity,
     ReturnItemCollectionMetrics
   }: {
     client: DocumentClient;
-    incomingTransactItems: readonly DocumentClient.TransactWriteItem[];
     ClientRequestToken: string | undefined;
     ReturnConsumedCapacity: RCC;
     ReturnItemCollectionMetrics: RICM;
   }) {
-    if (incomingTransactItems.length > 100) {
-      throw Error("TransactItems must have length less than or equal to 100");
-    }
     this.#client = client;
-    this.#transactItems = incomingTransactItems;
+    this.#transactItems = [];
     this.#ClientRequestToken = ClientRequestToken;
     this.#ReturnConsumedCapacity = ReturnConsumedCapacity;
     this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics;
   }
 
   push<const Inputs extends readonly VariadicTwiBase<TS>[]>(...inputs: ValidateVariadicTwiInputs<TS, Inputs>) {
-    const incomingTransactItems = [...this.#transactItems, ...inputs];
+    this.#transactItems.push(...inputs);
     type newReturnValues = GetNewVariadicTwiReturnValues<TS, Inputs>;
-    return new TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>({
-      client: this.#client,
-      incomingTransactItems,
-      ClientRequestToken: this.#ClientRequestToken,
-      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
-      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
-    });
+    return this as TransactWriteItemsRequest<TS, true, RCC, RICM, ReturnValues | newReturnValues>;
   }
 
   async #execute(): Promise<TwiOutput<RCC, RICM, ReturnValues>> {
     const transactionRequest = this.#client.transactWrite({
-      TransactItems: this.#transactItems as DocumentClient.TransactWriteItem[],
+      TransactItems: this.#transactItems,
       ClientRequestToken: this.#ClientRequestToken,
       ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
       ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
@@ -1960,43 +1950,29 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, CanExecute extends b
     return this.#ClientRequestToken;
   }
   setClientRequestToken(ClientRequestToken: string) {
-    return new TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>({
-      client: this.#client,
-      incomingTransactItems: this.#transactItems,
-      ClientRequestToken,
-      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
-      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
-    });
+    this.#ClientRequestToken = ClientRequestToken;
+    return this;
   }
 
   get ReturnConsumedCapacity() {
     return this.#ReturnConsumedCapacity;
   }
   setReturnConsumedCapacity<RCC extends "INDEXES" | "TOTAL" | "NONE">(ReturnConsumedCapacity: RCC) {
-    return new TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>({
-      client: this.#client,
-      incomingTransactItems: this.#transactItems,
-      ClientRequestToken: this.#ClientRequestToken,
-      ReturnConsumedCapacity,
-      ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
-    });
+    this.#ReturnConsumedCapacity = ReturnConsumedCapacity as any;
+    return this as unknown as TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>;
   }
 
   get ReturnItemCollectionMetrics() {
     return this.#ReturnItemCollectionMetrics;
   }
   setReturnItemCollectionMetrics<RICM extends "SIZE" | "NONE">(ReturnItemCollectionMetrics: RICM) {
-    return new TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>({
-      client: this.#client,
-      incomingTransactItems: this.#transactItems,
-      ClientRequestToken: this.#ClientRequestToken,
-      ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
-      ReturnItemCollectionMetrics
-    });
+    this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics as any;
+    return this as unknown as TransactWriteItemsRequest<TS, CanExecute, RCC, RICM, ReturnValues>;
   }
 
-  get isNonEmpty() {
-    return !!this.#transactItems.length;
+  /** Returns the length of the internal {@link DocumentClient.TransactWriteItemList} array. */
+  get length(): number {
+    return this.#transactItems.length;
   }
 
 }

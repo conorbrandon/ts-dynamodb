@@ -3,6 +3,7 @@ import { tsDdb } from "./lib/lib";
 import { CiCdTable, Table3 } from "./lib/tables";
 import { Type3b } from "./lib/types";
 import { expectTypeOf } from "expect-type";
+import { AWSError } from "aws-sdk";
 
 jest.setTimeout(100_000);
 
@@ -190,7 +191,7 @@ test('createTransactWriteItemsRequest failure', async () => {
 
 });
 
-test('createTransactWriteItemsRequest errors', () => {
+test('createTransactWriteItemsRequest errors', async () => {
 
   const request = tsDdb.createTransactWriteItemsRequest();
   type execute = (typeof request)['execute'];
@@ -213,65 +214,74 @@ test('createTransactWriteItemsRequest errors', () => {
       }
     };
   });
-  expect(() =>
-    request
-      .push({
-        Update: {
-          TableName: Table3.name,
-          Key: {
-            threeID: Math.random(),
-            otherID: `id_${Math.random()}`
-          },
-          UpdateExpression: 'SET record = :record',
-          ConditionExpression: 'size(#record) < :one',
-          ExpressionAttributeValues: {
-            ':record': {},
-            ':one': 1
-          },
-          // @ts-expect-error Missing EANs
-          ExpressionAttributeNames: {
-
-          }
-        }
-      })
-      .push({
-        Put: {
-          TableName: Table3.name,
-          Item: {
-            threeID: Math.random(),
-            otherID: `id_${Math.random()}`,
-            obj: {
-              nah: 'fam',
-              duck: 'goose',
-              '💀': 'RIP'
-            },
-            record: {}
-          },
-          ConditionExpression: 'attribute_exists(threeID)',
-          // @ts-expect-error Unused EANs
-          ExpressionAttributeNames: {
-            '#threeID': 'threeID'
-          }
-        }
-      })
-      .push({
-        Delete: {
-          // @ts-expect-error Invalid TableName
-          TableName: 'test'
-        }
-      })
-      .push({
-        Delete: {
-          TableName: CiCdTable.name,
-          Key: {
-            hashKey: randomUUID(),
-            rangeKey: 'big-cicd'
-          }
+  const response = await request
+    .push({
+      Update: {
+        TableName: Table3.name,
+        Key: {
+          threeID: Math.random(),
+          otherID: `id_${Math.random()}`
         },
-        // @ts-expect-error Once valid, these become excess properties
-        ConditionCheck: undefined
-      })
-      .push(...table3Inputs)
-  ).toThrow(Error("TransactItems must have length less than or equal to 100"));
+        UpdateExpression: 'SET record = :record',
+        ConditionExpression: 'size(#record) < :one',
+        ExpressionAttributeValues: {
+          ':record': {},
+          ':one': 1
+        },
+        // @ts-expect-error Missing EANs
+        ExpressionAttributeNames: {
+
+        }
+      }
+    })
+    .push({
+      Put: {
+        TableName: Table3.name,
+        Item: {
+          threeID: Math.random(),
+          otherID: `id_${Math.random()}`,
+          obj: {
+            nah: 'fam',
+            duck: 'goose',
+            '💀': 'RIP'
+          },
+          record: {}
+        },
+        ConditionExpression: 'attribute_exists(threeID)',
+        // @ts-expect-error Unused EANs
+        ExpressionAttributeNames: {
+          '#threeID': 'threeID'
+        }
+      }
+    })
+    .push({
+      Delete: {
+        // @ts-expect-error Invalid TableName
+        TableName: 'test',
+        // @ts-expect-error No Key
+        Key: {
+
+        }
+      }
+    })
+    .push({
+      Delete: {
+        TableName: CiCdTable.name,
+        Key: {
+          hashKey: randomUUID(),
+          rangeKey: 'big-cicd'
+        }
+      },
+      // @ts-expect-error Once valid, these become excess properties
+      ConditionCheck: undefined
+    })
+    .push(...table3Inputs)
+    .execute();
+  if (response.success) {
+    // eslint-disable-next-line no-undef
+    fail();
+  }
+  console.log(response.error);
+  expect((response.error as AWSError).message).toStrictEqual("Member must have length less than or equal to 100");
 
 });
