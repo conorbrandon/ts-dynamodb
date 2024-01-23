@@ -39,29 +39,33 @@ type GetReturnValuesValue<TypeOfItem extends Record<string, any>, CE extends str
   : TypeOfItem;
 export type GetNewVariadicTwiReturnValues<TS extends AnyGenericTable, Inputs extends readonly VariadicTwiBase<TS>[]> = {
   [K in keyof Inputs]:
-  Inputs[K] extends { Put: PutVariadicTwiBase<TS> }
-  ? GetReturnValuesValue<
-    ExtractTableItemForKey<TableItem<TS, Inputs[K]['Put']['TableName']>, Inputs[K]['Put']['Item']>,
-    Inputs[K]['Put']['ConditionExpression'],
-    Inputs[K]['Put']['ReturnValuesOnConditionCheckFailure']
-  >
-  : Inputs[K] extends { Update: UpdateVariadicTwiBase<TS> }
-  ? GetReturnValuesValue<
-    ExtractTableItemForKey<TableItem<TS, Inputs[K]['Update']['TableName']>, Inputs[K]['Update']['Key']>,
-    Inputs[K]['Update']['ConditionExpression'],
-    Inputs[K]['Update']['ReturnValuesOnConditionCheckFailure']
-  >
-  : Inputs[K] extends { Delete: DeleteVariadicTwiBase<TS> }
-  ? GetReturnValuesValue<
-    ExtractTableItemForKey<TableItem<TS, Inputs[K]['Delete']['TableName']>, Inputs[K]['Delete']['Key']>,
-    Inputs[K]['Delete']['ConditionExpression'],
-    Inputs[K]['Delete']['ReturnValuesOnConditionCheckFailure']
-  >
-  : Inputs[K] extends { ConditionCheck: ConditionCheckVariadicTwiBase<TS> }
-  ? GetReturnValuesValue<
-    ExtractTableItemForKey<TableItem<TS, Inputs[K]['ConditionCheck']['TableName']>, Inputs[K]['ConditionCheck']['Key']>,
-    Inputs[K]['ConditionCheck']['ConditionExpression'],
-    Inputs[K]['ConditionCheck']['ReturnValuesOnConditionCheckFailure']
-  >
+  Inputs[K] extends infer Input
+  ? (
+    Input extends { Put: PutVariadicTwiBase<TS> }
+    ? GetReturnValuesValue<
+      ExtractTableItemForKey<TableItem<TS, Input['Put']['TableName']>, Input['Put']['Item']>,
+      Input['Put']['ConditionExpression'],
+      Input['Put']['ReturnValuesOnConditionCheckFailure']
+    >
+    : Input extends { Update: UpdateVariadicTwiBase<TS> }
+    ? GetReturnValuesValue<
+      ExtractTableItemForKey<TableItem<TS, Input['Update']['TableName']>, Input['Update']['Key']>,
+      Input['Update']['ConditionExpression'],
+      Input['Update']['ReturnValuesOnConditionCheckFailure']
+    >
+    : Input extends { Delete: DeleteVariadicTwiBase<TS> }
+    ? GetReturnValuesValue<
+      ExtractTableItemForKey<TableItem<TS, Input['Delete']['TableName']>, Input['Delete']['Key']>,
+      Input['Delete']['ConditionExpression'],
+      Input['Delete']['ReturnValuesOnConditionCheckFailure']
+    >
+    : Input extends { ConditionCheck: ConditionCheckVariadicTwiBase<TS> }
+    ? GetReturnValuesValue<
+      ExtractTableItemForKey<TableItem<TS, Input['ConditionCheck']['TableName']>, Input['ConditionCheck']['Key']>,
+      Input['ConditionCheck']['ConditionExpression'],
+      Input['ConditionCheck']['ReturnValuesOnConditionCheckFailure']
+    >
+    : never
+  )
   : never;
 }[number];

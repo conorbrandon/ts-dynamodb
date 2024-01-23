@@ -77,22 +77,31 @@ test('createTransactWriteItemsRequest failure', async () => {
     },
     ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
   } as const;
+  const twiItemsUnionArray = [];
+  twiItemsUnionArray.push(
+    {
+      Put: {
+        TableName: CiCdTable.name,
+        Item,
+        ConditionExpression: 'attribute_not_exists(#hashKey)',
+        ExpressionAttributeNames: {
+          '#hashKey': 'hashKey'
+        },
+        ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+      }
+    } as const,
+    ...type3bKeys.map(Key => ({
+      Delete: {
+        ...type3bKeyParams,
+        Key
+      }
+    }))
+  );
   const request = tsDdb
     .createTransactWriteItemsRequest()
     .setReturnConsumedCapacity('TOTAL')
     .setReturnItemCollectionMetrics('SIZE')
     .push(
-      {
-        Put: {
-          TableName: CiCdTable.name,
-          Item,
-          ConditionExpression: 'attribute_not_exists(#hashKey)',
-          ExpressionAttributeNames: {
-            '#hashKey': 'hashKey'
-          },
-          ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
-        }
-      },
       {
         Put: {
           TableName: CiCdTable.name,
@@ -130,12 +139,7 @@ test('createTransactWriteItemsRequest failure', async () => {
           }
         }
       },
-      ...type3bKeys.map(Key => ({
-        Delete: {
-          ...type3bKeyParams,
-          Key
-        }
-      }))
+      ...twiItemsUnionArray
     );
   try {
     const response = await request.execute();
@@ -174,21 +178,21 @@ test('createTransactWriteItemsRequest failure', async () => {
     console.log(transactWriteError);
     expect(CancellationReasons).toStrictEqual([
       {
+        Code: "None",
+      },
+      {
+        Code: "None",
+      },
+      {
+        Code: "None",
+      },
+      {
         Item: {
           rangeKey: "big-cicd",
           hashKey: Item.hashKey,
         },
         Code: "ConditionalCheckFailed",
         Message: "The conditional request failed",
-      },
-      {
-        Code: "None",
-      },
-      {
-        Code: "None",
-      },
-      {
-        Code: "None",
       },
       {
         Code: "None",
