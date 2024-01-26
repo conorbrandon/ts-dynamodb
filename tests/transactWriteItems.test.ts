@@ -202,7 +202,6 @@ test('createTransactWriteItemsRequest failure', async () => {
 test('createTransactWriteItemsRequest errors', async () => {
 
   const request = tsDdb.createTransactWriteItemsRequest();
-  expectTypeOf<Extract<keyof typeof request, 'execute'>>().toBeNever();
 
   const table3Inputs = new Array(101).fill(0).map((): { Put: { TableName: typeof Table3.name; Item: Type3b } } => {
     return {
@@ -283,9 +282,6 @@ test('createTransactWriteItemsRequest errors', async () => {
       ConditionCheck: undefined
     })
     .push(...table3Inputs);
-  if (!request.isNotEmpty()) {
-    fail();
-  }
   try {
     await request.execute();
     fail();
@@ -295,6 +291,129 @@ test('createTransactWriteItemsRequest errors', async () => {
     }
     console.log(error.transactWriteError);
     expect((error.transactWriteError as AWSError).message).toStrictEqual("Member must have length less than or equal to 100");
+  }
+
+});
+
+test('createTransactWriteItemsRequest $push', async () => {
+
+  const Item = {
+    hashKey: randomUUID(),
+    rangeKey: 'big-cicd'
+  } as const;
+  await tsDdb.put({ TableName: CiCdTable.name, Item });
+
+  const preExecuteSleeper = new Promise<true>(resolve => setTimeout(() => resolve(true), 5_000));
+  const request = tsDdb
+    .createTransactWriteItemsRequest()
+    .$push(preExecuteSleeper, {
+      Put: {
+        TableName: CiCdTable.name,
+        Item,
+        ConditionExpression: 'attribute_not_exists(#hashKey)',
+        ExpressionAttributeNames: {
+          '#hashKey': 'hashKey'
+        },
+        ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+      }
+    })
+    .push()
+    .push({
+      Put: {
+        TableName: CiCdTable.name,
+        Item: {
+          hashKey: randomUUID(),
+          rangeKey: 'big-cicd'
+        },
+        ConditionExpression: 'attribute_not_exists(#hashKey)',
+        ExpressionAttributeNames: {
+          '#hashKey': 'hashKey'
+        },
+        ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+      }
+    })
+    .$push(false,
+      {
+        Put: {
+          TableName: CiCdTable.name,
+          Item: {
+            hashKey: randomUUID(),
+            rangeKey: 'big-cicd'
+          },
+          ConditionExpression: 'attribute_not_exists(#hashKey)',
+          ExpressionAttributeNames: {
+            '#hashKey': 'hashKey'
+          },
+          ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+        }
+      },
+      {
+        Put: {
+          TableName: CiCdTable.name,
+          Item: {
+            hashKey: randomUUID(),
+            rangeKey: 'big-cicd'
+          },
+          ConditionExpression: 'attribute_not_exists(#hashKey)',
+          ExpressionAttributeNames: {
+            '#hashKey': 'hashKey'
+          },
+          ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+        }
+      }
+    )
+    .$push(true, {
+      Put: {
+        TableName: CiCdTable.name,
+        Item: {
+          hashKey: randomUUID(),
+          rangeKey: 'big-cicd'
+        },
+        ConditionExpression: 'attribute_not_exists(#hashKey)',
+        ExpressionAttributeNames: {
+          '#hashKey': 'hashKey'
+        },
+        ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+      }
+    })
+    .$push(new Promise<true>(resolve => setTimeout(() => resolve(true), 10_000)), {
+      Put: {
+        TableName: CiCdTable.name,
+        Item: {
+          hashKey: randomUUID(),
+          rangeKey: 'big-cicd'
+        },
+        ConditionExpression: 'attribute_not_exists(#hashKey)',
+        ExpressionAttributeNames: {
+          '#hashKey': 'hashKey'
+        },
+        ReturnValuesOnConditionCheckFailure: 'ALL_OLD'
+      }
+    });
+
+  expect(request.length.minLength).toStrictEqual(2);
+  expect(request.length.maxPossibleLength).toStrictEqual(4);
+  await preExecuteSleeper;
+  expect(request.length.minLength).toStrictEqual(3);
+  expect(request.length.maxPossibleLength).toStrictEqual(4);
+
+  try {
+    await request.execute();
+    fail();
+  } catch (error) {
+    if (!request.isParsedErrorFromThisRequest(error)) {
+      fail();
+    }
+    if (!error.CancellationReasons) {
+      fail();
+    }
+    expect(request.length.minLength).toStrictEqual(4);
+    expect(request.length.maxPossibleLength).toStrictEqual(4);
+    expect(error.CancellationReasons).toHaveLength(4);
+    expect(error.CancellationReasons[0]?.Item).toStrictEqual(Item);
+    expect(error.CancellationReasons[1]?.Item).toBeUndefined();
+    expect(error.CancellationReasons[2]?.Item).toBeUndefined();
+    expect(error.CancellationReasons[3]?.Item).toBeUndefined();
   }
 
 });

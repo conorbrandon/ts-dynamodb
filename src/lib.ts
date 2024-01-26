@@ -1343,14 +1343,15 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   /**
    * Creates a `TransactWriteItemsRequest`. Add items to the internal {@link DocumentClient.TransactWriteItemList} with `push`.
-   * `push` allows adding multiple items through rest parameters.
+   * `push` allows adding multiple items through rest parameters. Conditionally add items with `$push`
+   * (please hover over or refer to the JS doc for `$push` for more details).
    * 
    * Other request options can be set using `setClientRequestToken`, `setReturnConsumedCapacity`, and `setReturnItemCollectionMetrics`.
-   * When you are ready to send the request, call `execute`. `execute` only becomes available after calling `push` at least once (or {@link TransactWriteItemsRequest.isNotEmpty} in the mutable flow, see below),
-   * otherwise there are no items to transact! (You can still shoot yourself in the foot by calling `push` with no arguments, however.)
+   * When you are ready to send the request, call `execute`.
    * 
    * Please note the request is _mutable_. Each method call returns the same instance (i.e. itself). This means you can chain method calls,
-   * but you don't have to. This is a consideration for logic that needs to conditionally push items onto the request, as it would be burdensome
+   * but you don't have to. This is a consideration for logic that needs to conditionally push items onto the request 
+   * (although the recommended flow is to use `$push`), as it would be burdensome
    * to have to assign the request back to a variable after each push. (Note: upon transaction failure, if you wish to process the `CancellationReasons` array in a `TransactWriteItemsParsedError` 
    * in a strongly typed fashion wherein it includes _all_ possible items that set `ReturnValuesOnConditionCheckFailure`,
    * you _must_ assign the request back to a new variable given the absence of [microsoft/TypeScript#10421](https://github.com/microsoft/TypeScript/issues/10421).)
@@ -1362,16 +1363,17 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    * `CancellationReasons` will contain reasons for all items, and is strongly typed such that only items that specified a
    * `ConditionExpression` and `ReturnValuesOnConditionCheckFailure == 'ALL_OLD'` will appear on the `Item` property of a reason.
    * However, `CancellationReasons` is not _typed_ such that the reasons are guaranteed to appear 
-   * in the order of items in the internal `TransactWriteItemList` (i.e., a tuple), however at runtime they _should_ technically be in the same order.
+   * in the order of items in the internal `TransactWriteItemList` (i.e., a tuple), however at runtime they _should_ technically be in the same order
+   * (of course with the items passed to `$push` that did not result in them _actually_ getting pushed omitted).
    */
   createTransactWriteItemsRequest() {
-    return new TransactWriteItemsRequest({
+    return new TransactWriteItemsRequest<TS, 'NONE', 'NONE', never>({
       client: this.client,
       ClientRequestToken: undefined,
       ReturnConsumedCapacity: "NONE",
       ReturnItemCollectionMetrics: "NONE",
       id: Symbol(),
-    }) as Omit<TransactWriteItemsRequest<TS, 'NONE', 'NONE', never>, 'execute'>;
+    });
   }
 
   /** Convenience helper to create and return a DynamoDB.DocumentClient.StringSet set */
@@ -1869,14 +1871,20 @@ export class TransactWriteItemsParsedError<ReturnValues extends Record<string, u
     super();
   }
 }
+type ShouldPush = {
+  shouldPush: boolean;
+  inputs: readonly DocumentClient.TransactWriteItem[];
+};
 class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
 
   readonly #client: DocumentClient;
-  readonly #transactItems: DocumentClient.TransactWriteItem[];
   #ClientRequestToken: string | undefined;
   #ReturnConsumedCapacity: RCC;
   #ReturnItemCollectionMetrics: RICM;
   readonly #id: symbol;
+  readonly #shouldPushPromises: (ShouldPush | Promise<ShouldPush>)[] = [];
+  #minLength: number = 0;
+  #maxPossibleLength: number = 0;
   constructor({
     client,
     ClientRequestToken,
@@ -1891,7 +1899,6 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     id: symbol;
   }) {
     this.#client = client;
-    this.#transactItems = [];
     this.#ClientRequestToken = ClientRequestToken;
     this.#ReturnConsumedCapacity = ReturnConsumedCapacity;
     this.#ReturnItemCollectionMetrics = ReturnItemCollectionMetrics;
@@ -1899,14 +1906,61 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
   }
 
   push<const Inputs extends readonly VariadicTwiBase<TS>[]>(...inputs: ValidateVariadicTwiInputs<TS, Inputs>) {
-    this.#transactItems.push(...inputs);
+    this.#minLength += inputs.length;
+    this.#maxPossibleLength += inputs.length;
+    this.#shouldPushPromises.push({
+      shouldPush: true,
+      inputs
+    });
+    type newReturnValues = GetNewVariadicTwiReturnValues<TS, Inputs>;
+    return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>;
+  }
+
+  /** 
+   * Conditionally add items to the `TransactWriteItemList`. Pass a `boolean` or a `Promise` that resolves to a `boolean`.
+   * Items are pushed if it is `true` or resolves to `true`.
+   * 
+   * Please note: if passing a `Promise`, it - in fact, all `Promises` passed to this method throughout the request's construction -
+   * are `await`ed upon calling {@link execute}, but before the `transactWrite` call to the SDK. `Promise`s are awaited with a simple
+   * `Promise.all`. Internally, `Promise`s are managed such that `CancellationReasons` will still be in order
+   * (of course with the items passed to `$push` that did not result in them _actually_ getting pushed omitted).
+   * 
+   * The number of unresolved `shouldPush` promises is currently not customizable. If you wish to add many `shouldPush` promises but don't
+   * want them to be all be unresolved at once, you should keep a reference to them and `await` them separately as you are constructing
+   * the request.
+   */
+  $push<const Inputs extends readonly VariadicTwiBase<TS>[]>(shouldPush: boolean | Promise<boolean>, ...inputs: ValidateVariadicTwiInputs<TS, Inputs>) {
+    if (shouldPush instanceof Promise) {
+      this.#maxPossibleLength += inputs.length;
+      const awaitableShouldPush = shouldPush
+        .then(shouldActuallyPush => {
+          if (shouldActuallyPush) {
+            this.#minLength += inputs.length;
+          }
+          return {
+            shouldPush: shouldActuallyPush,
+            inputs
+          };
+        });
+      this.#shouldPushPromises.push(awaitableShouldPush);
+    } else if (shouldPush) {
+      this.#minLength += inputs.length;
+      this.#maxPossibleLength += inputs.length;
+      this.#shouldPushPromises.push({
+        shouldPush,
+        inputs
+      });
+    }
     type newReturnValues = GetNewVariadicTwiReturnValues<TS, Inputs>;
     return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>;
   }
 
   async execute(): Promise<TwiResponse<RCC, RICM>> {
+    const TransactItems: DynamoDB.DocumentClient.TransactWriteItem[] = [];
+    const shouldPushes = await Promise.all(this.#shouldPushPromises);
+    shouldPushes.forEach(item => item.shouldPush && TransactItems.push(...item.inputs));
     const transactionRequest = this.#client.transactWrite({
-      TransactItems: this.#transactItems,
+      TransactItems,
       ClientRequestToken: this.#ClientRequestToken,
       ReturnConsumedCapacity: this.#ReturnConsumedCapacity,
       ReturnItemCollectionMetrics: this.#ReturnItemCollectionMetrics
@@ -1988,13 +2042,22 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
     return this as unknown as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues>;
   }
 
-  /** Returns the length of the internal {@link DocumentClient.TransactWriteItemList} array. */
-  get length(): number {
-    return this.#transactItems.length;
-  }
-
-  isNotEmpty(): this is TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues> {
-    return this.#transactItems.length > 0;
+  /** 
+   * Returns the length of the internal {@link DocumentClient.TransactWriteItemList} array.
+   * 
+   * `minLength` is the number of items that are certain to be in the `TransactWriteItemList`. This value is updated
+   * upon every call to `push`, when `shouldPush` is passed to `$push` as `true`, and when `shouldPush` is passed
+   * as a `Promise` to `$push` and resolves to `true`.
+   * 
+   * `maxPossibleLength` is the number of items that _could_ be in the `TransactWriteItemsList`. This value is updated
+   * upon every call to `push`, when `shouldPush` is passed to `$push` as `true`, and when `shouldPush` is passed
+   * as a `Promise` to `$push` but _BEFORE_ the `Promise` resolves.
+   */
+  get length(): { minLength: number; maxPossibleLength: number } {
+    return {
+      minLength: this.#minLength,
+      maxPossibleLength: this.#maxPossibleLength
+    };
   }
 
   isParsedErrorFromThisRequest(error: unknown): error is TransactWriteItemsParsedError<ReturnValues> {
