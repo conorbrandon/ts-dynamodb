@@ -61,13 +61,12 @@
     "zod": "^3.22.4"
   },
   "scripts": {
-    "build": "rm -rf ./dist && rm -rf ./.webpack && yarn tsc && yarn webpack -c ./webpack.config.js && yarn prettier --write --ignore-path '' --print-width 120 ./dist && cp ./.webpack/index.js ./dist",
-    "pub": "./scripts/pub.sh",
+    "lint": "yarn eslint .",
+    "build": "rm -rf ./dist && rm -rf ./.webpack && yarn lint && yarn tsc && yarn webpack -c ./webpack.config.js && yarn prettier --write --ignore-path '' --print-width 120 ./dist && cp ./.webpack/index.js ./dist",
     "test": "yarn jest --testPathIgnorePatterns \"no-unchecked\" && yarn jest \"no-unchecked\"",
     "ddb:create": "docker-compose -f ./tests/ddb-local/docker-compose.yml up -d && ts-node ./tests/ddb-local/create-tables-locally.ts",
     "ddb:down": "docker-compose -f ./tests/ddb-local/docker-compose.yml down",
-    "ddb:reset": "yarn ddb:down && yarn ddb:create",
-    "lint": "yarn eslint ."
+    "ddb:reset": "yarn ddb:down && yarn ddb:create"
   },
   "jest": {
     "transform": {

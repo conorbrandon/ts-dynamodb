@@ -16,10 +16,7 @@
   - [query](#query)
   - [scan](#scan)
 - [TypesafeDocumentClientv2](#typesafedocumentclientv2)
-  - [createStrict\*Item](#createstrictitem)
-    - [createStrict\*Item additional features](#createstrictitem-additional-features)
   - [updateSimpleSET](#updatesimpleset)
-    - [createStrictUpdateSimpleSET](#createstrictupdatesimpleset)
   - [queryAll and scanAll](#queryall-and-scanall)
   - [queryItem](#queryitem)
 - [Troubleshooting](#troubleshooting)
@@ -378,67 +375,6 @@ Return the actual type of `Attributes` when using `ReturnValues = 'ALL_OLD'`.
 
 With the non-types only client, everything about the core methods still applies from the a [TypesafeDocumentClientRawv2](#typesafedocumentclientrawv2) section. In exchange for not having to use `.promise()`, the `callback` parameter of the raw client is not supported.
 
-### `createStrict*Item`
-
-To abstract away a tiny bit of overhead (for the caller), `TypesafeDocumentClientv2` adds some additional "`createStrict[Put|Get|Update|Delete]Item`" methods. The syntax for these is slightly wonky (my apologies), but it's to workaround Typescript's current lack of [partial type inference](https://github.com/microsoft/TypeScript/issues/26242).
-
-The syntax for the `createStrict*Item` methods is the following:
-
-```ts
-// 1. The curried function's argument is a table name. Call the function once.
-// 2. It returns a function which takes no parameters, but must be provided with an Item that lives in the table (name) provided. Call this function.
-// 3. The result is a function that can only get a `User`. Any `Key` that is not for a `User` will error.
-const getUser = tsDdb.createStrictGetItem(MyTable.name)<User>();
-const { Item: user } = await getUser({
-  Key: {
-    hashKey: userID,
-    rangeKey: "user",
-  },
-  ProjectionExpression: "hashKey, rangeKey",
-});
-type u = typeof user;
-//   ^? type u = TSDdbSet<User, false> | undefined
-```
-
-Everything else about the `createStrict*Item` methods is the same as described in the [TypesafeDocumentClientRawv2](#typesafedocumentclientrawv2) section, except you don't have to pass the `TableName` property in the parameters object. (i.e., all expressions are supported and are checked for missing `ExpressionAttribute`s).
-
-#### `createStrict*Item` additional features
-
-The following features are independent of one another and the use of one does not preclude the use of the other.
-
-##### Item/Attributes only
-
-When creating the curried function, you can optionally pass a second `boolean` parameter after the `TableName` argument. If equal to `true`, only the `Item` (for `get`) or `Attributes` (for `put`, `update`, and `delete`) are returned instead of an `aws-sdk` "`PromiseResult`". (For example, for `get`, you lose the ability to access the `ConsumedCapacity` and `$response` attributes in the response, but don't have to deconstruct `Item` out of the response.) Here's an example using `delete`:
-
-```ts
-// note the second parameter to createStrictDeleteItem is now `true`, which returns the `Attributes` directly!
-const deleteUser = tsDdb.createStrictDeleteItem(MyTable.name, true)<User>();
-const user = await deleteUser({
-  Key: {
-    hashKey: userID,
-    rangeKey: "user",
-  },
-  ReturnValues: "ALL_OLD",
-});
-type u = typeof user;
-//   ^? type u = TSDdbSet<User, false> | undefined
-```
-
-##### Provide only the Key for `get` and `delete`
-
-`createStrictGetItem` and `createStrictDeleteItem` allow passing only the `Key` object as a parameter instead of `{ Key: { ...your key here... } }`. You lose the ability to provide any other parameters, such as a `ProjectionExpression`, `ConditionExpression`, or `ReturnValues`, but it simplifies the parameters slightly because you don't need a top-level `"Key"` property in the params. Thus, the preceeding example could be simplified to:
-
-```ts
-const user = await deleteUser({
-  hashKey: userID,
-  rangeKey: "user",
-});
-type u = typeof user;
-//   ^? type u = undefined
-```
-
-There is one exception: if the `Key` of the item type includes a property named `"Key"`, you must pass the traditional params object. (This is because there is a simple check, `if ("Key" in params)`, that determines whether the params are the traditional kind, or simply the `Key` object itself.) This is enforced through a helper type, so you won't run into runtime errors because one of the keys to your table is simply named `"Key"`.
-
 ### `updateSimpleSET`
 
 A common operation is to update an object with new top level properties, such as updating a User's role, i.e. `type User = { ..., role: 'admin' | 'user' };`.
@@ -483,10 +419,6 @@ type u = typeof updatedUser;
 //   ^? type u2 = {  role: "user" | "admin";  lastLogin: number;} | undefined
 ```
 
-#### `createStrictUpdateSimpleSET`
-
-There is also a strict version of `updateSimpleSET`, because why not. It follows the same curried pattern described in [createStrict\*Item](#createstrictitem).
-
 ### `queryAll` and `scanAll`
 
 Simply returns an array containing all `Items` returned in a `query` or `scan` of the entire table.
@@ -497,7 +429,7 @@ Simply returns the first element of the `Items` returned in a single `query` ope
 
 ### `*PE` methods
 
-While the `createStrict*Item` methods slightly simplify the operation for the caller, sometimes you want to be able to _completely_ abstract away the creation of complex parameters (especially helpful for `query`). However, you may still want to provide the caller with the **option** of passing a `ProjectionExpression` if they only require certain item attributes.
+Sometimes you want to be able to _completely_ abstract away the creation of complex parameters (especially helpful for `query`). However, you may still want to provide the caller with the **option** of passing a `ProjectionExpression` if they only require certain item attributes.
 
 `TypesafeDocumentClientv2` provides modified versions of `get`, `query`, `queryAll`, `queryItem`, `scan`, and `scanAll` with this functionality. Each produces the same output as it's regular version, simply append `PE` to the method name. The syntax for passing input params is slightly different however. Each of the `*PE` methods does not permit passing the `ProjectionExpression` directly in the params object. Instead, call the method with the normal params, minus `ProjectionExpression`, in the first parameter and then pass the actual `ProjectionExpression` in the second parameter.
 

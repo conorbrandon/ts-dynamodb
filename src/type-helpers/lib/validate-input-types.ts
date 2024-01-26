@@ -94,6 +94,3 @@ export type ValidateInputTypesForTable<TypesUnion extends Record<any, any>> =
   : 1 extends AreRestArraysTailGrowingInUnion<TypesUnion>
   ? TypesContainUnknowableRestArraysError
   : 1;
-
-/** Check if a `Key` that could be provided to createStrictGet/DeleteItem has a property called "Key". If so, make it so the raw `Key` _cannot_ be an argument to createStrictGet/DeleteItem. This is to avoid incorrect parameters being passed to `get`/`delete`. */
-export type DoesKeyHaveAPropertyCalledKey<Key extends Record<string, unknown>> = "Key" extends keyof Key ? never : Key;

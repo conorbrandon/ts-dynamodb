@@ -28,27 +28,6 @@ export type GetInput<
       ExpressionAttributeNames?: DummyEAN;
     }
   );
-// NOTE: to get the behavior I want with the generics around FilterUnusedEANsOrVs and conditionally including ExpressionAttributes, Omit on GetInput DOES NOT WORK. 
-// This means if the logic changes in either of these types, it should be reflected in the other.
-export type StrictGetItemInput<
-  Key extends object,
-  PE extends string,
-  EANs extends string,
-  GAK extends string,
-  EAN extends Record<EANs, GAK>,
-  DummyEAN extends undefined
-> = Omit<DocumentClient.GetItemInput, 'TableName' | 'Key' | 'ProjectionExpression' | 'ExpressionAttributeNames'> & {
-  Key: Key;
-  ProjectionExpression?: PE extends UseAllExpressionAttributeNamesInString<EAN, true> ? PE : `Error ❌ unused EANs: ${FilterUnusedEANOrVs<PE, OnlyStrings<keyof EAN>>}`;
-} & (
-    PE extends EANString
-    ? {
-      ExpressionAttributeNames: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
-    }
-    : {
-      ExpressionAttributeNames?: DummyEAN;
-    }
-  );
 
 export type GetPEInput<
   TN extends string,

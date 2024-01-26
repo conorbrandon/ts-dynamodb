@@ -11,7 +11,7 @@ jest.setTimeout(100_000);
 
 const otherID = otherZodID.parse('otherID');
 
-describe('createStrict*', () => {
+describe('table3 crud test', () => {
 
   const threeID = Math.random();
   const Item = {
@@ -27,8 +27,8 @@ describe('createStrict*', () => {
 
   test('putType3Zod', async () => {
 
-    const putType3Zod = tsDdb.createStrictPutItem(Table3.name)<Type3Zod>();
-    const putItem = await putType3Zod({
+    const putItem = await tsDdb.put({
+      TableName: Table3.name,
       Item,
       ConditionExpression: 'threeID <> :zero',
       ExpressionAttributeValues: {
@@ -44,8 +44,8 @@ describe('createStrict*', () => {
 
   test('getType3Zod', async () => {
 
-    const getType3Zod = tsDdb.createStrictGetItem(Table3.name)<Type3Zod>();
-    const gotItem = await getType3Zod({
+    const gotItem = await tsDdb.get({
+      TableName: Table3.name,
       Key: {
         threeID,
         otherID
@@ -65,8 +65,8 @@ describe('createStrict*', () => {
 
   test('updateType3Zod', async () => {
 
-    const updateType3Zod = tsDdb.createStrictUpdateItem(Table3.name)<Type3Zod>();
-    const updatedItem = await updateType3Zod({
+    const updatedItem = await tsDdb.update({
+      TableName: Table3.name,
       Key: {
         threeID,
         otherID
@@ -85,8 +85,8 @@ describe('createStrict*', () => {
 
   test('deleteType3Zod', async () => {
 
-    const deleteType3Zod = tsDdb.createStrictDeleteItem(Table3.name)<Type3Zod>();
-    const deletedItem = await deleteType3Zod({
+    const deletedItem = await tsDdb.delete({
+      TableName: Table3.name,
       Key: {
         threeID,
         otherID
@@ -103,153 +103,151 @@ describe('createStrict*', () => {
 
   });
 
-  describe('createStrict* with item/attributesOnly', () => {
+  test('putType3Zod 2', async () => {
 
-    test('putType3Zod attributesOnly', async () => {
-
-      const putType3Zod = tsDdb.createStrictPutItem(Table3.name, true)<Type3Zod>();
-      const putItem = await putType3Zod({
-        Item,
-        ConditionExpression: 'threeID <> :threeID',
-        ExpressionAttributeValues: {
-          ':threeID': threeID
-        },
-        ReturnValues: 'ALL_OLD'
-      });
-      console.log('puttedZod:', myInspect(putItem));
-
-      expect(putItem).toStrictEqual(undefined);
-
+    const { Attributes: putItem } = await tsDdb.put({
+      TableName: Table3.name,
+      Item,
+      ConditionExpression: 'threeID <> :threeID',
+      ExpressionAttributeValues: {
+        ':threeID': threeID
+      },
+      ReturnValues: 'ALL_OLD'
     });
+    console.log('puttedZod:', myInspect(putItem));
 
-    test('getType3Zod itemOnly', async () => {
+    expect(putItem).toStrictEqual(undefined);
 
-      const getType3Zod = tsDdb.createStrictGetItem(Table3.name, true)<Type3Zod>();
-      const gotItem = await getType3Zod({
-        Key: {
-          threeID,
-          otherID
-        },
-        ProjectionExpression: '#threeID, zod',
-        ExpressionAttributeNames: {
-          '#threeID': 'threeID'
-        }
-      });
-      console.log('gotZod:', myInspect(gotItem));
-
-      expect(gotItem).toStrictEqual({ threeID: Item.threeID, zod: Item.zod });
-
-    });
-
-    test('updateType3Zod attributesOnly', async () => {
-
-      const updateType3Zod = tsDdb.createStrictUpdateItem(Table3.name, true)<Type3Zod>();
-      const updatedItem = await updateType3Zod({
-        Key: {
-          threeID,
-          otherID
-        },
-        UpdateExpression: 'SET zod = :zod',
-        ExpressionAttributeValues: {
-          ':zod': updateObj,
-        },
-        ReturnValues: 'UPDATED_NEW'
-      });
-      console.log('updatedZod:', myInspect(updatedItem));
-
-      expect(updatedItem).toStrictEqual({ zod: updateObj });
-
-    });
-
-    test('deleteType3Zod attributesOnly', async () => {
-
-      const deleteType3Zod = tsDdb.createStrictDeleteItem(Table3.name, true)<Type3Zod>();
-      const deletedItem = await deleteType3Zod({
-        Key: {
-          threeID,
-          otherID
-        },
-        ConditionExpression: 'threeID = :threeID',
-        ExpressionAttributeValues: {
-          ':threeID': threeID
-        },
-        ReturnValues: 'ALL_OLD'
-      });
-      console.log('deletedZod:', myInspect(deletedItem));
-
-      expect(deletedItem).toStrictEqual({ ...Item, zod: updateObj });
-
-    });
   });
 
-  describe('createStrict* with Key only as a parameter and item/attributesOnly', () => {
+  test('getType3Zod 2', async () => {
 
-    test('putType3Zod attributesOnly', async () => {
-
-      const putType3Zod = tsDdb.createStrictPutItem(Table3.name, true)<Type3Zod>();
-      const putItem = await putType3Zod({
-        Item,
-        ConditionExpression: '#threeID <> :threeID',
-        ExpressionAttributeValues: {
-          ':threeID': threeID
-        },
-        ExpressionAttributeNames: {
-          '#threeID': 'threeID'
-        },
-        ReturnValues: 'ALL_OLD'
-      });
-      console.log('puttedZod:', myInspect(putItem));
-
-      expect(putItem).toStrictEqual(undefined);
-
-    });
-
-    test('getType3Zod itemOnly', async () => {
-
-      const getType3Zod = tsDdb.createStrictGetItem(Table3.name, true)<Type3Zod>();
-      const gotItem = await getType3Zod({
+    const { Item: gotItem } = await tsDdb.get({
+      TableName: Table3.name,
+      Key: {
         threeID,
         otherID
-      });
-      console.log('gotZod:', myInspect(gotItem));
-
-      expect(gotItem).toStrictEqual(Item);
-      expectTypeOf<typeof gotItem>().toEqualTypeOf<Type3Zod | undefined>();
-
+      },
+      ProjectionExpression: '#threeID, zod',
+      ExpressionAttributeNames: {
+        '#threeID': 'threeID'
+      }
     });
+    console.log('gotZod:', myInspect(gotItem));
 
-    test('updateType3Zod attributesOnly', async () => {
+    expect(gotItem).toStrictEqual({ threeID: Item.threeID, zod: Item.zod });
 
-      const updateType3Zod = tsDdb.createStrictUpdateItem(Table3.name, true)<Type3Zod>();
-      const updatedItem = await updateType3Zod({
-        Key: {
-          threeID,
-          otherID
-        },
-        UpdateExpression: 'SET zod = :zod',
-        ExpressionAttributeValues: {
-          ':zod': updateObj,
-        },
-        ReturnValues: 'UPDATED_NEW'
-      });
-      console.log('updatedZod:', myInspect(updatedItem));
+  });
 
-      expect(updatedItem).toStrictEqual({ zod: updateObj });
+  test('updateType3Zod 2', async () => {
 
-    });
-
-    test('deleteType3Zod attributesOnly', async () => {
-
-      const deleteType3Zod = tsDdb.createStrictDeleteItem(Table3.name, true)<Type3Zod>();
-      const deletedItem = await deleteType3Zod({
+    const { Attributes: updatedItem } = await tsDdb.update({
+      TableName: Table3.name,
+      Key: {
         threeID,
         otherID
-      });
-      console.log('deletedZod:', myInspect(deletedItem));
-
-      expect(deletedItem).toStrictEqual(undefined);
-
+      },
+      UpdateExpression: 'SET zod = :zod',
+      ExpressionAttributeValues: {
+        ':zod': updateObj,
+      },
+      ReturnValues: 'UPDATED_NEW'
     });
+    console.log('updatedZod:', myInspect(updatedItem));
+
+    expect(updatedItem).toStrictEqual({ zod: updateObj });
+
+  });
+
+  test('deleteType3Zod 2', async () => {
+
+    const { Attributes: deletedItem } = await tsDdb.delete({
+      TableName: Table3.name,
+      Key: {
+        threeID,
+        otherID
+      },
+      ConditionExpression: 'threeID = :threeID',
+      ExpressionAttributeValues: {
+        ':threeID': threeID
+      },
+      ReturnValues: 'ALL_OLD'
+    });
+    console.log('deletedZod:', myInspect(deletedItem));
+
+    expect(deletedItem).toStrictEqual({ ...Item, zod: updateObj });
+
+  });
+
+  test('putType3Zod 2', async () => {
+
+    const { Attributes: putItem } = await tsDdb.put({
+      TableName: Table3.name,
+      Item,
+      ConditionExpression: '#threeID <> :threeID',
+      ExpressionAttributeValues: {
+        ':threeID': threeID
+      },
+      ExpressionAttributeNames: {
+        '#threeID': 'threeID'
+      },
+      ReturnValues: 'ALL_OLD'
+    });
+    console.log('puttedZod:', myInspect(putItem));
+
+    expect(putItem).toStrictEqual(undefined);
+
+  });
+
+  test('getType3Zod 2', async () => {
+
+    const { Item: gotItem } = await tsDdb.get({
+      TableName: Table3.name,
+      Key: {
+        threeID,
+        otherID
+      }
+    });
+    console.log('gotZod:', myInspect(gotItem));
+
+    expect(gotItem).toStrictEqual(Item);
+    expectTypeOf<typeof gotItem>().toEqualTypeOf<Type3Zod | undefined>();
+
+  });
+
+  test('updateType3Zod 2', async () => {
+
+    const { Attributes: updatedItem } = await tsDdb.update({
+      TableName: Table3.name,
+      Key: {
+        threeID,
+        otherID
+      },
+      UpdateExpression: 'SET zod = :zod',
+      ExpressionAttributeValues: {
+        ':zod': updateObj,
+      },
+      ReturnValues: 'UPDATED_NEW'
+    });
+    console.log('updatedZod:', myInspect(updatedItem));
+
+    expect(updatedItem).toStrictEqual({ zod: updateObj });
+
+  });
+
+  test('deleteType3Zod 2', async () => {
+
+    const { Attributes: deletedItem } = await tsDdb.delete({
+      TableName: Table3.name,
+      Key: {
+        threeID,
+        otherID
+      }
+    });
+    console.log('deletedZod:', myInspect(deletedItem));
+
+    expect(deletedItem).toStrictEqual(undefined);
+
   });
 
   test('updateSimpleSETCICDSmaller', async () => {
@@ -279,11 +277,12 @@ describe('createStrict*', () => {
       myNumberSet: tsDdb.createNumberSet([80, 81, 82])
     };
 
-    await tsDdb.createStrictPutItem(CiCdTable.name)<CICDSmaller>()({
+    await tsDdb.put({
+      TableName: CiCdTable.name,
       Item: putItem
     });
 
-    type t = TypesafeDocumentClientv2.StrictSimpleUpdateSETItem<CiCdTableType, CICDSmaller>
+    type t = TypesafeDocumentClientv2.GetUpdateSimpleSETItem<CiCdTableType, CICDSmaller>
     const simpleUpdateItem = {
       datum: 0,
       datumStr: 'datum_blah',
@@ -319,9 +318,9 @@ describe('createStrict*', () => {
       ]
     } as const satisfies t;
 
-    const updateSimpleSETCICDSmaller = tsDdb.createStrictUpdateSimpleSET(CiCdTable.name)<CICDSmaller>();
     // @ts-expect-error TS version 5.3.2 correctly errors on this as it should (tracked here: https://github.com/microsoft/TypeScript/issues/52267)
-    const { Attributes: simpleUpdated } = await updateSimpleSETCICDSmaller({
+    const { Attributes: simpleUpdated } = await tsDdb.updateSimpleSET({
+      TableName: CiCdTable.name,
       Key,
       Item: simpleUpdateItem,
       ReturnValues: 'UPDATED_NEW',

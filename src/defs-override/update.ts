@@ -36,18 +36,6 @@ export type UpdateInput<
   ConditionExpression?: `${UE}${CE}` extends UseAllExpressionAttributesInString<EAN, EAV> ? CE : `Error ❌ unused EAs in UE and/or CE: ${FilterUnusedEANOrVs<`${UE}${CE}`, OnlyStrings<keyof EAN | keyof EAV>>}`;
   ReturnValues?: RN;
 };
-export type StrictUpdateItemInput<
-  Key extends object,
-  TypeOfItem extends object,
-  UE extends string,
-  CE extends string,
-  EANs extends string,
-  EAVs extends string,
-  GAK extends string,
-  EAN extends Record<EANs, GAK>,
-  EAV extends Record<EAVs, any>,
-  RN extends UpdateReturnValues
-> = Omit<UpdateInput<never, Key, TypeOfItem, UE, CE, EANs, EAVs, GAK, EAN, EAV, RN>, 'TableName'>;
 
 export type ExtraConditions<AS extends string, EANs extends string, EAVs extends string, GAK extends string, EAN extends Record<EANs, GAK>, DummyEAN extends undefined, EAV extends Record<EAVs, any>, DummyEAV extends undefined> = {
   ANDSuffix: AS extends UseAllExpressionAttributesInString<EAN, EAV> ? AS : `Error ❌ unused EAs in ANDSuffix: ${FilterUnusedEANOrVs<AS, OnlyStrings<keyof EAN | keyof EAV>>}`;
@@ -118,20 +106,6 @@ export type UpdateSimpleSETInput<
 } & (
     DeepValidateShapev2WithBinaryResult<DeepWriteable<Item>, DeepWriteable<TypeOfItem>> extends 1 ? unknown : { Error: "The type of Item provided to `updateSimpleSET` is invalid. The Item must extend a Partial of the type of Item with the provided Key, but may not contain any additional fields and may not contain any of the fields on the provided Key. Succinctly, `Exact< Partial< Omit<Item_with_Key, keyof Key> > >`" }
   );
-export type StrictUpdateSimpleSETInput<
-  Key extends object,
-  TypeOfItem extends object,
-  Item extends object,
-  AS extends string,
-  EANs extends string,
-  EAVs extends string,
-  GAK extends string,
-  EAN extends Record<EANs, GAK>,
-  DummyEAN extends undefined,
-  EAV extends Record<EAVs, any>,
-  DummyEAV extends undefined,
-  RN extends UpdateReturnValues
-> = Omit<UpdateSimpleSETInput<never, Key, TypeOfItem, Item, AS, EANs, EAVs, GAK, EAN, DummyEAN, EAV, DummyEAV, RN>, 'TableName'>;
 
 export type UpdateOutput<
   GenericT extends object,

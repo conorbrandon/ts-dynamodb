@@ -21,6 +21,6 @@ test('all', () => {
   };
   _;
 
-  expectTypeOf<TypesafeDocumentClientv2.StrictSimpleUpdateSETItem<MyTableType, A>>().toEqualTypeOf<Partial<Omit<A, 'p0' | 's0'>> | DeepReadonly<Partial<Omit<A, 'p0' | 's0'>>>>();
+  expectTypeOf<TypesafeDocumentClientv2.GetUpdateSimpleSETItem<MyTableType, A>>().toEqualTypeOf<Partial<Omit<A, 'p0' | 's0'>> | DeepReadonly<Partial<Omit<A, 'p0' | 's0'>>>>();
 
 });
