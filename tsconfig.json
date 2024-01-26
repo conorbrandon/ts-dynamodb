@@ -4,7 +4,7 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "declaration": true,
-    "declarationDir": "./.tsc-declaration",
+    "declarationDir": "./dist",
     "emitDeclarationOnly": true,
     "removeComments": false,
     "noEmitOnError": true,
