@@ -4,6 +4,8 @@ scratch*
 .vscode/*
 !.vscode/settings.json
 dist
+.tsc-declaration
+.webpack
 .DS_Store
 coverage*
 trace
