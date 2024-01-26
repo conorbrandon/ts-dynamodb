@@ -43,13 +43,11 @@ test('createTransactWriteItemsRequest success', async () => {
     });
   } catch (error) {
     if (!request.isParsedErrorFromThisRequest(error)) {
-      // eslint-disable-next-line no-undef
       fail();
     }
     const { CancellationReasons } = error;
     type CRItem = NonNullable<typeof CancellationReasons>[number]['Item'];
     expectTypeOf<CRItem>().toBeUndefined();
-    // eslint-disable-next-line no-undef
     fail();
   }
 
@@ -153,7 +151,6 @@ test('createTransactWriteItemsRequest failure', async () => {
     });
   } catch (error) {
     if (!request.isParsedErrorFromThisRequest(error)) {
-      // eslint-disable-next-line no-undef
       fail();
     }
     const {
@@ -287,16 +284,13 @@ test('createTransactWriteItemsRequest errors', async () => {
     })
     .push(...table3Inputs);
   if (!request.isNotEmpty()) {
-    // eslint-disable-next-line no-undef
     fail();
   }
   try {
     await request.execute();
-    // eslint-disable-next-line no-undef
     fail();
   } catch (error) {
     if (!request.isParsedErrorFromThisRequest(error)) {
-      // eslint-disable-next-line no-undef
       fail();
     }
     console.log(error.transactWriteError);

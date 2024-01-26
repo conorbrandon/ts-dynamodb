@@ -3,7 +3,8 @@
   "env": {
     "node": true,
     "es2020": true,
-    "jest": true
+    "jest": true,
+    "jasmine": true
   },
   "extends": [
     // https://eslint.org/docs/latest/rules/
