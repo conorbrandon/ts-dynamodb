@@ -61,7 +61,7 @@
     "zod": "^3.22.4"
   },
   "scripts": {
-    "build": "rm -rf ./dist && rm -rf ./.webpack && yarn tsc && yarn webpack -c ./webpack.config.js && cp ./.webpack/index.js ./dist",
+    "build": "rm -rf ./dist && rm -rf ./.webpack && yarn tsc && yarn webpack -c ./webpack.config.js && yarn prettier --write --ignore-path '' --print-width 120 ./dist && cp ./.webpack/index.js ./dist",
     "pub": "./scripts/pub.sh",
     "test": "yarn jest --testPathIgnorePatterns \"no-unchecked\" && yarn jest \"no-unchecked\"",
     "ddb:create": "docker-compose -f ./tests/ddb-local/docker-compose.yml up -d && ts-node ./tests/ddb-local/create-tables-locally.ts",
