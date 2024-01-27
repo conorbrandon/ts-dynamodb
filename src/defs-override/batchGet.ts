@@ -1,11 +1,11 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { FilterUnusedEANOrVs, UseAllExpressionAttributeNamesInString } from "../type-helpers/string";
 import { AnyExpressionAttributeNames, EANString } from "../dynamodb-types";
-import { NotEmptyWithMessage, UnionToIntersection } from "../type-helpers/record";
-import { OnlyStrings } from "../type-helpers/utils";
-import { ExtractTableItemForKeys, TableItem } from "../lib";
+import { UnionToIntersection } from "../type-helpers/record";
+import { AnyGenericTable, ExtractTableItemForKeys, TableItem, TableKey } from "../lib";
 import { ProjectProjectionExpressionStruct } from "../type-helpers/PE2/pe-lib";
 import { TSDdbSet } from "../type-helpers/sets/utils";
+import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
+import { GetAllKeys } from "../type-helpers/get-all-keys";
 
 export type BatchGetAllRequestRequests = readonly {
   TableName: string;
@@ -15,26 +15,37 @@ export type BatchGetAllRequestRequests = readonly {
   ExpressionAttributeNames?: AnyExpressionAttributeNames;
 }[];
 
-export type CreateBatchGetAllRequestAddTableInput<
-  Keys extends readonly object[],
-  PE extends string,
-  EANs extends string,
-  GAK extends string,
-  EAN extends Record<EANs, GAK>,
-  DummyEAN extends undefined
+export type CreateBatchGetAllRequestAddTableInputBase<TS extends AnyGenericTable, TN extends string> = {
+  Keys: readonly TableKey<TS, TN>[];
+  ConsistentRead?: DocumentClient.ConsistentRead;
+  ProjectionExpression?: string;
+  ExpressionAttributeNames?: Record<string, string>;
+};
+type CreateBatchGetAllRequestAddTableInput<
+  TS extends AnyGenericTable,
+  TN extends string,
+  Keys extends readonly Record<string, any>[],
+  PE extends string | undefined
 > = {
   Keys: Keys;
   ConsistentRead?: DocumentClient.ConsistentRead;
-  ProjectionExpression?: PE extends UseAllExpressionAttributeNamesInString<EAN, true> ? PE : `Error ❌ unused EANs: ${FilterUnusedEANOrVs<PE, OnlyStrings<keyof EAN>>}`;
+  ProjectionExpression?: PE;
 } & (
     PE extends EANString
     ? {
-      ExpressionAttributeNames: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
+      ExpressionAttributeNames: Record<ExtractEAsFromString<PE>['ean'], GetAllKeys<ExtractTableItemForKeys<TableItem<TS, TN>, Keys>>>;
     }
     : {
-      ExpressionAttributeNames?: DummyEAN;
+      ExpressionAttributeNames?: never;
     }
   );
+export type ValidateCreateBatchGetAllRequestAddTableInput<
+  TS extends AnyGenericTable,
+  TN extends string,
+  Params extends CreateBatchGetAllRequestAddTableInputBase<TS, TN>
+> = [Params] extends [unknown]
+  ? CreateBatchGetAllRequestAddTableInput<TS, TN, Params['Keys'], Params['ProjectionExpression']>
+  : Params;
 
 export type BatchGetAllRequestOutput<TS, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> = {
   Responses: UnionToIntersection<

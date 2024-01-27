@@ -15,7 +15,7 @@ import { TSDdbSet } from "./type-helpers/sets/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
 import { inspect, InspectOptions } from 'util';
 import { GetAllKeys } from "./type-helpers/get-all-keys";
-import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
+import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInputBase, ValidateCreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
 import { CancellationReasons, TwiResponse } from "./defs-override/transactWrite/output";
 import { GetNewVariadicTwiReturnValues, ValidateVariadicTwiInputs, VariadicTwiBase } from "./defs-override/transactWrite/input";
@@ -1477,19 +1477,13 @@ class BatchGetAllRequest<TS extends AnyGenericTable, Requests extends BatchGetAl
 
   addTable<
     TN extends Exclude<TableName<TS>, TableNamesAlreadySet>,
-    const Keys extends readonly TableKey<TS, TN>[],
-    TypeOfItem extends ExtractTableItemForKeys<TableItem<TS, TN>, Keys>,
-    PE extends string,
-    GAK extends GetAllKeys<TypeOfItem>,
-    EANs extends ExtractEAsFromString<PE>['ean'],
-    const EAN extends Record<EANs, GAK>,
-    const DummyEAN extends undefined
-  >(TableName: TN, request: CreateBatchGetAllRequestAddTableInput<Keys, PE, EANs, GAK, EAN, DummyEAN>) {
+    const Params extends CreateBatchGetAllRequestAddTableInputBase<TS, TN>
+  >(TableName: TN, request: ValidateCreateBatchGetAllRequestAddTableInput<TS, TN, Params>) {
     const requestWithTableName = {
       ...request,
       TableName
     };
-    type NewRequests = [...Requests, typeof requestWithTableName];
+    type NewRequests = [...Requests, Params & { TableName: TN }];
     const newRequests = [...this.#requests, requestWithTableName] satisfies BatchGetAllRequestRequests;
     return new BatchGetAllRequest<TS, NewRequests, TableNamesAlreadySet | TN, RCC>({
       client: this.#client,
