@@ -1,33 +1,44 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, EANString } from "../dynamodb-types";
 import { ProjectProjectionExpressionStruct } from "../type-helpers/PE2/pe-lib";
-import { DeepPartial, NotEmptyWithMessage } from "../type-helpers/record";
+import { DeepPartial } from "../type-helpers/record";
 import { TSDdbSet } from "../type-helpers/sets/utils";
-import { FilterUnusedEANOrVs, UseAllExpressionAttributeNamesInString } from "../type-helpers/string";
-import { OnlyStrings } from "../type-helpers/utils";
 import { _LogParams } from "./defs-helpers";
+import { AnyGenericTable, ExtractTableItemForKey, TableItem, TableKey, TableName } from "../lib";
+import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
+import { GetAllKeys } from "../type-helpers/get-all-keys";
 
-export type GetInput<
+export type GetInputBase<TS extends AnyGenericTable> = {
+  TableName: TableName<TS>;
+  Key: Record<string, any>;
+  ConsistentRead?: boolean;
+  ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
+  ProjectionExpression?: string;
+  ExpressionAttributeNames?: Record<string, string>;
+};
+
+type GetInput<
+  TS extends AnyGenericTable,
   TN extends string,
-  Key extends object,
-  PE extends string,
-  EANs extends string,
-  GAK extends string,
-  EAN extends Record<EANs, GAK>,
-  DummyEAN extends undefined
-> = Omit<DocumentClient.GetItemInput, 'TableName' | 'Key' | 'ProjectionExpression' | 'ExpressionAttributeNames'> & {
+  Key extends Record<string, any>,
+  PE extends string | undefined
+> = {
   TableName: TN;
-  Key: Key;
-  ProjectionExpression?: PE extends UseAllExpressionAttributeNamesInString<EAN, true> ? PE : `Error ❌ unused EANs: ${FilterUnusedEANOrVs<PE, OnlyStrings<keyof EAN>>}`;
+  Key: TableKey<TS, TN>;
+  ProjectionExpression?: PE;
 } & (
     PE extends EANString
     ? {
-      ExpressionAttributeNames: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
+      ExpressionAttributeNames: Record<ExtractEAsFromString<PE>['ean'], GetAllKeys<ExtractTableItemForKey<TableItem<TS, TN>, Key>>>;
     }
     : {
-      ExpressionAttributeNames?: DummyEAN;
+      ExpressionAttributeNames?: never;
     }
   );
+export type ValidateGetInput<TS extends AnyGenericTable, Params extends GetInputBase<TS>> =
+  [Params] extends [unknown]
+  ? GetInput<TS, Params['TableName'], Params['Key'], Params['ProjectionExpression']>
+  : Params;
 
 export type GetPEInput<
   TN extends string,
@@ -43,15 +54,15 @@ export type GetPEInput<
   _logParams?: _LogParams;
 };
 
-export type GetOutput<
-  PE extends string,
-  TypeOfItem extends object,
-  EAN extends AnyExpressionAttributeNames
-> = (Omit<DocumentClient.GetItemOutput, 'Item'> & {
-  Item?: (string extends PE
-    ? TSDdbSet<TypeOfItem>
-    : ProjectProjectionExpressionStruct<TypeOfItem, PE, EAN>) extends infer Res ? Res : never;
-}) extends infer Res2 ? Res2 : never;
+export type GetOutput<TS extends AnyGenericTable, Params extends GetInputBase<TS>, TypeOfItem extends Record<string, any> = ExtractTableItemForKey<TableItem<TS, Params['TableName']>, Params['Key']>> = (
+  Omit<DocumentClient.GetItemOutput, 'Item'> & {
+    Item?: (
+      unknown extends Params['ProjectionExpression']
+      ? TSDdbSet<TypeOfItem>
+      : ProjectProjectionExpressionStruct<TypeOfItem, Extract<Params['ProjectionExpression'], string>, Extract<Params['ExpressionAttributeNames'], Record<string, string>>>
+    ) extends infer Res ? Res : never;
+  }
+) extends infer Res2 ? Res2 : never;
 
 export type GetPEOutput<
   PE extends string | undefined,

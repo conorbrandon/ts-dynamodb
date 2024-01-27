@@ -1,6 +1,6 @@
 import { TypesafePromiseResult, TypesafeCallback, TypesafeRequest, _LogParams } from "./defs-override/defs-helpers";
 import { DeleteInput, DeleteOutput } from "./defs-override/delete";
-import { GetInput, GetOutput, GetPEInput, GetPEOutput } from "./defs-override/get";
+import { GetInputBase, GetOutput, GetPEInput, GetPEOutput, ValidateGetInput } from "./defs-override/get";
 import { PutInput, PutOutput } from "./defs-override/put";
 import { ExtraConditions, UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput } from "./defs-override/update";
 import { ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
@@ -159,25 +159,13 @@ export type ReturnValuesOnConditionCheckFailureValues = 'NONE' | 'ALL_OLD';
  */
 export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends Omit<DocumentClient, 'get' | 'put' | 'update' | 'delete' | 'query' | 'scan'> {
 
-  get<
-    TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    PE extends string,
-    GAK extends GetAllKeys<TypeOfItem>,
-    EANs extends ExtractEAsFromString<PE>['ean'],
-    const EAN extends Record<EANs, GAK>,
-    const DummyEAN extends undefined
-  >(
-    params: GetInput<TN, Key, PE, EANs, GAK, EAN, DummyEAN>,
+  get<const Params extends GetInputBase<TS>>(
+    params: ValidateGetInput<TS, Params>,
     callback?: TypesafeCallback<
-      GetOutput<
-        PE, TypeOfItem, EAN
-      >>
-  ): TypesafeRequest<
-    GetOutput<
-      PE, TypeOfItem, EAN
+      GetOutput<TS, Params>
     >
+  ): TypesafeRequest<
+    GetOutput<TS, Params>
   >;
 
   put<
@@ -363,18 +351,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   constructor(private client: DocumentClient, private inspectOptions?: InspectOptions) { }
 
-  async get<
-    TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    PE extends string,
-    GAK extends GetAllKeys<TypeOfItem>,
-    EANs extends ExtractEAsFromString<PE>['ean'],
-    const EAN extends Record<EANs, GAK>,
-    const DummyEAN extends undefined
-  >(params: GetInput<TN, Key, PE, EANs, GAK, EAN, DummyEAN>) {
+  async get<const Params extends GetInputBase<TS>>(params: ValidateGetInput<TS, Params>) {
     const res = await this.client.get(params).promise();
-    return res as unknown as TypesafePromiseResult<GetOutput<PE, TypeOfItem, EAN>>;
+    return res as unknown as TypesafePromiseResult<GetOutput<TS, Params>>;
   }
 
   /**

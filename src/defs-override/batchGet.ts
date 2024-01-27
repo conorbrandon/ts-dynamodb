@@ -1,5 +1,5 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { AnyExpressionAttributeNames, EANString } from "../dynamodb-types";
+import { EANString } from "../dynamodb-types";
 import { UnionToIntersection } from "../type-helpers/record";
 import { AnyGenericTable, ExtractTableItemForKeys, TableItem, TableKey } from "../lib";
 import { ProjectProjectionExpressionStruct } from "../type-helpers/PE2/pe-lib";
@@ -10,14 +10,14 @@ import { GetAllKeys } from "../type-helpers/get-all-keys";
 export type BatchGetAllRequestRequests = readonly {
   TableName: string;
   Keys: readonly object[];
-  ConsistentRead?: DocumentClient.ConsistentRead;
+  ConsistentRead?: boolean;
   ProjectionExpression?: string;
-  ExpressionAttributeNames?: AnyExpressionAttributeNames;
+  ExpressionAttributeNames?: Record<string, string>;
 }[];
 
 export type CreateBatchGetAllRequestAddTableInputBase<TS extends AnyGenericTable, TN extends string> = {
   Keys: readonly TableKey<TS, TN>[];
-  ConsistentRead?: DocumentClient.ConsistentRead;
+  ConsistentRead?: boolean;
   ProjectionExpression?: string;
   ExpressionAttributeNames?: Record<string, string>;
 };
@@ -28,7 +28,7 @@ type CreateBatchGetAllRequestAddTableInput<
   PE extends string | undefined
 > = {
   Keys: Keys;
-  ConsistentRead?: DocumentClient.ConsistentRead;
+  ConsistentRead?: boolean;
   ProjectionExpression?: PE;
 } & (
     PE extends EANString
@@ -47,7 +47,7 @@ export type ValidateCreateBatchGetAllRequestAddTableInput<
   ? CreateBatchGetAllRequestAddTableInput<TS, TN, Params['Keys'], Params['ProjectionExpression']>
   : Params;
 
-export type BatchGetAllRequestOutput<TS, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> = {
+export type BatchGetAllRequestOutput<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> = {
   Responses: UnionToIntersection<
     {
       [K in keyof Requests]:
@@ -55,7 +55,7 @@ export type BatchGetAllRequestOutput<TS, Requests extends BatchGetAllRequestRequ
         TableName: infer TN extends string;
         Keys: infer Keys extends readonly object[];
         ProjectionExpression?: infer PE extends string;
-        ExpressionAttributeNames?: infer EAN extends AnyExpressionAttributeNames;
+        ExpressionAttributeNames?: infer EAN extends Record<string, string>;
       }
       ? ExtractTableItemForKeys<TableItem<TS, TN>, Keys> extends infer TypeOfItem extends Record<string, any>
       ? {
