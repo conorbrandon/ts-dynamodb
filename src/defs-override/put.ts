@@ -1,42 +1,50 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { EANString, EAVString } from "../dynamodb-types";
 import { PutAndDeleteOutputHelper, PutAndDeleteReturnValues } from "../lib";
-import { DeepValidateShapev2 } from "../type-helpers/deep-validate";
-import { NotEmptyWithMessage } from "../type-helpers/record";
-import { FilterUnusedEANOrVs as FilterUnusedEANOrVs, UseAllExpressionAttributesInString } from "../type-helpers/string";
-import { OnlyStrings } from "../type-helpers/utils";
+import { DeepValidateShapev2WithBinaryResult } from "../type-helpers/deep-validate";
+import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
+import { GetAllKeys } from "../type-helpers/get-all-keys";
 
 export type PutInput<
   TN extends string,
-  Item extends object,
-  TypeOfItem extends object,
+  Item extends Record<string, any>,
+  TypeOfItem extends Record<string, any>,
   CE extends string,
-  GAK extends string,
-  EANs extends string,
-  EAVs extends string,
-  EAN extends Record<EANs, GAK>,
-  DummyEAN extends undefined,
-  EAV extends Record<EAVs, any>,
-  DummyEAV extends undefined,
-  RN extends PutAndDeleteReturnValues
-> = Omit<DocumentClient.PutItemInput, 'TableName' | 'Item' | 'ConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ReturnValues'> & {
+  EAN extends Record<string, string>,
+  EAV extends Record<string, any>,
+  RV extends PutAndDeleteReturnValues,
+  CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<CE>
+> = {
   TableName: TN;
-  Item: Item extends DeepValidateShapev2<Item, TypeOfItem> ? Item : { Error: `Error: the type of the Item provided to \`put\` does not match a known table item type. Please verify you are not providing any extra keys or incorrect types of values.` };
-  ConditionExpression?: CE extends UseAllExpressionAttributesInString<EAN, EAV> ? CE : `Error ❌ unused EANs or EAVs: ${FilterUnusedEANOrVs<CE, OnlyStrings<keyof EAN | keyof EAV>>}`;
-  ReturnValues?: RN;
+  Item: Item;
+  ConditionExpression?: CE;
+  ReturnValues?: RV;
+  ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
+  ReturnItemCollectionMetrics?: "SIZE" | "NONE";
+  ReturnValuesOnConditionCheckFailure?: "ALL_OLD" | "NONE";
+  ExpressionAttributeNames?: EAN;
+  ExpressionAttributeValues?: EAV;
 } & (
     CE extends EANString
     ? {
-      ExpressionAttributeNames: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
+      ExpressionAttributeNames: Record<CEEAs['ean'], GetAllKeys<TypeOfItem>>;
     } : {
-      ExpressionAttributeNames?: DummyEAN;
+      ExpressionAttributeNames?: never;
     }
   ) & (
     CE extends EAVString
     ? {
-      ExpressionAttributeValues: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
+      ExpressionAttributeValues: Record<CEEAs['eav'], any>;
     } : {
-      ExpressionAttributeValues?: DummyEAV;
+      ExpressionAttributeValues?: never;
+    }
+  ) & (
+    DeepValidateShapev2WithBinaryResult<Item, TypeOfItem> extends 1
+    ? unknown
+    : {
+      Item: {
+        Error: `Error: the type of the Item provided to \`put\` does not match a known table item type. Please verify you are not providing any extra keys or incorrect types of values.`;
+      };
     }
   );
 

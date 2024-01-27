@@ -9,7 +9,7 @@ import { ProjectUpdateExpression } from "./type-helpers/UE/output";
 import DynamoDB, { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "./dynamodb-types";
 import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryKeyInput, QueryKeyKey, QueryKeyOutput, QueryKeyPEInput, QueryKeyPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
-import { DeepSimplifyObject, NoUndefined, OnlyStrings } from "./type-helpers/utils";
+import { DeepSimplifyObject, NoUndefined } from "./type-helpers/utils";
 import { ExtractEAsFromString } from "./type-helpers/extract-EAs";
 import { TSDdbSet } from "./type-helpers/sets/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
@@ -176,28 +176,19 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
 
   put<
     TN extends TableName<TS>,
-    Item extends TableItem<TS, TN>,
-    // we must pick across if the Item is a union
-    Key extends PickAcrossUnionOfRecords<Item, OnlyStrings<keyof TableKey<TS, TN>>>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
+    const Item extends TableItem<TS, TN>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Item>,
     CE extends string,
-    EAs extends ExtractEAsFromString<CE>,
-    GAK extends GetAllKeys<TypeOfItem>,
-    const EAN extends Record<EAs['ean'], GAK>,
-    const DummyEAN extends undefined,
-    const EAV extends Record<EAs['eav'], any>,
-    const DummyEAV extends undefined,
-    RN extends PutAndDeleteReturnValues = 'NONE'
+    const EAN extends Record<string, string>,
+    const EAV extends Record<string, any>,
+    RV extends PutAndDeleteReturnValues = 'NONE'
   >(
-    params: PutInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, DummyEAN, EAV, DummyEAV, RN>,
+    params: PutInput<TN, Item, TypeOfItem, CE, EAN, EAV, RV>,
     callback?: TypesafeCallback<
-      PutOutput<
-        TypeOfItem, RN
-      >>
-  ): TypesafeRequest<
-    PutOutput<
-      TypeOfItem, RN
+      PutOutput<TypeOfItem, RV>
     >
+  ): TypesafeRequest<
+    PutOutput<TypeOfItem, RV>
   >;
 
   update<
@@ -360,9 +351,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   async get<
     TN extends TableName<TS>,
     const Key extends TableKey<TS, TN>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     PE extends string,
-    const EAN extends Record<string, string>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>
+    const EAN extends Record<string, string>
   >(params: GetInput<TS, TN, Key, PE, EAN>) {
     const res = await this.client.get(params).promise();
     return res as unknown as TypesafePromiseResult<GetOutput<PE, EAN, TypeOfItem>>;
@@ -404,21 +395,15 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   async put<
     TN extends TableName<TS>,
-    Item extends TableItem<TS, TN>,
-    // we must pick across if the Item is a union
-    Key extends PickAcrossUnionOfRecords<Item, OnlyStrings<keyof TableKey<TS, TN>>>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
+    const Item extends TableItem<TS, TN>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Item>,
     CE extends string,
-    EAs extends ExtractEAsFromString<CE>,
-    GAK extends GetAllKeys<TypeOfItem>,
-    const EAN extends Record<EAs['ean'], GAK>,
-    const DummyEAN extends undefined,
-    const EAV extends Record<EAs['eav'], any>,
-    const DummyEAV extends undefined,
-    RN extends PutAndDeleteReturnValues = 'NONE'
-  >(params: PutInput<TN, Item, TypeOfItem, CE, GAK, EAs['ean'], EAs['eav'], EAN, DummyEAN, EAV, DummyEAV, RN>) {
+    const EAN extends Record<string, string>,
+    const EAV extends Record<string, any>,
+    RV extends PutAndDeleteReturnValues = 'NONE'
+  >(params: PutInput<TN, Item, TypeOfItem, CE, EAN, EAV, RV>) {
     const res = await this.client.put(params).promise();
-    return res as unknown as TypesafePromiseResult<PutOutput<TypeOfItem, RN>>;
+    return res as unknown as TypesafePromiseResult<PutOutput<TypeOfItem, RV>>;
   }
 
   async update<
