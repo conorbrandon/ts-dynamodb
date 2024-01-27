@@ -34,7 +34,7 @@ export type PutInput<
   ) & (
     CE extends EAVString
     ? {
-      ExpressionAttributeValues: Record<CEEAs['eav'], any>;
+      ExpressionAttributeValues: Record<CEEAs['eav'], unknown>; // NOTE: this MUST be unknown for `const` inference to work (not `any`).
     } : {
       ExpressionAttributeValues?: never;
     }
