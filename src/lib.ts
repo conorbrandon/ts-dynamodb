@@ -1,6 +1,6 @@
 import { TypesafePromiseResult, TypesafeCallback, TypesafeRequest, _LogParams } from "./defs-override/defs-helpers";
 import { DeleteInput, DeleteOutput } from "./defs-override/delete";
-import { GetInputBase, GetOutput, GetPEInput, GetPEOutput, ValidateGetInput } from "./defs-override/get";
+import { GetInput, GetOutput, GetPEInput, GetPEOutput } from "./defs-override/get";
 import { PutInput, PutOutput } from "./defs-override/put";
 import { ExtraConditions, UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput } from "./defs-override/update";
 import { ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
@@ -159,13 +159,19 @@ export type ReturnValuesOnConditionCheckFailureValues = 'NONE' | 'ALL_OLD';
  */
 export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends Omit<DocumentClient, 'get' | 'put' | 'update' | 'delete' | 'query' | 'scan'> {
 
-  get<const Params extends GetInputBase<TS>>(
-    params: ValidateGetInput<TS, Params>,
+  get<
+    TN extends TableName<TS>,
+    const Key extends TableKey<TS, TN>,
+    PE extends string,
+    const EAN extends Record<string, string>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>
+  >(
+    params: GetInput<TS, TN, Key, PE, EAN>,
     callback?: TypesafeCallback<
-      GetOutput<TS, Params>
+      GetOutput<PE, EAN, TypeOfItem>
     >
   ): TypesafeRequest<
-    GetOutput<TS, Params>
+    GetOutput<PE, EAN, TypeOfItem>
   >;
 
   put<
@@ -351,9 +357,15 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   constructor(private client: DocumentClient, private inspectOptions?: InspectOptions) { }
 
-  async get<const Params extends GetInputBase<TS>>(params: ValidateGetInput<TS, Params>) {
+  async get<
+    TN extends TableName<TS>,
+    const Key extends TableKey<TS, TN>,
+    PE extends string,
+    const EAN extends Record<string, string>,
+    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>
+  >(params: GetInput<TS, TN, Key, PE, EAN>) {
     const res = await this.client.get(params).promise();
-    return res as unknown as TypesafePromiseResult<GetOutput<TS, Params>>;
+    return res as unknown as TypesafePromiseResult<GetOutput<PE, EAN, TypeOfItem>>;
   }
 
   /**

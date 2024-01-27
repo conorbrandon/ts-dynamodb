@@ -4,12 +4,12 @@ import { ProjectProjectionExpressionStruct } from "../type-helpers/PE2/pe-lib";
 import { DeepPartial } from "../type-helpers/record";
 import { TSDdbSet } from "../type-helpers/sets/utils";
 import { _LogParams } from "./defs-helpers";
-import { AnyGenericTable, ExtractTableItemForKey, TableItem, TableKey, TableName } from "../lib";
+import { AnyGenericTable, ExtractTableItemForKey, TableItem } from "../lib";
 import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
 import { GetAllKeys } from "../type-helpers/get-all-keys";
 
-export type GetInputBase<TS extends AnyGenericTable> = {
-  TableName: TableName<TS>;
+export type GetInputBase<TN extends string> = {
+  TableName: TN;
   Key: Record<string, any>;
   ConsistentRead?: boolean;
   ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
@@ -17,15 +17,17 @@ export type GetInputBase<TS extends AnyGenericTable> = {
   ExpressionAttributeNames?: Record<string, string>;
 };
 
-type GetInput<
+export type GetInput<
   TS extends AnyGenericTable,
   TN extends string,
   Key extends Record<string, any>,
-  PE extends string | undefined
+  PE extends string,
+  EAN extends Record<string, string>
 > = {
   TableName: TN;
-  Key: TableKey<TS, TN>;
+  Key: Key;
   ProjectionExpression?: PE;
+  ExpressionAttributeNames?: EAN;
 } & (
     PE extends EANString
     ? {
@@ -35,10 +37,6 @@ type GetInput<
       ExpressionAttributeNames?: never;
     }
   );
-export type ValidateGetInput<TS extends AnyGenericTable, Params extends GetInputBase<TS>> =
-  [Params] extends [unknown]
-  ? GetInput<TS, Params['TableName'], Params['Key'], Params['ProjectionExpression']>
-  : Params;
 
 export type GetPEInput<
   TN extends string,
@@ -54,12 +52,16 @@ export type GetPEInput<
   _logParams?: _LogParams;
 };
 
-export type GetOutput<TS extends AnyGenericTable, Params extends GetInputBase<TS>, TypeOfItem extends Record<string, any> = ExtractTableItemForKey<TableItem<TS, Params['TableName']>, Params['Key']>> = (
+export type GetOutput<
+  PE extends string,
+  EAN extends Record<string, string>,
+  TypeOfItem extends Record<string, any>
+> = (
   Omit<DocumentClient.GetItemOutput, 'Item'> & {
     Item?: (
-      unknown extends Params['ProjectionExpression']
+      string extends PE
       ? TSDdbSet<TypeOfItem>
-      : ProjectProjectionExpressionStruct<TypeOfItem, Extract<Params['ProjectionExpression'], string>, Extract<Params['ExpressionAttributeNames'], Record<string, string>>>
+      : ProjectProjectionExpressionStruct<TypeOfItem, PE, EAN>
     ) extends infer Res ? Res : never;
   }
 ) extends infer Res2 ? Res2 : never;
