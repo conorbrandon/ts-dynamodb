@@ -399,7 +399,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   >(params: GetPEInput<TN, Key>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const res = await this.client.get(p).promise();
-    return res as unknown as TypesafePromiseResult<GetPEOutput<PE, TypeOfItem, {}>>;
+    return res as unknown as TypesafePromiseResult<GetPEOutput<PE, TypeOfItem>>;
   }
 
   async put<
