@@ -54,8 +54,8 @@ export type PutInput<
 export type PutOutput<
   TypeOfItem extends object,
   RN extends PutAndDeleteReturnValues
-> = (Omit<DocumentClient.PutItemOutput, 'Attributes'> & {
-  Attributes?: PutAndDeleteOutputHelper<
-    TypeOfItem, RN
-  > extends infer Res ? Res : never;
-}) extends infer Res2 ? Res2 : never;
+> = (
+  Omit<DocumentClient.PutItemOutput, 'Attributes'> & {
+    Attributes?: PutAndDeleteOutputHelper<TypeOfItem, RN> extends infer Res ? Res : never;
+  }
+) extends infer Res2 ? Res2 : never;

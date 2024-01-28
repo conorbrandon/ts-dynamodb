@@ -216,23 +216,15 @@ test('updateSimpleSET with a record', async () => {
     ReturnValues: 'UPDATED_NEW'
   });
   expectTypeOf<typeof updatedNew>().toEqualTypeOf<{
-    prop1: ["huh"];
-    recordWithTuple: {
-      blah: ["", 0, ""];
-    };
-    record: {
-      prop: {
-        1: {};
+    prop1: string[];
+    recordWithTuple: Record<string, [string, number, string]>;
+    record: Record<string, Record<number, any>>;
+    record1: Record<string, {
+      foo: [string, number, string];
+      bar: {
+        baz: Record<number, unknown>;
       };
-    };
-    record1: {
-      thing: {
-        foo: ["hi", 99, "bye"];
-        bar: {
-          baz: "";
-        };
-      };
-    };
+    }>;
   } | undefined>();
 
   const { Attributes: updatedOld } = await tsDdb.updateSimpleSET({
