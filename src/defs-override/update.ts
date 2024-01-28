@@ -9,6 +9,7 @@ import { GetAllKeys } from "../type-helpers/get-all-keys";
 import { TSDdbSet } from "../type-helpers/sets/utils";
 import { DeepSimplifyObject, NoUndefined } from "../type-helpers/utils";
 import { ProjectUpdateExpression } from "../type-helpers/UE/output";
+import { DeepWriteable } from "../type-helpers/record";
 
 export type UpdateInput<
   TN extends string,
@@ -86,6 +87,7 @@ export type UpdateSimpleSETInput<
   TN extends string,
   Key extends Record<string, any>,
   TypeOfItem extends Record<string, any>,
+  Item extends Record<string, any>,
   UpdateKeys extends keyof TypeOfItem,
   AS extends string,
   EAN extends Record<string, string>,
@@ -94,7 +96,7 @@ export type UpdateSimpleSETInput<
 > = {
   TableName: TN;
   Key: Key;
-  Item: { [K in UpdateKeys]: TypeOfItem[K] };
+  Item: { [K in UpdateKeys]: TypeOfItem[K] } & Item;
   ReturnValues?: RV;
   /** 
   * 
@@ -127,7 +129,7 @@ export type UpdateSimpleSETInput<
    */
   _logParams?: _LogParams;
 } & (
-    DeepValidateShapev2WithBinaryResult<Item, NoKeysTypeOfItem> extends 1
+    DeepValidateShapev2WithBinaryResult<DeepWriteable<Item>, DeepWriteable<{ [K in UpdateKeys]: TypeOfItem[K] }>> extends 1
     ? unknown
     : {
       Item: {

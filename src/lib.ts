@@ -433,12 +433,13 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
+    const Item extends Record<string, any>,
     UpdateKeys extends Exclude<keyof TypeOfItem, keyof Key>,
     AS extends string,
     EAN extends Record<string, string>,
     EAV extends Record<string, any>,
     RV extends UpdateReturnValues = 'NONE'
-  >(params: UpdateSimpleSETInput<TN, Key, TypeOfItem, UpdateKeys, AS, EAN, EAV, RV>) {
+  >(params: UpdateSimpleSETInput<TN, Key, TypeOfItem, Item, UpdateKeys, AS, EAN, EAV, RV>) {
     const { TableName, Key, Item, ReturnValues, extraConditions, _logParams } = params;
     const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
     const finalParams = {

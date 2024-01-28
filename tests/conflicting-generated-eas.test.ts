@@ -11,13 +11,13 @@ const Key = {
 const Item: B = {
   ...Key
 };
-const updateItem = {
+const updateItem: Pick<B, 'obj'> = {
   obj: {
     prop4: 0,
     prop5: [0],
     prop6: []
   }
-} as const;
+};
 
 const TableName = MyTable.name;
 
@@ -43,7 +43,7 @@ test('conflict in eas for updateSimpleSET', async () => {
     },
     ReturnValues: 'UPDATED_NEW'
   });
-  expectTypeOf<typeof Attributes>().toEqualTypeOf<DeepWriteable<typeof updateItem> | undefined>();
+  expectTypeOf<typeof Attributes>().toEqualTypeOf<Required<Pick<B, 'obj'>> | undefined>();
 
   const { Attributes: deleted } = await tsDdb.delete({ TableName, Key, ReturnValues: 'ALL_OLD' });
   expect(deleted).toStrictEqual({ ...Item, ...updateItem });

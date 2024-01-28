@@ -227,6 +227,14 @@ test('updateSimpleSET with a record', async () => {
     }>;
   } | undefined>();
 
+  const record1 = {
+    thing: {
+      foo: ["hi", 99, "bye"] as [string, number, string],
+      bar: {
+        baz: ''
+      }
+    }
+  };
   const { Attributes: updatedOld } = await tsDdb.updateSimpleSET({
     TableName: MyTable.name,
     Key,
@@ -240,18 +248,11 @@ test('updateSimpleSET with a record', async () => {
           1: {}
         }
       },
-      record1: {
-        thing: {
-          foo: ["hi", 99, "bye"],
-          bar: {
-            baz: ''
-          }
-        }
-      }
+      record1: record1
     },
     ReturnValues: 'UPDATED_OLD'
   });
-  expectTypeOf<typeof updatedOld>().toEqualTypeOf<(Pick<A, 'prop1' | 'record' | 'record1'> & { recordWithTuple: A['recordWithTuple'] }) | undefined>();
+  expectTypeOf<typeof updatedOld>().toEqualTypeOf<(Pick<A, 'prop1' | 'record' | 'record1'> & { recordWithTuple?: A['recordWithTuple'] }) | undefined>();
 });
 
 test('delete with a record', async () => {

@@ -318,10 +318,10 @@ describe('table3 crud test', () => {
       ]
     } as const satisfies t;
 
-    // @ts-expect-error TS version 5.3.2 correctly errors on this as it should (tracked here: https://github.com/microsoft/TypeScript/issues/52267)
     const { Attributes: simpleUpdated } = await tsDdb.updateSimpleSET({
       TableName: CiCdTable.name,
       Key,
+      // @ts-expect-error TS version 5.3.2 correctly errors on this as it should (tracked here: https://github.com/microsoft/TypeScript/issues/52267)
       Item: simpleUpdateItem,
       ReturnValues: 'UPDATED_NEW',
       extraConditions: {
