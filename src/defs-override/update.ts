@@ -7,7 +7,7 @@ import { _LogParams } from "./defs-helpers";
 import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
 import { GetAllKeys } from "../type-helpers/get-all-keys";
 import { TSDdbSet } from "../type-helpers/sets/utils";
-import { DeepSimplifyObject, NoUndefined } from "../type-helpers/utils";
+import { DeepRequiredUsingPartialLiteralObject, DeepSimplifyObject } from "../type-helpers/utils";
 import { ProjectUpdateExpression } from "../type-helpers/UE/output";
 import { DeepWriteable } from "../type-helpers/record";
 
@@ -155,20 +155,24 @@ export type UpdateOutput<
   }
 ) extends infer Res2 ? Res2 : never;
 
-type UpdateSimpleSETOutputHelper<TypeOfItem extends Record<string, any>, UpdateKeys extends keyof TypeOfItem, RN extends UpdateReturnValues | undefined> =
+type UpdateSimpleSETOutputHelper<Item extends Record<string, any>, TypeOfItem extends Record<string, any>, RN extends UpdateReturnValues | undefined> =
   RN extends undefined | 'NONE' ? undefined
   // The lack of undefined is predicated on the fact a CE with the Key is ALWAYS included
   : RN extends 'ALL_OLD' | 'ALL_NEW' ? TSDdbSet<TypeOfItem>
   // below this, we add undefined because we are allowing a Partial of TypeOfItem, and if the Item doesn't actually contains any keys or all values are undefined, no UpdateExpression will be created, thus Attributes could be undefined.
-  : RN extends 'UPDATED_OLD' ? DeepSimplifyObject<TSDdbSet<{ [K in UpdateKeys]: TypeOfItem[K] }>> | undefined
-  : RN extends 'UPDATED_NEW' ? DeepSimplifyObject<TSDdbSet<{ [K in UpdateKeys]-?: NoUndefined<TypeOfItem[K]> }>> | undefined
+  : RN extends 'UPDATED_OLD' ? DeepSimplifyObject<TSDdbSet<{ [K in Extract<keyof TypeOfItem, keyof Item>]: TypeOfItem[K] }>> | undefined
+  : RN extends 'UPDATED_NEW'
+  ? (
+    | DeepSimplifyObject<TSDdbSet<DeepRequiredUsingPartialLiteralObject<TypeOfItem, Item>, true>>
+    | undefined
+  )
   : never;
 export type UpdateSimpleSETOutput<
+  Item extends Record<string, any>,
   TypeOfItem extends Record<string, any>,
-  UpdateKeys extends keyof TypeOfItem,
   RN extends UpdateReturnValues
 > = (
   Omit<DocumentClient.UpdateItemOutput, 'Attributes'> & {
-    Attributes?: UpdateSimpleSETOutputHelper<TypeOfItem, UpdateKeys, RN> extends infer Res ? Res : never;
+    Attributes?: UpdateSimpleSETOutputHelper<Item, TypeOfItem, RN> extends infer Res ? Res : never;
   }
 ) extends infer Res2 ? Res2 : never;

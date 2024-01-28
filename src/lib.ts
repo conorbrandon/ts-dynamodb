@@ -452,7 +452,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       console.log(_logParams.message ?? '', this.myInspect(finalParams));
     }
     const res = await this.client.update(finalParams).promise();
-    return res as unknown as TypesafePromiseResult<UpdateSimpleSETOutput<TypeOfItem, UpdateKeys, RV>>;
+    return res as unknown as TypesafePromiseResult<UpdateSimpleSETOutput<Item, TypeOfItem, RV>>;
   }
 
   async delete<

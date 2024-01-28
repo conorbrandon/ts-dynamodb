@@ -53,6 +53,17 @@ export type XLevelSimplifyObject<T, Levels extends never[] = [never]> =
     )
     : T
   );
+export type DeepRequiredUsingPartialLiteralObject<T, Literal> =
+  IsAnyOrUnknown<T> extends true
+  ? T
+  : T extends Primitive | NativeJSBinaryTypes | Set<any> | ReadonlySet<any> | any[] | DynamoDB.DocumentClient.DynamoDbSet
+  ? T
+  : T extends Record<string, any>
+  ? {
+    // IMPORTANT: We want to use the `Literal`'s keys here to supersede index signatures in `T` (i.e. `Record`s).
+    -readonly [K in keyof Literal]-?: DeepRequiredUsingPartialLiteralObject<NoUndefined<T[K & keyof T]>, Literal[K]>
+  }
+  : T;
 
 export type IsNever<T> = [T] extends [never] ? true : false;
 export type IsAny<T> = 0 extends (1 & T) ? true : false;

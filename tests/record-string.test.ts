@@ -217,14 +217,22 @@ test('updateSimpleSET with a record', async () => {
   });
   expectTypeOf<typeof updatedNew>().toEqualTypeOf<{
     prop1: string[];
-    recordWithTuple: Record<string, [string, number, string]>;
-    record: Record<string, Record<number, any>>;
-    record1: Record<string, {
-      foo: [string, number, string];
-      bar: {
-        baz: Record<number, unknown>;
+    recordWithTuple: {
+      blah: [string, number, string];
+    };
+    record: {
+      prop: {
+        1: any;
       };
-    }>;
+    };
+    record1: {
+      thing: {
+        foo: [string, number, string];
+        bar: {
+          baz: "";
+        };
+      };
+    };
   } | undefined>();
 
   const record1 = {
@@ -252,7 +260,7 @@ test('updateSimpleSET with a record', async () => {
     },
     ReturnValues: 'UPDATED_OLD'
   });
-  expectTypeOf<typeof updatedOld>().toEqualTypeOf<(Pick<A, 'prop1' | 'record' | 'record1'> & { recordWithTuple?: A['recordWithTuple'] }) | undefined>();
+  expectTypeOf<typeof updatedOld>().toEqualTypeOf<(Pick<A, 'prop1' | 'record' | 'record1'> & { recordWithTuple: A['recordWithTuple'] }) | undefined>();
 });
 
 test('delete with a record', async () => {
