@@ -18,7 +18,7 @@ export type ScanInput<
   FEEAs extends { ean: string; eav: string } = ExtractEAsFromString<FE>,
   PEEAs extends { ean: string; eav: string } = ExtractEAsFromString<PE>,
   EANs extends Record<string, string> = Record<FEEAs['ean'] | PEEAs['ean'], GetAllKeys<TypeOfItem>>
-> = Omit<DocumentClient.ScanInput, 'TableName' | 'IndexName' | 'ProjectionExpression' | 'FilterExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'AttributesToGet' | 'ConditionalOperator' | 'ScanFilter' | 'Select'> & {
+> = Omit<DocumentClient.ScanInput, 'TableName' | 'IndexName' | 'ProjectionExpression' | 'FilterExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'AttributesToGet' | 'ConditionalOperator' | 'ScanFilter'> & {
   TableName: TN;
   IndexName?: IndexName;
   FilterExpression?: FE;
@@ -48,7 +48,7 @@ export type ScanPEInput<
   EAN extends Record<string, string>,
   FEEAs extends { ean: string; eav: string } = ExtractEAsFromString<FE>,
   EANs extends Record<string, string> = Record<FEEAs['ean'], GetAllKeys<TypeOfItem>>
-> = Omit<DocumentClient.ScanInput, 'TableName' | 'IndexName' | 'ProjectionExpression' | 'FilterExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'AttributesToGet' | 'ConditionalOperator' | 'ScanFilter' | 'Select'> & {
+> = Omit<DocumentClient.ScanInput, 'TableName' | 'IndexName' | 'ProjectionExpression' | 'FilterExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'AttributesToGet' | 'ConditionalOperator' | 'ScanFilter'> & {
   TableName: TN;
   IndexName?: IndexName;
   FilterExpression?: FE;

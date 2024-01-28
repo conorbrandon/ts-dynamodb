@@ -1,13 +1,13 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { AnyExpressionAttributeNames, DynamoDBKeyValue, ExpressionAttributeValues } from "../dynamodb-types";
+import { AnyExpressionAttributeNames, DynamoDBKeyValue, EANString, EAVString, ExpressionAttributeValues } from "../dynamodb-types";
 import { GSIIndexFromValue, IndexFromValue, LSIIndexFromValue } from "../lib";
 import { ProjectNonIndexQuery, ProjectQuery } from "../type-helpers/query/common";
-import { DeepPartial, NotEmptyWithMessage } from "../type-helpers/record";
-import { FilterUnusedEANOrVs, UseAllExpressionAttributesInString } from "../type-helpers/string";
-import { IsNever, OnlyStrings } from "../type-helpers/utils";
+import { DeepPartial } from "../type-helpers/record";
+import { IsNever } from "../type-helpers/utils";
 import { _LogParams } from "./defs-helpers";
 import { GetGSIIndexKeyTypes } from "../type-helpers/query/gsi-lib";
 import { GetLSIIndexKeyTypes } from "../type-helpers/query/lsi-lib";
+import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
 
 export type QueryInput<
   TN extends string,
@@ -15,42 +15,76 @@ export type QueryInput<
   KCE extends string,
   PE extends string,
   FE extends string,
-  EANs extends string,
-  EAVs extends string,
-  EAN extends Record<EANs, string>, // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
-  EAV extends Record<EAVs, any>,
-> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression'> & {
+  EAN extends Record<string, string>,
+  EAV extends Record<string, any>,
+  KCEEAs extends { ean: string; eav: string } = ExtractEAsFromString<KCE>,
+  FEEAs extends { ean: string; eav: string } = ExtractEAsFromString<FE>,
+  PEEAs extends { ean: string; eav: string } = ExtractEAsFromString<PE>,
+  EANs extends Record<string, string> = Record<KCEEAs['ean'] | FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
+  EAVs extends Record<string, any> = Record<KCEEAs['eav'] | FEEAs['eav'] | PEEAs['eav'], unknown> // NOTE: this MUST be unknown for `const` inference to work (not `any`).
+> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression' | 'AttributesToGet' | 'ConditionalOperator' | 'KeyConditions' | 'QueryFilter'> & {
   TableName: TN;
   IndexName?: IndexName;
-  KeyConditionExpression?: `${KCE}${PE}${FE}` extends UseAllExpressionAttributesInString<EAN, EAV> ? KCE : `Error ❌ unused EANs or EAVs in the KCE, PE, and/or FE: ${FilterUnusedEANOrVs<`${KCE}${PE}${FE}`, OnlyStrings<keyof EAN | keyof EAV>>}`;
-  ExpressionAttributeNames?: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
-  ExpressionAttributeValues?: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
-  ProjectionExpression?: PE; // from what it seems, putting the Error condition on the KCE is sufficient. This is because the either the KCE or KCs are required (DDB will yell at you if you don't include either, and I can't be bothered with legacy parameters, the current ones are hard enough lol)
+  KeyConditionExpression: KCE;
+  ProjectionExpression?: PE;
   FilterExpression?: FE;
-};
+  ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
+  ExpressionAttributeValues?: EAVs extends EAV ? EAV : EAVs;
+} & (
+    `${KCE}${FE}${PE}` extends EANString
+    ? {
+      ExpressionAttributeNames: EANs;
+    } : {
+      ExpressionAttributeNames?: never;
+    }
+  ) & (
+    `${KCE}${FE}${PE}` extends EAVString
+    ? {
+      ExpressionAttributeValues: EAVs;
+    } : {
+      ExpressionAttributeValues?: never;
+    }
+  );
+
 export type QueryPEInput<
   TN extends string,
   IndexName extends string,
   KCE extends string,
   FE extends string,
-  EANs extends string,
-  EAVs extends string,
-  EAN extends Record<EANs, string>, // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
-  EAV extends Record<EAVs, any>,
-> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression'> & {
+  EAN extends Record<string, string>,
+  EAV extends Record<string, any>,
+  KCEEAs extends { ean: string; eav: string } = ExtractEAsFromString<KCE>,
+  FEEAs extends { ean: string; eav: string } = ExtractEAsFromString<FE>,
+  EANs extends Record<string, string> = Record<KCEEAs['ean'] | FEEAs['ean'], string>, // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
+  EAVs extends Record<string, any> = Record<KCEEAs['eav'] | FEEAs['eav'], unknown> // NOTE: this MUST be unknown for `const` inference to work (not `any`).
+> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression' | 'AttributesToGet' | 'ConditionalOperator' | 'KeyConditions' | 'QueryFilter'> & {
   TableName: TN;
   IndexName?: IndexName;
-  KeyConditionExpression?: `${KCE}${FE}` extends UseAllExpressionAttributesInString<EAN, EAV> ? KCE : `Error ❌ unused EANs or EAVs in the KCE and/or FE: ${FilterUnusedEANOrVs<`${KCE}${FE}`, OnlyStrings<keyof EAN | keyof EAV>>}`;
-  ExpressionAttributeNames?: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
-  ExpressionAttributeValues?: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
+  KeyConditionExpression: KCE;
   FilterExpression?: FE;
+  ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
+  ExpressionAttributeValues?: EAVs extends EAV ? EAV : EAVs;
   /**
    * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `queryPE` creates the parameters for you, you may wish to log exactly what was going into your DB.
    * Make sure to set `log` to `true`!
    * Optionally also log a custom `message`.
    */
   _logParams?: _LogParams;
-};
+} & (
+    `${KCE}${FE}` extends EANString
+    ? {
+      ExpressionAttributeNames: EANs;
+    } : {
+      ExpressionAttributeNames?: never;
+    }
+  ) & (
+    `${KCE}${FE}` extends EAVString
+    ? {
+      ExpressionAttributeValues: EAVs;
+    } : {
+      ExpressionAttributeValues?: never;
+    }
+  );
 
 export type QueryKeyKey<TableItem extends object, IndexName extends string, Index extends IndexFromValue, tableKey extends Record<string, any>, PartitionKeyField extends string> =
   IsNever<IndexName> extends true
@@ -70,48 +104,74 @@ export type QueryKeyInput<
   IndexName extends string,
   PE extends string,
   FE extends string,
-  EANs extends string,
-  EAVs extends string,
-  EAN extends Record<EANs, string>, // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
-  EAV extends Record<EAVs, any>,
-> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression'> & {
+  EAN extends Record<string, string>,
+  FEEAs extends { ean: string; eav: string } = ExtractEAsFromString<FE>,
+  PEEAs extends { ean: string; eav: string } = ExtractEAsFromString<PE>,
+  EANs extends Record<string, string> = Record<FEEAs['ean'] | PEEAs['ean'], string> // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
+> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression' | 'AttributesToGet' | 'ConditionalOperator' | 'KeyConditions' | 'QueryFilter'> & {
   TableName: TN;
   IndexName?: IndexName;
   Key: Key;
-  ExpressionAttributeNames?: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
-  ExpressionAttributeValues?: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
+  ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
   ProjectionExpression?: PE;
-  FilterExpression?: `${FE}${PE}` extends UseAllExpressionAttributesInString<EAN, EAV> ? FE : `Error ❌ unused EANs or EAVs in the FE and/or PE: ${FilterUnusedEANOrVs<`${FE}${PE}`, OnlyStrings<keyof EAN | keyof EAV>>}`;
+  FilterExpression?: FE;
   /**
    * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `queryKey` creates the KeyConditionExpression for you, you may wish to log exactly what was going into your DB.
    * Make sure to set `log` to `true`!
    * Optionally also log a custom `message`.
    */
   _logParams?: _LogParams;
-};
+} & (
+    `${PE}${FE}` extends EANString
+    ? {
+      ExpressionAttributeNames: EANs;
+    } : {
+      ExpressionAttributeNames?: never;
+    }
+  ) & (
+    `${PE}${FE}` extends EAVString
+    ? {
+      ExpressionAttributeValues: Record<FEEAs['eav'] | PEEAs['eav'], any>;
+    } : {
+      ExpressionAttributeValues?: never;
+    }
+  );
+
 export type QueryKeyPEInput<
   TN extends string,
   Key extends Record<string, unknown>,
   IndexName extends string,
   FE extends string,
-  EANs extends string,
-  EAVs extends string,
-  EAN extends Record<EANs, string>, // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
-  EAV extends Record<EAVs, any>,
-> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression'> & {
+  EAN extends Record<string, string>,
+  FEEAs extends { ean: string; eav: string } = ExtractEAsFromString<FE>,
+  EANs extends Record<string, string> = Record<FEEAs['ean'], string> // we can't do GAK here because that required the type of the item, which is the whole point of what we're trying to find with query
+> = Omit<DocumentClient.QueryInput, 'TableName' | 'IndexName' | 'KeyConditionExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ProjectionExpression' | 'FilterExpression' | 'AttributesToGet' | 'ConditionalOperator' | 'KeyConditions' | 'QueryFilter'> & {
   TableName: TN;
   IndexName?: IndexName;
   Key: Key;
-  ExpressionAttributeNames?: NotEmptyWithMessage<EAN, "ExpressionAttributeNames cannot be empty">;
-  ExpressionAttributeValues?: NotEmptyWithMessage<EAV, "ExpressionAttributeValues cannot be empty">;
-  FilterExpression?: FE extends UseAllExpressionAttributesInString<EAN, EAV> ? FE : `Error ❌ unused EANs or EAVs in the FE: ${FilterUnusedEANOrVs<FE, OnlyStrings<keyof EAN | keyof EAV>>}`;
+  ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
+  FilterExpression?: FE;
   /**
    * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `queryKey` creates the KeyConditionExpression for you, you may wish to log exactly what was going into your DB.
    * Make sure to set `log` to `true`!
    * Optionally also log a custom `message`.
    */
   _logParams?: _LogParams;
-};
+} & (
+    FE extends EANString
+    ? {
+      ExpressionAttributeNames: EANs;
+    } : {
+      ExpressionAttributeNames?: never;
+    }
+  ) & (
+    FE extends EAVString
+    ? {
+      ExpressionAttributeValues: Record<FEEAs['eav'], any>;
+    } : {
+      ExpressionAttributeValues?: never;
+    }
+  );
 
 /** 
  * Note: we do not have to cover the case where KeyConditionExpression is omitted. 
