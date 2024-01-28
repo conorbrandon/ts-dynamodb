@@ -1,4 +1,3 @@
-import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { GSIIndexFromValue, IndexFromValue, LSIIndexFromValue, ProjectAllIndex, ProjectAttributesIndex, ProjectOnlyKeysIndex } from "../../lib";
 import { ProjectProjectionExpressionStruct } from "../PE2/pe-lib";
 import { PickOverAllExtractedQueryTypes } from "../query/common";
@@ -7,14 +6,14 @@ import { ExtractSortKeyOfLSIIndex } from "../query/lsi-lib";
 import { TSDdbSet } from "../sets/utils";
 import { DeepSimplifyObject } from "../utils";
 
-export type ProjectNonIndexScan<TableItem extends object, EAN extends AnyExpressionAttributeNames, PE extends string> =
+export type ProjectNonIndexScan<TableItem extends object, EAN extends Record<string, string>, PE extends string> =
   string extends PE
   ? TSDdbSet<TableItem>
   : TableItem extends object
   ? ProjectProjectionExpressionStruct<TableItem, PE, EAN>
   : never;
 
-export type ProjectScan<TableItem extends object, TableIndex extends IndexFromValue, PartitionKeyField extends string, SortKeyField extends string, EAN extends AnyExpressionAttributeNames, PE extends string> =
+export type ProjectScan<TableItem extends object, TableIndex extends IndexFromValue, PartitionKeyField extends string, SortKeyField extends string, EAN extends Record<string, string>, PE extends string> =
   TableIndex extends GSIIndexFromValue
   ? ProjectGSIScan<TableIndex, TableItem, PartitionKeyField | SortKeyField, PE, EAN>
   : (
@@ -25,7 +24,7 @@ export type ProjectScan<TableItem extends object, TableIndex extends IndexFromVa
     )
   );
 
-type _ProjectGSIScan<PE extends string, EAN extends AnyExpressionAttributeNames, indexItem extends object> =
+type _ProjectGSIScan<PE extends string, EAN extends Record<string, string>, indexItem extends object> =
   string extends PE
   ? DeepSimplifyObject<TSDdbSet<indexItem>>
   : (
@@ -33,7 +32,7 @@ type _ProjectGSIScan<PE extends string, EAN extends AnyExpressionAttributeNames,
     ? ProjectProjectionExpressionStruct<indexItem, PE, EAN>
     : never
   );
-type ProjectGSIScan<Index extends GSIIndexFromValue, Item extends object, MainTableKeyFields extends string, PE extends string, EAN extends AnyExpressionAttributeNames> =
+type ProjectGSIScan<Index extends GSIIndexFromValue, Item extends object, MainTableKeyFields extends string, PE extends string, EAN extends Record<string, string>> =
   _ProjectGSIScan<
     PE,
     EAN,
@@ -52,7 +51,7 @@ type ProjectGSIScan<Index extends GSIIndexFromValue, Item extends object, MainTa
     )
   >;
 
-type ProjectLSIScan<Index extends LSIIndexFromValue, Item extends object, MainTableKeyFields extends string, PE extends string, EAN extends AnyExpressionAttributeNames> =
+type ProjectLSIScan<Index extends LSIIndexFromValue, Item extends object, MainTableKeyFields extends string, PE extends string, EAN extends Record<string, string>> =
   string extends PE // PE was not provided
   ? (
     Index extends ProjectAllIndex

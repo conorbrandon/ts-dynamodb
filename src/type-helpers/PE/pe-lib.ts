@@ -1,4 +1,3 @@
-import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { Flatten } from "../flatten";
 import { Tail } from "../record";
 import { Split, UnionArraySplitter } from "../string";
@@ -15,7 +14,7 @@ type MapDocPathPropsToEAN<Props, EAN extends Record<string, string>> =
     : Props[K]
   }
   : never;
-export type MapArrayOfDocPathPropsToEAN<Props extends string[][], EAN extends AnyExpressionAttributeNames> =
+type MapArrayOfDocPathPropsToEAN<Props extends string[][], EAN extends Record<string, string>> =
   Props extends []
   ? []
   : (
@@ -53,7 +52,7 @@ type ExtractIndexAccessFromPE<Parts extends string[][]> =
   never;
 
 /** Take a full projection expression and parse out all the doc paths to get */
-export type ParsePEToPropPickNestedArray<PE extends string, EAN extends AnyExpressionAttributeNames> =
+export type ParsePEToPropPickNestedArray<PE extends string, EAN extends Record<string, string>> =
   MapArrayOfDocPathPropsToEAN<
     ExtractIndexAccessFromPE<
       UnionArraySplitter<
@@ -65,4 +64,4 @@ export type ParsePEToPropPickNestedArray<PE extends string, EAN extends AnyExpre
 /** Takes a SINGLE doc path, may have EANs in it, and create an array out of the doc path using the EANs. Parses only ONE DocPath!!!
  * General purpose function to be used anywhere, i.e. for UEs, etc...
  */
-export type CreatePropPickArrayFromDocPath<DocPath extends string, EAN extends AnyExpressionAttributeNames> = ParsePEToPropPickNestedArray<DocPath, EAN> extends (infer singleDocPath extends [string[]]) ? singleDocPath[0] : never;
+export type CreatePropPickArrayFromDocPath<DocPath extends string, EAN extends Record<string, string>> = ParsePEToPropPickNestedArray<DocPath, EAN> extends (infer singleDocPath extends [string[]]) ? singleDocPath[0] : never;

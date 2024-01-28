@@ -1,5 +1,5 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { AnyExpressionAttributeNames, DynamoDBKeyValue, EANString, EAVString, ExpressionAttributeValues } from "../dynamodb-types";
+import { DynamoDBKeyValue, EANString, EAVString } from "../dynamodb-types";
 import { GSIIndexFromValue, IndexFromValue, LSIIndexFromValue } from "../lib";
 import { ProjectNonIndexQuery, ProjectQuery } from "../type-helpers/query/common";
 import { DeepPartial } from "../type-helpers/record";
@@ -181,8 +181,8 @@ export type QueryOutput<
   TableItem extends object,
   PartitionKeyField extends string, // used to validate the LSI key
   SortKeyField extends string, // used to pick from TypesUnion when the LSI projection type is keys-only or attributes
-  EAN extends AnyExpressionAttributeNames,
-  EAV extends ExpressionAttributeValues,
+  EAN extends Record<string, string>,
+  EAV extends Record<string, unknown>,
   TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
   KCE extends string,
   PE extends string
@@ -212,8 +212,8 @@ export type QueryPEOutput<
   TableItem extends object,
   PartitionKeyField extends string, // used to validate the LSI key
   SortKeyField extends string, // used to pick from TypesUnion when the LSI projection type is keys-only or attributes
-  EAN extends AnyExpressionAttributeNames,
-  EAV extends ExpressionAttributeValues,
+  EAN extends Record<string, string>,
+  EAV extends Record<string, unknown>,
   TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
   KCE extends string,
   PE extends string | undefined
@@ -298,8 +298,8 @@ export type QueryItemOutput<
   TableItem extends object,
   PartitionKeyField extends string, // used to validate the LSI key
   SortKeyField extends string, // used to pick from TypesUnion when the LSI projection type is keys-only or attributes
-  EAN extends AnyExpressionAttributeNames,
-  EAV extends ExpressionAttributeValues,
+  EAN extends Record<string, string>,
+  EAV extends Record<string, unknown>,
   TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
   KCE extends string,
   PE extends string
@@ -329,8 +329,8 @@ export type QueryItemPEOutput<
   TableItem extends object,
   PartitionKeyField extends string, // used to validate the LSI key
   SortKeyField extends string, // used to pick from TypesUnion when the LSI projection type is keys-only or attributes
-  EAN extends AnyExpressionAttributeNames,
-  EAV extends ExpressionAttributeValues,
+  EAN extends Record<string, string>,
+  EAV extends Record<string, unknown>,
   TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
   KCE extends string,
   PE extends string | undefined
@@ -414,7 +414,7 @@ export type QueryKeyOutput<
   TableItem extends object,
   PartitionKeyField extends string, // used to validate the LSI key
   SortKeyField extends string, // used to pick from TypesUnion when the LSI projection type is keys-only or attributes
-  EAN extends AnyExpressionAttributeNames,
+  EAN extends Record<string, string>,
   TableIndex extends IndexFromValue, // this is to determine the type of item to give to ProjectProjectionExpression
   PE extends string
 > = (Omit<DocumentClient.QueryOutput, 'Items'> & {

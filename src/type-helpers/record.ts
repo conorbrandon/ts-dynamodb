@@ -14,29 +14,6 @@ export type PickAcrossUnionOfRecords<U, Fields extends string> = U extends Recor
  */
 export type Values<T extends Record<string, string | undefined>> = Exclude<T[keyof T] & string, undefined>;
 
-/** Produce a single union from all elements in a union of arrays
- * For example, `U` = `[{hi: string}] | [{hello: number}]`
- * produces: `{hi: string} | {hello: number}`
- */
-export type UnionArrayMerge<U> = U extends any[] ? U[number] : never;
-
-/** Throw out all indexed keys in an object. Turns this: { a: string, [key: string]: string }
- * into this: { a : string }
- */
-export type RemoveIndex<T extends object> = {
-  [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K] extends infer tk ? (
-    tk extends object ? (
-      (
-        tk extends any[]
-        ? {
-          [K in keyof tk]: tk[K] extends infer tkk ? tkk extends object ? RemoveIndex<tkk> : tkk : never;
-        }
-        : RemoveIndex<tk>
-      )
-    ) : tk
-  ) : never
-};
-
 /** Get tail of a tuple */
 export type Tail<T extends any[]> = T extends [head: any, ...tail: infer I]
   ? I
@@ -51,19 +28,6 @@ export type Head<T extends any[]> = T extends [...head: infer I, tail: any]
  */
 export type UnionToIntersection<U> =
   (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
-
-/** Force a Record to contain at least one key */
-export type NotEmpty<T> = keyof T extends never ? never : {
-  [K in keyof T]: T[K] // TODO: this is a temporary stopgap for https://github.com/microsoft/TypeScript/issues/53307
-};
-export type NotEmptyWithMessage<T, Msg extends string> = keyof T extends never ? { 'Error ❌': Msg } : {
-  [K in keyof T]: T[K] // TODO: this is a temporary stopgap for https://github.com/microsoft/TypeScript/issues/53307
-};
-
-/** https://stackoverflow.com/questions/70941227/intersection-of-values-based-on-union-of-keys */
-export type ValueIntersectionByKeyUnion<T, TKey extends keyof T> = {
-  [P in TKey]: (k: T[P]) => void
-}[TKey] extends ((k: infer I) => void) ? I : never;
 
 /** 
  * Removes the readonly modifier from a type (required for SET computed type to extend picked type) 
@@ -88,12 +52,7 @@ export type DeepPartial<T> =
   ? { [K in keyof T]: DeepPartial<T[K]> }
   : { [K in keyof T]?: DeepPartial<T[K]> };
 
-export type ForceRecordToEAN<T extends Record<string, string>> =
-  { [P in keyof T & string as `${P extends `#${string}` ? P : `#${P}`}`]: T[P] };
-export type ForceRecordToEAV<T extends Record<string, any>> =
-  { [P in keyof T & string as `${P extends `:${string}` ? P : `:${P}`}`]: T[P] };
-
-export type RemoveIndexKeys<T> = {
+type RemoveIndexKeys<T> = {
   [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K]
 };
 export type GetAllNonIndexKeys<T> = keyof RemoveIndexKeys<T>;

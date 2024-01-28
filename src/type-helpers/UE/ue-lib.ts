@@ -1,4 +1,3 @@
-import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../../dynamodb-types";
 import { DeepWriteable } from "../record";
 import { StringReplaceAll } from "../string";
 import { IsUEValidForADD } from "./ADD";
@@ -7,8 +6,7 @@ import { IsUEValidForREMOVE } from "./REMOVE";
 import { IsUEValidForSET } from "./SET";
 
 /** ddb UE clauses */
-export type UEClauses = "SET" | "REMOVE" | "ADD" | "DELETE";
-export type UEFunctions = "if_not_exists" | "list_append";
+type UEClauses = "SET" | "REMOVE" | "ADD" | "DELETE";
 
 export type UEIsValid = "UE_IS_VALID";
 type UESETInvalidError = "Error: the UpdateExpression is invalid - a SET clause does not agree with the type of item being updated. Make sure the left and right side of the setter are the same type, any increment/decrement operations are operating on strict `number` types, the `list_append` function takes two lists and sets a list, and the document path in the `if_not_exists` function points to a valid property.";
@@ -19,8 +17,8 @@ type UEDELETEInvalidError = "Error: the UpdateExpression is invalid - a DELETE c
 type _IsUEValid<
   UE extends string,
   T extends Record<string, any>,
-  EAN extends AnyExpressionAttributeNames,
-  EAV extends ExpressionAttributeValues
+  EAN extends Record<string, string>,
+  EAV extends Record<string, unknown>
 > =
   IsUEValidForSET<UE, T, EAN, EAV> extends 1
   ? IsUEValidForREMOVE<UE, T, EAN> extends 1
@@ -35,8 +33,8 @@ type _IsUEValid<
 export type IsUEValid<
   UE extends string,
   T extends Record<string, any>,
-  EAN extends AnyExpressionAttributeNames,
-  EAV extends ExpressionAttributeValues
+  EAN extends Record<string, string>,
+  EAV extends Record<string, unknown>
 > = _IsUEValid<UppercaseUEClauses<UE>, T, EAN, DeepWriteable<EAV>>;
 
 type WalkThroughUppercaseUEClauses<Str extends string, Acc extends string = ''> =

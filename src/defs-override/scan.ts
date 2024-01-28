@@ -1,5 +1,5 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { AnyExpressionAttributeNames, EANString, EAVString } from "../dynamodb-types";
+import { EANString, EAVString } from "../dynamodb-types";
 import { IndexFromValue } from "../lib";
 import { DeepPartial } from "../type-helpers/record";
 import { ProjectNonIndexScan, ProjectScan } from "../type-helpers/scan/common";
@@ -79,7 +79,7 @@ export type ScanOutput<
   TableItem extends object,
   PartitionKeyField extends string,
   SortKeyField extends string,
-  EAN extends AnyExpressionAttributeNames,
+  EAN extends Record<string, string>,
   TableIndex extends IndexFromValue,
   PE extends string
 > = (
@@ -104,7 +104,7 @@ export type ScanPEOutput<
   TableItem extends object,
   PartitionKeyField extends string,
   SortKeyField extends string,
-  EAN extends AnyExpressionAttributeNames,
+  EAN extends Record<string, string>,
   TableIndex extends IndexFromValue,
   PE extends string | undefined
 > = (

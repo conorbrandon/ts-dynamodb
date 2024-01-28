@@ -4,13 +4,11 @@ import { ExtractEAsFromString } from "../../type-helpers/extract-EAs";
 import { IsUnknown, OnlyStrings } from "../../type-helpers/utils";
 import { GetAllKeys } from "../../type-helpers/get-all-keys";
 import { IsUEValid, UEIsValid } from "../../type-helpers/UE/ue-lib";
-import { AnyExpressionAttributeNames, EANString, EAVString, ExpressionAttributeValues } from "../../dynamodb-types";
+import { EANString, EAVString } from "../../dynamodb-types";
 
-export type UpdateVariadicTwiBase<TS extends AnyGenericTable> = Omit<DocumentClient.Update, 'TableName' | 'ReturnValuesOnConditionCheckFailure' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues'> & {
+export type UpdateVariadicTwiBase<TS extends AnyGenericTable> = Omit<DocumentClient.Update, 'TableName' | 'ReturnValuesOnConditionCheckFailure'> & {
   TableName: TableName<TS>;
   ReturnValuesOnConditionCheckFailure?: ReturnValuesOnConditionCheckFailureValues;
-  ExpressionAttributeNames?: AnyExpressionAttributeNames;
-  ExpressionAttributeValues?: ExpressionAttributeValues;
 };
 /** 
  * TS is greedily evaluating the UpdateExpression for errors. 
@@ -39,8 +37,8 @@ export type ValidateUpdateVariadicTwiInput<
   Key extends Record<string, any>,
   UE extends string,
   CE extends string | undefined,
-  EAN extends AnyExpressionAttributeNames | undefined,
-  EAV extends ExpressionAttributeValues | undefined,
+  EAN extends Record<string, string> | undefined,
+  EAV extends Record<string, unknown> | undefined,
   TypeOfItem extends Record<string, any> = ExtractTableItemForKey<TableItem<TS, TN>, Key>,
   UEEAs extends { ean: string; eav: string } = ExtractEAsFromString<UE>,
   CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<OnlyStrings<CE>>,
@@ -50,8 +48,8 @@ export type ValidateUpdateVariadicTwiInput<
     IsUnknown<EAV> extends true ? {} : EAV,
     IsUnknown<CE> extends true ? "" : CE // important: CE is actually unknown if not set, and this swallows any UE causing the false branch to be hit
   ] extends [
-    infer definedEAN extends AnyExpressionAttributeNames,
-    infer definedEAV extends ExpressionAttributeValues,
+    infer definedEAN extends Record<string, string>,
+    infer definedEAV extends Record<string, unknown>,
     infer definedCE extends string
   ]
   ? {

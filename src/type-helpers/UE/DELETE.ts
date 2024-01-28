@@ -1,5 +1,4 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../../dynamodb-types";
 import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
 import { DrillIntoTypeUsingStrArray, Split, Trim, UnionSplitter } from "../string";
 import { IsNever, NoUndefined } from "../utils";
@@ -12,7 +11,7 @@ type IsDeleterTupleMatchingDynamoDBSet<Drilled, EAV> =
   )
   : false;
 
-export type ValidateDeleterTuples<DeleterTuple, T extends Record<string, any>, EAN extends Record<string, string>, EAV extends Record<string, any>> =
+type ValidateDeleterTuples<DeleterTuple, T extends Record<string, any>, EAN extends Record<string, string>, EAV extends Record<string, any>> =
   DeleterTuple extends [infer names extends string, infer value extends string]
   ? CreatePropPickArrayFromDocPath<names, EAN> extends (infer PropPickArray extends string[])
   // no need to add AddUndefinedToIndexAccess because we use NoUndefined below anyway
@@ -54,8 +53,8 @@ type SplitUEForDelete<UE extends string> = UnionSplitter<UnionSplitter<Split<UE,
 export type IsUEValidForDELETE<
   UE extends string,
   T extends Record<string, any>,
-  EAN extends AnyExpressionAttributeNames,
-  EAV extends ExpressionAttributeValues
+  EAN extends Record<string, string>,
+  EAV extends Record<string, unknown>
 > = ExtractDeleteTuplesFromUE<UE> extends infer DeleteTuple
   ? (
     IsNever<DeleteTuple> extends true

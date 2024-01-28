@@ -1,4 +1,4 @@
-import { AnyExpressionAttributeNames, DynamoDBKeyValue, ExpressionAttributeValues } from "../../dynamodb-types";
+import { DynamoDBKeyValue } from "../../dynamodb-types";
 import { GSIIndexFromValue, IndexFromValue, LSIIndexFromValue } from "../../lib";
 import { ProjectProjectionExpressionStruct } from "../PE2/pe-lib";
 import { UnionToIntersection } from "../record";
@@ -10,12 +10,12 @@ import { ProjectLSIQuery } from "./lsi-lib";
 import { BeginsWith as BeginsWithChecker } from "../begins-with";
 
 /** Take a key name in the KCE and map it to the EAN name if it is an EAN, otherwise leave it alone */
-type ExtractKeyConditionFieldFromEANs<Field extends string, EAN extends AnyExpressionAttributeNames> =
+type ExtractKeyConditionFieldFromEANs<Field extends string, EAN extends Record<string, string>> =
   Field extends `#${string}`
   ? EAN[Field]
   : Field;
 /** Index into the EAVs to get the one at Field, if it exists */
-type ExtractKeyConditionFieldFromEAVs<Field extends string, EAV extends ExpressionAttributeValues> = Field extends keyof EAV ? EAV[Field] : never;
+type ExtractKeyConditionFieldFromEAVs<Field extends string, EAV extends Record<string, unknown>> = Field extends keyof EAV ? EAV[Field] : never;
 
 /** Replace newlines, tabs, and 'and' with 'AND' and 'between' with 'BETWEEN' in a KCE for consistency */
 type KCEKeywords = 'AND' | 'BETWEEN';
@@ -172,9 +172,9 @@ export type NarrowExtractedTypesKeyFieldsToWidenedKeyValues<Types extends object
 
 export type BeginsWithExtractor = { begins_with_extractor: string };
 /** The reason we can't combine both into one union is we need to make sure both BETWEEN operands can be reasonably matched. With the distributivity of the current {@link BeginsWithChecker} type, there's no way to tell if _both_, or just one, match. */
-export type BetweenExtractor = { begins_with_extractor: "between_hijack"; eav1: string; eav2: string };
+type BetweenExtractor = { begins_with_extractor: "between_hijack"; eav1: string; eav2: string };
 
-type ResolveKCStruct<KCStruct extends KCStructs, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, PartitionKeyField extends string> =
+type ResolveKCStruct<KCStruct extends KCStructs, EAN extends Record<string, string>, EAV extends Record<string, unknown>, PartitionKeyField extends string> =
   ExtractKeyConditionFieldFromEANs<KCStruct['path'], EAN> extends infer kCKeyPath extends string
   ? (
     KCStruct extends StrictEquals
@@ -257,7 +257,7 @@ type ReconstructSplitKC<SplitKC extends string[]> =
   );
 
 /** Take a KCE and create the type of the Key is represents */
-export type ExtractKeyFromKCE<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, PartitionKeyFieldForIndex extends string> =
+export type ExtractKeyFromKCE<KCE extends string, EAN extends Record<string, string>, EAV extends Record<string, unknown>, PartitionKeyFieldForIndex extends string> =
   ReconstructSplitKC<Split<CleanKCE<KCE>, 'AND'>> extends (infer splitAND extends string[])
   ? (
     {
@@ -308,11 +308,11 @@ type FilterForBeginsWithExtractor<AllTypesForTable extends object, HasBeginsWith
   )
   : never;
 
-export type OnlyBeginsWithExtractor<Key extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>> =
+type OnlyBeginsWithExtractor<Key extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>> =
   {
     [K in keyof Key as Key[K] extends BeginsWithExtractor ? K : never]: Key[K]
   };
-export type NoBeginsWithExtractor<Key extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>> =
+type NoBeginsWithExtractor<Key extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>> =
   {
     [K in keyof Key as Key[K] extends BeginsWithExtractor ? never : K]: Key[K]
   };
@@ -339,7 +339,7 @@ export type CommonExtractTypeForKCEKey<AllTypesForTable extends object, Key exte
   : never;
 
 /** @param {QueryKey} - the pre-computed object key of the query, if any */
-export type ProjectQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, TableIndex extends IndexFromValue, TableItem extends object, PartitionKeyField extends string, SortKeyField extends string, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
+export type ProjectQuery<KCE extends string, EAN extends Record<string, string>, EAV extends Record<string, unknown>, TableIndex extends IndexFromValue, TableItem extends object, PartitionKeyField extends string, SortKeyField extends string, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
   TableIndex extends GSIIndexFromValue
   ? ProjectGSIQuery<KCE, EAN, EAV, TableIndex, TableItem, PartitionKeyField | SortKeyField, PE, QueryKey>
   : (
@@ -352,7 +352,7 @@ export type ProjectQuery<KCE extends string, EAN extends AnyExpressionAttributeN
 
 // TODO: can widen and extract here?
 /** @param {QueryKey} - the pre-computed object key of the query, if any */
-export type ProjectNonIndexQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, PartitionKeyField extends string, SortKeyField extends string, TableItem extends object, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
+export type ProjectNonIndexQuery<KCE extends string, EAN extends Record<string, string>, EAV extends Record<string, unknown>, PartitionKeyField extends string, SortKeyField extends string, TableItem extends object, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
   (IsNever<QueryKey> extends true ? ExtractKeyFromKCE<KCE, EAN, EAV, PartitionKeyField> : QueryKey) extends (infer indexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>) // get the index key
   ? (
     keyof indexKey extends (PartitionKeyField | SortKeyField)

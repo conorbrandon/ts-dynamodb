@@ -2,11 +2,6 @@ import { DynamoDB } from "aws-sdk";
 import { IsAny } from "./type-helpers/utils";
 import { Stream } from "stream";
 
-export type ExpressionAttributeNames<Names extends string> = Record<`#${string}`, Names>;
-export type AnyExpressionAttributeNames = ExpressionAttributeNames<string>;
-
-export type ExpressionAttributeValues = Record<`:${string}`, any>;
-
 export type DynamoDBKeyValue = string | number | DynamoDB.DocumentClient.BinaryAttributeValue;
 
 type BlobTypePolyfill = IsAny<Blob> extends true ? never : Blob extends { readonly size: number; readonly type: string } ? Blob : never;

@@ -6,7 +6,6 @@ import { UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput 
 import { ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
 import { DeepReadonly, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
 import DynamoDB, { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "./dynamodb-types";
 import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryKeyInput, QueryKeyKey, QueryKeyOutput, QueryKeyPEInput, QueryKeyPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
 import { NoUndefined } from "./type-helpers/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
@@ -127,7 +126,7 @@ type _TableIndex<IndicesUnion, IndexName extends string> = IndicesUnion extends 
 /** Take a IndexFromValue['name'] string and find the indices[string] IndexFromValue it came from */
 export type TableIndex<Tables, TN extends string, IndexName extends string> = _TableIndex<TableInidicesUnion<Tables, TN>, IndexName>;
 /** Pick the Key object from a TableItem object */
-export type TableItemKey<Tables, TN extends string, Item extends TableItem<Tables, TN>> = TableKey<Tables, TN> extends infer tKey ? [keyof tKey] extends [keyof Item] ? Pick<Item, keyof tKey> : never : never;
+type TableItemKey<Tables, TN extends string, Item extends TableItem<Tables, TN>> = TableKey<Tables, TN> extends infer tKey ? [keyof tKey] extends [keyof Item] ? Pick<Item, keyof tKey> : never : never;
 
 /** Correctly type the return value of put/delete depending whether the ReturnValues key is supplied */
 export type PutAndDeleteReturnValues = 'NONE' | 'ALL_OLD';
@@ -1151,7 +1150,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     };
   }
 
-  private getKCEFromQueryKey<RawParams extends { Key: Record<string, unknown>; ExpressionAttributeNames?: AnyExpressionAttributeNames; ExpressionAttributeValues?: ExpressionAttributeValues }>(params: RawParams) {
+  private getKCEFromQueryKey<RawParams extends { Key: Record<string, unknown>; ExpressionAttributeNames?: Record<string, string>; ExpressionAttributeValues?: Record<string, unknown> }>(params: RawParams) {
     let index = 0;
     const ExpressionAttributeNames: Record<`#_${number}_`, string> = {};
     const ExpressionAttributeValues: Record<`:_${number}_`, any> = {};
@@ -1189,7 +1188,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     }, {} as Record<V, K>);
   }
 
-  private parsePEConstructedParamsAndLog<RawParams extends { ExpressionAttributeNames?: AnyExpressionAttributeNames; _logParams?: _LogParams }>(params: RawParams, peRaw: string | undefined) {
+  private parsePEConstructedParamsAndLog<RawParams extends { ExpressionAttributeNames?: Record<string, string>; _logParams?: _LogParams }>(params: RawParams, peRaw: string | undefined) {
     let p;
     let i = 0;
     if (peRaw) {
@@ -1265,7 +1264,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
 }
 
-export class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> extends Error {
+class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> extends Error {
   override name = "BatchGetAllMaxFailedAttemptsExceededError" as const;
   constructor(public readonly id: symbol, public readonly partialResponse: BatchGetAllRequestOutput<TS, Requests, RCC>) {
     super();
@@ -1571,7 +1570,7 @@ const isConditionalCheckFailedReason = (reason: Record<string, unknown> & { Code
 const conditionalCheckFailedReasonHasItem = (reason: Record<string, unknown> & { Code: "ConditionalCheckFailed" }): reason is Record<string, unknown> & { Code: "ConditionalCheckFailed"; Item: Record<string, any> } => {
   return "Item" in reason && typeof reason['Item'] === 'object' && !!reason['Item'];
 };
-export class TransactWriteItemsParsedError<ReturnValues extends Record<string, unknown>> extends Error {
+class TransactWriteItemsParsedError<ReturnValues extends Record<string, unknown>> extends Error {
   override name = "TransactWriteItemsParsedError" as const;
   constructor(public readonly id: symbol, public readonly transactWriteError: unknown, public readonly CancellationReasons: CancellationReasons<ReturnValues>) {
     super();

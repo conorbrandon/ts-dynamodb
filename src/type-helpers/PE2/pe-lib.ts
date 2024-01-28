@@ -1,5 +1,5 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { AnyExpressionAttributeNames, NativeJSBinaryTypes } from "../../dynamodb-types";
+import { NativeJSBinaryTypes } from "../../dynamodb-types";
 import { ParsePEToPropPickNestedArray } from "../PE/pe-lib";
 import { Trim } from "../string";
 import { ArrayHasNoDefinedIndices, Branded, DeepSimplifyObject, IsAnyOrUnknown, IsNever, IsNoUncheckedIndexAccessEnabled, NoUndefined, OnlyNumbers, Primitive, UnbrandRecord } from "../utils";
@@ -47,7 +47,7 @@ type _ConstructPEStruct<PropPickArray extends string[][], Acc extends Record<str
   PropPickArray extends [infer First extends [string, ...string[]], ...infer Rest extends string[][]]
   ? _ConstructPEStruct<Rest, _AddToPEStructAcc<First, Acc>>
   : Acc;
-export type ConstructPEStruct<PE extends string, EAN extends AnyExpressionAttributeNames> =
+export type ConstructPEStruct<PE extends string, EAN extends Record<string, string>> =
   ParsePEToPropPickNestedArray<Trim<Trim<PE, "\t" | "\n">, " ">, EAN> extends (infer nestedPropPickArray extends string[][])
   ? _ConstructPEStruct<nestedPropPickArray>
   : never;
@@ -148,7 +148,7 @@ type TerminateOnNonIndexableTypes<Struct, T> = Struct extends true ? AddWrapperN
 type Numberify<S> = S extends `${infer N extends number}` ? N : S;
 type _GetKeysForNextLevel<T, Keys> = Keys extends `${OnlyNumbers<keyof T>}` ? Numberify<Keys> : Keys;
 type GetKeysForNextLevel<Struct extends PEStruct, T> = _GetKeysForNextLevel<T, keyof Struct>;
-export type ProjectPEStruct<Struct extends PEStruct, T, MakeRequired extends boolean> =
+type ProjectPEStruct<Struct extends PEStruct, T, MakeRequired extends boolean> =
   Struct extends any
   ? T extends any
   ? (
@@ -223,7 +223,7 @@ type TopLevelPick<T extends Record<string, any>, PropPickArray extends [string][
   : never
   : never;
 
-export type ProjectProjectionExpressionStruct<T extends Record<string, any>, PE extends string, EAN extends AnyExpressionAttributeNames, MakeRequired extends boolean = false> =
+export type ProjectProjectionExpressionStruct<T extends Record<string, any>, PE extends string, EAN extends Record<string, string>, MakeRequired extends boolean = false> =
   ParsePEToPropPickNestedArray<Trim<Trim<PE, "\t" | "\n">, " ">, EAN> extends (infer nestedPropPickArray extends string[][])
   ? nestedPropPickArray extends [string][]
   ? DeepSimplifyObject<TopLevelPick<TSDdbSet<T, MakeRequired>, nestedPropPickArray, MakeRequired>>

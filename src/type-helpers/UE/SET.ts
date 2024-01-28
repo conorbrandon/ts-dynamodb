@@ -1,4 +1,3 @@
-import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../../dynamodb-types";
 import { DeepValidateShapev2WithBinaryResult } from "../deep-validate";
 import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
 import { Head } from "../record";
@@ -177,7 +176,7 @@ export type SplitOnOneOpenParen<Str extends string, Stack extends string[] = [],
   : never; // In this case, we shouldn't get to the end of the string if the list_append is well formed
 
 // ########## Step 4 ##########
-type _GetFinalValueOfSetterTupleForComputedType<ValueStruct extends object, T extends Record<any, any>, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues> =
+type _GetFinalValueOfSetterTupleForComputedType<ValueStruct extends object, T extends Record<any, any>, EAN extends Record<string, string>, EAV extends Record<string, unknown>> =
   (
     ValueStruct extends BrokenCrement
     ? (
@@ -253,18 +252,18 @@ type _GetFinalValueOfSetterTupleForComputedType<ValueStruct extends object, T ex
     )
   );
 /** NOTE: ONLY EXPORTED FOR TESTS */
-export type GetFinalValuesOfSetterTuples<SetterTuples extends [string, object][], T extends Record<any, any>, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues> = {
+export type GetFinalValuesOfSetterTuples<SetterTuples extends [string, object][], T extends Record<any, any>, EAN extends Record<string, string>, EAV extends Record<string, unknown>> = {
   [K in keyof SetterTuples]: [SetterTuples[K][0], _GetFinalValueOfSetterTupleForComputedType<SetterTuples[K][1], T, EAN, EAV>]
 };
 
 // ########## Step 5 ##########
 /** Uses the setter arrays parsed from a UE to pick from type T based on what they are setting */
-type CreatePickedObjectFromDocPath<RawDocPath extends string, T extends object, EAN extends AnyExpressionAttributeNames> =
+type CreatePickedObjectFromDocPath<RawDocPath extends string, T extends object, EAN extends Record<string, string>> =
   CreatePropPickArrayFromDocPath<RawDocPath, EAN> extends (infer PropPickArray extends string[])
   ? NestedPickForUE<T, PropPickArray, (IsNoUncheckedIndexAccessEnabled extends true ? undefined : never)>
   : never;
 /** NOTE: ONLY EXPORTED FOR TESTS */
-export type CreatePickedAndComputedTypesForSetters<FinalValueSetterTuples extends [string, any][], T extends object, EAN extends AnyExpressionAttributeNames> = {
+export type CreatePickedAndComputedTypesForSetters<FinalValueSetterTuples extends [string, any][], T extends object, EAN extends Record<string, string>> = {
   [K in keyof FinalValueSetterTuples]: [
     picked: CreatePickedObjectFromDocPath<FinalValueSetterTuples[K][0], T, EAN>,
     computed: FinalValueSetterTuples[K][1] extends infer finalValue // cannot infer and distribute in one step
@@ -296,7 +295,7 @@ export type FinalValidationOfSetterUE<PickedAndComputed extends [picked: object,
 
 
 // Put all the above steps 1-6 together
-export type IsUEValidForSET<TrimmedUE extends string, T extends Record<any, any>, EAN extends AnyExpressionAttributeNames, EAV extends Record<`:${string}`, any>> =
+export type IsUEValidForSET<TrimmedUE extends string, T extends Record<any, any>, EAN extends Record<string, string>, EAV extends Record<string, any>> =
   ExtractSetterPartOfUE<TrimmedUE> extends infer setterPart
   ? IsNever<setterPart> extends true ? 1 // setterPart _could_ be never here!
   : setterPart extends string

@@ -1,4 +1,4 @@
-import { AnyExpressionAttributeNames, DynamoDBKeyValue, ExpressionAttributeValues } from "../../dynamodb-types";
+import { DynamoDBKeyValue } from "../../dynamodb-types";
 import { GSIIndexFromValue, ProjectAllIndex, ProjectAttributesIndex, ProjectOnlyKeysIndex } from "../../lib";
 import { ProjectProjectionExpressionStruct } from "../PE2/pe-lib";
 import { DeepWriteable } from "../record";
@@ -34,7 +34,7 @@ export type ExtractKeysOfGSIIndex<Index extends GSIIndexFromValue, RetainObject 
 export type GetGSIIndexKeyTypes<Index extends GSIIndexFromValue, AllTypesForTable extends object> =
   OnlyNonEmptyObjects<PickOverTypesForQueryKey<AllTypesForTable, ExtractKeysOfGSIIndex<Index, true>>>;
 
-type ProjectItemsForGSIQuery<Index extends GSIIndexFromValue, IndexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>, ExtractedItem extends object, MainTableKeyFields extends string, PE extends string, EAN extends AnyExpressionAttributeNames> =
+type ProjectItemsForGSIQuery<Index extends GSIIndexFromValue, IndexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>, ExtractedItem extends object, MainTableKeyFields extends string, PE extends string, EAN extends Record<string, string>> =
   (
     WidenKeyToTypesItExtracted<IndexKey, ExtractedItem> extends infer wk extends Record<string, DynamoDBKeyValue>
     ? (
@@ -73,7 +73,7 @@ type ProjectItemsForGSIQuery<Index extends GSIIndexFromValue, IndexKey extends R
   )
   : never;
 
-export type ProjectGSIQuery<KCE extends string, EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues, TableIndex extends GSIIndexFromValue, TableItem extends object, MainTableKeyFields extends string, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
+export type ProjectGSIQuery<KCE extends string, EAN extends Record<string, string>, EAV extends Record<string, unknown>, TableIndex extends GSIIndexFromValue, TableItem extends object, MainTableKeyFields extends string, PE extends string, QueryKey extends Record<string, DynamoDBKeyValue> = never> =
   (IsNever<QueryKey> extends true ? ExtractKeyFromKCE<KCE, EAN, EAV, TableIndex['partitionKey']> : QueryKey) extends (infer indexKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>) // get the index key
   ? (
     ValidateGSIExtractedKey<indexKey, TableIndex> extends (infer validatedKey extends Record<string, DynamoDBKeyValue | BeginsWithExtractor>)

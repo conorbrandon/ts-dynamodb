@@ -1,7 +1,6 @@
 import { NestedPickForUE } from "./nested-pick";
 import { DrillIntoTypeUsingStrArray, Split, Trim, UnionSplitter } from "../string";
 import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
-import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { IsNever } from "../utils";
 
 // REMOVE
@@ -35,7 +34,7 @@ type SplitUEForREMOVE<UE extends string> = UnionSplitter<UnionSplitter<Split<UE,
 export type IsUEValidForREMOVE<
   UE extends string,
   T extends Record<string, any>,
-  EAN extends AnyExpressionAttributeNames
+  EAN extends Record<string, string>
 > = ExtractPropsToRemoveFromUE<UE> extends infer PropsToRemove
   ? IsNever<PropsToRemove> extends true ? 1 : PropsToRemove extends string
   ? DoesRemoveDocPathExtendUndefined<T, PropsToRemove, EAN> extends true

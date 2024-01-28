@@ -1,6 +1,4 @@
-import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../dynamodb-types";
-import { Tail, UnionToIntersection } from "./record";
-import { IsNever } from "./utils";
+import { Tail } from "./record";
 
 /** Takes a string Str and trims the Separator string from Str. 
  * The accumulator is optional by the caller and most likely should not be supplied, but required for inner recursion.
@@ -14,10 +12,6 @@ export type Trim<Str extends string, Separator extends string = ' ', Acc extends
       ? Acc
       : never)
   );
-/** Applies Trim to each string in a union of strings. */
-export type UnionTrimmer<S, Separator extends string = ' '> = S extends string ? Trim<S, Separator> : never;
-/** Applies Trim to each string in each array in a union of string arrays. */
-export type UnionArrayTrimmer<S extends any[], Separator extends string = " "> = S extends string[] ? { [K in keyof S]: Trim<S[K], Separator> } : never;
 
 /** Takes a string and produces an array of the string split on the D=delimeter.
  * For ex, take "obj, item" and produce ["obj", " item"]
@@ -44,50 +38,6 @@ export type Join<Arr extends string[], Sep extends string = ".", Acc extends str
   Arr extends [infer S extends string, ...infer Rest extends string[]]
   ? Join<Rest, Sep, `${Acc}${S}${S extends "" ? "" : Rest extends [] ? "" : Sep}`>
   : Acc;
-
-/** Take a Record and create a template string that forces you to 
- * use all keys of the Record at least once somewhere in the string. Useful for making
- * sure all the EANs/EAVs are in a PE or CE.
- */
-type _UseAllExpressionAttributeString<U extends Record<string, any>> = {
-  [K in keyof U]: `${string}${K & string}${string}`
-}[keyof U];
-export type UseAllExpressionAttributeNamesInString<EAN extends AnyExpressionAttributeNames, ConvertToIntersection extends boolean = false> =
-  (AnyExpressionAttributeNames extends EAN ? never : EAN) extends infer preCheck
-  ? IsNever<preCheck> extends true
-  ? string
-  : (
-    ConvertToIntersection extends true
-    ? UnionToIntersection<_UseAllExpressionAttributeString<EAN>>
-    : _UseAllExpressionAttributeString<EAN>
-  )
-  : never;
-
-/** Take a string, the keys of EAN and/or EAV objects, and determine which EANs or EAVs are unused in the string */
-export type FilterUnusedEANOrVs<Expr extends string, EANOrVs extends string> = EANOrVs extends string ? (`${string}${Expr}${string}` extends `${string}${EANOrVs}${string}` ? never : EANOrVs) : never;
-
-export type UseAllExpressionAttributeValuesInString<EAV extends ExpressionAttributeValues> =
-  (ExpressionAttributeValues extends EAV ? never : EAV) extends infer preCheck
-  ? IsNever<preCheck> extends true
-  ? string
-  : _UseAllExpressionAttributeString<EAV>
-  : never;
-export type UseAllExpressionAttributesInString<EAN extends AnyExpressionAttributeNames, EAV extends ExpressionAttributeValues> =
-  UnionToIntersection<(
-    UseAllExpressionAttributeNamesInString<EAN> extends infer useAllEAN
-    ? `#${string}` extends useAllEAN
-    ? never
-    : useAllEAN
-    : never
-  ) | (
-      UseAllExpressionAttributeValuesInString<EAV> extends infer useAllEAV
-      ? `:${string}` extends useAllEAV
-      ? never
-      : useAllEAV
-      : never
-    )>;
-
-export type CEComparators = '=' | '<>' | '<' | '<=' | '>' | '>=';
 
 // https://stackoverflow.com/questions/72193378/replace-parts-of-literal-string-with-values-from-object
 export type StringReplaceAll<Str extends string, M extends { [k: string]: string }, Acc extends string = ""> =

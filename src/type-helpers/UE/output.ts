@@ -4,7 +4,6 @@ import { ExtractAddTuplesFromUE } from "./ADD";
 import { ExtractPropsToRemoveFromUE } from "./REMOVE";
 import { ExtractSetterPartOfUE, ExtractSetterTuplesLookAhead } from "./SET";
 import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
-import { AnyExpressionAttributeNames } from "../../dynamodb-types";
 import { UppercaseUEClauses } from "./ue-lib";
 import { Tail } from "../record";
 import { ExtractDeleteTuplesFromUE } from "./DELETE";
@@ -32,7 +31,7 @@ type DrillIntoTypeToAddUndefinedToArray<PropPickArray extends string[][], T exte
     ? DrillIntoTypeToAddUndefinedToArray<Tail<PropPickArray>, firstDrilled>
     : never
   );
-type AddUndefinedToOnlyIndexRemoveProps<UE extends string, T extends object, EAN extends AnyExpressionAttributeNames> =
+type AddUndefinedToOnlyIndexRemoveProps<UE extends string, T extends object, EAN extends Record<string, string>> =
   ExtractPropsToRemoveFromUE<UE, true> extends infer removeProps extends string[]
   ? RemoveNonIndexRemovesFromRemoveProps<removeProps> extends infer onlyIndexRemoves extends string[]
   ? {
@@ -126,7 +125,7 @@ type ExtractDeletePEFromUE<
 export type ProjectUpdateExpression<
   UE extends string,
   T extends Record<string, any>,
-  EAN extends AnyExpressionAttributeNames,
+  EAN extends Record<string, string>,
   ReturnValues extends 'UPDATED_OLD' | 'UPDATED_NEW'
 > = UppercaseUEClauses<UE> extends (infer trimmedUE extends string)
   ? (

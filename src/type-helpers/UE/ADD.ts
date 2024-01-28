@@ -2,7 +2,6 @@ import { NestedPickForUE } from "./nested-pick";
 import { DrillIntoTypeUsingStrArray, Split, Trim, UnionSplitter } from "../string";
 import { CreatePropPickArrayFromDocPath } from "../PE/pe-lib";
 import { IsNever, NoUndefined } from "../utils";
-import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "../../dynamodb-types";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
 // Nobody would be insane enough to create a branded constant number, would they? Aye yai yai...
@@ -23,7 +22,7 @@ type IsAdderTupleMatchingDynamoDBSet<Drilled, EAV> =
   : false;
 
 // ADD
-export type ValidateAdderTuples<AdderTuple, T extends Record<string, any>, EAN extends Record<string, string>, EAV extends Record<string, any>> =
+type ValidateAdderTuples<AdderTuple, T extends Record<string, any>, EAN extends Record<string, string>, EAV extends Record<string, any>> =
   AdderTuple extends [infer names extends string, infer value extends string]
   ? CreatePropPickArrayFromDocPath<names, EAN> extends (infer PropPickArray extends string[])
   // the behavior of ADD is very interesting. If the property doesn't exist, it can create it. So we can actually accept `undefined` for the drilled type, but we filter it out here so it doesn't cause issues in the checks below.
@@ -71,8 +70,8 @@ type SplitUEForAdd<UE extends string> = UnionSplitter<UnionSplitter<Split<UE, " 
 export type IsUEValidForADD<
   UE extends string,
   T extends Record<string, any>,
-  EAN extends AnyExpressionAttributeNames,
-  EAV extends ExpressionAttributeValues
+  EAN extends Record<string, string>,
+  EAV extends Record<string, unknown>
 > = ExtractAddTuplesFromUE<UE> extends infer AddTuple
   ? (
     IsNever<AddTuple> extends true
