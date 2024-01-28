@@ -254,13 +254,10 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     TN extends TableName<TS>,
     FE extends string,
     PE extends string,
-    FEEAs extends ExtractEAsFromString<FE>,
-    PEEAs extends ExtractEAsFromString<PE>,
-    const EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    const EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<string, string>,
     IndexName extends TableIndexName<TS, TN> = never
   >(
-    params: ScanInput<TN, IndexName, FE, PE, FEEAs['ean'] | PEEAs['ean'], FEEAs['eav'], EAN, EAV>,
+    params: ScanInput<TN, IndexName, FE, PE, EAN>,
     callback?: TypesafeCallback<
       ScanOutput<
         TableItem<TS, TN>,
@@ -270,7 +267,8 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
         EAN,
         TableIndex<TS, TN, IndexName>,
         PE
-      >>
+      >
+    >
   ): TypesafeRequest<
     ScanOutput<
       TableItem<TS, TN>,
@@ -914,12 +912,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     FE extends string,
     PE extends string,
-    FEEAs extends ExtractEAsFromString<FE>,
-    PEEAs extends ExtractEAsFromString<PE>,
-    const EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    const EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<string, string>,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: ScanInput<TN, IndexName, FE, PE, FEEAs['ean'] | PEEAs['ean'], FEEAs['eav'], EAN, EAV>) {
+  >(params: ScanInput<TN, IndexName, FE, PE, EAN>) {
     const res = await this.client.scan(params).promise();
     return res as unknown as TypesafePromiseResult<ScanOutput<
       TableItem<TS, TN>,
@@ -938,12 +933,10 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   async scanPE<
     TN extends TableName<TS>,
     FE extends string,
-    FEEAs extends ExtractEAsFromString<FE>,
-    const EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    const EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<string, string>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: ScanPEInput<TN, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
+  >(params: ScanPEInput<TN, IndexName, FE, EAN>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const res = await this.client.scan(p).promise();
     return res as unknown as TypesafePromiseResult<ScanPEOutput<
@@ -965,12 +958,9 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     FE extends string,
     PE extends string,
-    FEEAs extends ExtractEAsFromString<FE>,
-    PEEAs extends ExtractEAsFromString<PE>,
-    const EAN extends Record<FEEAs['ean'] | PEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    const EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<string, string>,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: ScanInput<TN, IndexName, FE, PE, FEEAs['ean'] | PEEAs['ean'], FEEAs['eav'], EAN, EAV>) {
+  >(params: ScanInput<TN, IndexName, FE, PE, EAN>) {
     const items: unknown[] = await this.whileLastEvaluatedKey({ method: 'scan', params });
     return items as unknown as NoUndefined<ScanOutput<
       TableItem<TS, TN>,
@@ -992,12 +982,10 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   async scanAllPE<
     TN extends TableName<TS>,
     FE extends string,
-    FEEAs extends ExtractEAsFromString<FE>,
-    const EAN extends Record<FEEAs['ean'], string>, // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
-    const EAV extends Record<FEEAs['eav'], any>,
+    const EAN extends Record<string, string>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: ScanPEInput<TN, IndexName, FE, FEEAs['ean'], FEEAs['eav'], EAN, EAV>, ProjectionExpression?: PE) {
+  >(params: ScanPEInput<TN, IndexName, FE, EAN>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const items: unknown[] = await this.whileLastEvaluatedKey({ method: 'scan', params: p });
     return items as unknown as NoUndefined<ScanPEOutput<
