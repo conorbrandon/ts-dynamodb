@@ -1,11 +1,14 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { EANString, EAVString } from "../dynamodb-types";
-import { UpdateOutputHelper, UpdateReturnValues, UpdateSimpleSETOutputHelper } from "../lib";
+import { UpdateReturnValues } from "../lib";
 import { DeepValidateShapev2WithBinaryResult } from "../type-helpers/deep-validate";
 import { IsUEValid, UEIsValid } from "../type-helpers/UE/ue-lib";
 import { _LogParams } from "./defs-helpers";
 import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
 import { GetAllKeys } from "../type-helpers/get-all-keys";
+import { TSDdbSet } from "../type-helpers/sets/utils";
+import { DeepSimplifyObject, NoUndefined } from "../type-helpers/utils";
+import { ProjectUpdateExpression } from "../type-helpers/UE/output";
 
 export type UpdateInput<
   TN extends string,
@@ -83,8 +86,7 @@ export type UpdateSimpleSETInput<
   TN extends string,
   Key extends Record<string, any>,
   TypeOfItem extends Record<string, any>,
-  NoKeysTypeOfItem extends Record<string, any>,
-  Item extends Record<string, any>,
+  UpdateKeys extends keyof TypeOfItem,
   AS extends string,
   EAN extends Record<string, string>,
   EAV extends Record<string, any>,
@@ -92,7 +94,7 @@ export type UpdateSimpleSETInput<
 > = {
   TableName: TN;
   Key: Key;
-  Item: Item;
+  Item: { [K in UpdateKeys]: TypeOfItem[K] };
   ReturnValues?: RV;
   /** 
   * 
@@ -134,6 +136,12 @@ export type UpdateSimpleSETInput<
     }
   );
 
+type UpdateOutputHelper<T extends Record<any, any>, UE extends string, EAN extends Record<string, string>, RN extends UpdateReturnValues | undefined> =
+  RN extends undefined ? undefined
+  : RN extends 'NONE' ? undefined
+  : RN extends 'ALL_OLD' | 'ALL_NEW' ? TSDdbSet<T> | undefined
+  : RN extends 'UPDATED_OLD' | 'UPDATED_NEW' ? ProjectUpdateExpression<UE, T, EAN, RN>
+  : never;
 export type UpdateOutput<
   TypeOfItem extends Record<string, any>,
   UE extends string,
@@ -144,12 +152,21 @@ export type UpdateOutput<
     Attributes?: UpdateOutputHelper<TypeOfItem, UE, EAN, RN> extends infer Res ? Res : never;
   }
 ) extends infer Res2 ? Res2 : never;
+
+type UpdateSimpleSETOutputHelper<TypeOfItem extends Record<string, any>, UpdateKeys extends keyof TypeOfItem, RN extends UpdateReturnValues | undefined> =
+  RN extends undefined | 'NONE' ? undefined
+  // The lack of undefined is predicated on the fact a CE with the Key is ALWAYS included
+  : RN extends 'ALL_OLD' | 'ALL_NEW' ? TSDdbSet<TypeOfItem>
+  // below this, we add undefined because we are allowing a Partial of TypeOfItem, and if the Item doesn't actually contains any keys or all values are undefined, no UpdateExpression will be created, thus Attributes could be undefined.
+  : RN extends 'UPDATED_OLD' ? DeepSimplifyObject<TSDdbSet<{ [K in UpdateKeys]: TypeOfItem[K] }>> | undefined
+  : RN extends 'UPDATED_NEW' ? DeepSimplifyObject<TSDdbSet<{ [K in UpdateKeys]-?: NoUndefined<TypeOfItem[K]> }>> | undefined
+  : never;
 export type UpdateSimpleSETOutput<
-  Item extends Record<string, any>,
   TypeOfItem extends Record<string, any>,
+  UpdateKeys extends keyof TypeOfItem,
   RN extends UpdateReturnValues
 > = (
   Omit<DocumentClient.UpdateItemOutput, 'Attributes'> & {
-    Attributes?: UpdateSimpleSETOutputHelper<Item, TypeOfItem, RN> extends infer Res ? Res : never;
+    Attributes?: UpdateSimpleSETOutputHelper<TypeOfItem, UpdateKeys, RN> extends infer Res ? Res : never;
   }
 ) extends infer Res2 ? Res2 : never;

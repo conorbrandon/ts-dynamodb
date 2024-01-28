@@ -5,11 +5,10 @@ import { PutInput, PutOutput } from "./defs-override/put";
 import { UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput } from "./defs-override/update";
 import { ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
 import { DeepReadonly, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
-import { ProjectUpdateExpression } from "./type-helpers/UE/output";
 import DynamoDB, { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "./dynamodb-types";
 import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryKeyInput, QueryKeyKey, QueryKeyOutput, QueryKeyPEInput, QueryKeyPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
-import { DeepSimplifyObject, NoUndefined } from "./type-helpers/utils";
+import { NoUndefined } from "./type-helpers/utils";
 import { ExtractEAsFromString } from "./type-helpers/extract-EAs";
 import { TSDdbSet } from "./type-helpers/sets/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
@@ -138,15 +137,6 @@ export type PutAndDeleteReturnValues = 'NONE' | 'ALL_OLD';
 export type PutAndDeleteOutputHelper<T extends Record<any, any>, RN extends PutAndDeleteReturnValues | undefined> = RN extends undefined ? undefined : RN extends 'NONE' ? undefined : RN extends 'ALL_OLD' ? TSDdbSet<T> | undefined : never;
 /** Correctly type the return value of update depending whether the ReturnValues key is supplied */
 export type UpdateReturnValues = 'NONE' | 'ALL_OLD' | 'ALL_NEW' | 'UPDATED_OLD' | 'UPDATED_NEW';
-export type UpdateOutputHelper<T extends Record<any, any>, UE extends string, EAN extends AnyExpressionAttributeNames, RN extends UpdateReturnValues | undefined> = RN extends undefined ? undefined : RN extends 'NONE' ? undefined : RN extends 'ALL_OLD' | 'ALL_NEW' ? TSDdbSet<T> | undefined : RN extends 'UPDATED_OLD' | 'UPDATED_NEW' ? ProjectUpdateExpression<UE, T, EAN, RN> : never;
-export type UpdateSimpleSETOutputHelper<Item extends Record<string, any>, TypeOfItem extends Record<string, any>, RN extends UpdateReturnValues | undefined> =
-  RN extends undefined | 'NONE' ? undefined
-  // The lack of undefined is predicated on the fact a CE with the Key is ALWAYS included
-  : RN extends 'ALL_OLD' | 'ALL_NEW' ? TSDdbSet<TypeOfItem>
-  // below this, we add undefined because we are allowing a Partial of TypeOfItem, and if the Item doesn't actually contains any keys or all values are undefined, no UpdateExpression will be created, thus Attributes could be undefined.
-  : RN extends 'UPDATED_OLD' ? DeepSimplifyObject<TSDdbSet<{ [K in Extract<keyof TypeOfItem, keyof Item>]: TypeOfItem[K] }>> | undefined
-  : RN extends 'UPDATED_NEW' ? DeepSimplifyObject<TSDdbSet<{ [K in Extract<keyof TypeOfItem, keyof Item>]: NoUndefined<TypeOfItem[K]> }>> | undefined
-  : never;
 export type ReturnValuesOnConditionCheckFailureValues = 'NONE' | 'ALL_OLD';
 
 /** 
@@ -443,13 +433,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    NoKeysTypeOfItem extends Partial<Omit<TypeOfItem, keyof Key>>,
-    const Item extends NoKeysTypeOfItem,
+    UpdateKeys extends Exclude<keyof TypeOfItem, keyof Key>,
     AS extends string,
     EAN extends Record<string, string>,
     EAV extends Record<string, any>,
     RV extends UpdateReturnValues = 'NONE'
-  >(params: UpdateSimpleSETInput<TN, Key, TypeOfItem, NoKeysTypeOfItem, Item, AS, EAN, EAV, RV>) {
+  >(params: UpdateSimpleSETInput<TN, Key, TypeOfItem, UpdateKeys, AS, EAN, EAV, RV>) {
     const { TableName, Key, Item, ReturnValues, extraConditions, _logParams } = params;
     const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
     const finalParams = {
@@ -462,7 +451,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
       console.log(_logParams.message ?? '', this.myInspect(finalParams));
     }
     const res = await this.client.update(finalParams).promise();
-    return res as unknown as TypesafePromiseResult<UpdateSimpleSETOutput<Item, TypeOfItem, RV>>;
+    return res as unknown as TypesafePromiseResult<UpdateSimpleSETOutput<TypeOfItem, UpdateKeys, RV>>;
   }
 
   async delete<
