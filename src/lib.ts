@@ -203,7 +203,7 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
 
   delete<
     TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
+    const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     CE extends string,
     EAs extends ExtractEAsFromString<CE>,
@@ -368,7 +368,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    */
   async getPE<
     TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
+    const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     PE extends string | undefined = undefined
   >(params: GetPEInput<TN, Key>, ProjectionExpression?: PE) {
@@ -431,7 +431,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    */
   async updateSimpleSET<
     TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
+    const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     UpdateKeys extends Exclude<keyof TypeOfItem, keyof Key>,
     AS extends string,
@@ -456,7 +456,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   async delete<
     TN extends TableName<TS>,
-    Key extends TableKey<TS, TN>,
+    const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     CE extends string,
     EAs extends ExtractEAsFromString<CE>,
