@@ -1,9 +1,10 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { EANString, EAVString } from "../dynamodb-types";
-import { PutAndDeleteOutputHelper, PutAndDeleteReturnValues } from "../lib";
+import { PutAndDeleteReturnValues } from "../lib";
 import { DeepValidateShapev2WithBinaryResult } from "../type-helpers/deep-validate";
 import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
 import { GetAllKeys } from "../type-helpers/get-all-keys";
+import { TSDdbSet } from "../type-helpers/sets/utils";
 
 declare const ERROR: unique symbol;
 export type PutInput<
@@ -51,6 +52,12 @@ export type PutInput<
     }
   );
 
+
+export type PutAndDeleteOutputHelper<TypeOfItem extends Record<any, any>, RN extends PutAndDeleteReturnValues | undefined> =
+  RN extends undefined ? undefined
+  : RN extends 'NONE' ? undefined
+  : RN extends 'ALL_OLD' ? TSDdbSet<TypeOfItem> | undefined
+  : never;
 export type PutOutput<
   TypeOfItem extends object,
   RN extends PutAndDeleteReturnValues

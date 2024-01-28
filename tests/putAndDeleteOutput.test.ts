@@ -1,5 +1,5 @@
 import { expectTypeOf } from "expect-type";
-import { PutAndDeleteOutputHelper } from "../src/lib";
+import { PutAndDeleteOutputHelper } from "../src/defs-override/put";
 
 test('PutAndDeleteOutput', () => {
   expectTypeOf<PutAndDeleteOutputHelper<{ a: number }, undefined>>().toEqualTypeOf<undefined>();

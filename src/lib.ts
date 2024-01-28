@@ -10,10 +10,8 @@ import { AnyExpressionAttributeNames, ExpressionAttributeValues } from "./dynamo
 import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryKeyInput, QueryKeyKey, QueryKeyOutput, QueryKeyPEInput, QueryKeyPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
 import { NoUndefined } from "./type-helpers/utils";
 import { ExtractEAsFromString } from "./type-helpers/extract-EAs";
-import { TSDdbSet } from "./type-helpers/sets/utils";
 import { ScanInput, ScanOutput, ScanPEInput, ScanPEOutput } from "./defs-override/scan";
 import { inspect, InspectOptions } from 'util';
-import { GetAllKeys } from "./type-helpers/get-all-keys";
 import { BatchGetAllRequestOutput, BatchGetAllRequestRequests, CreateBatchGetAllRequestAddTableInputBase, ValidateCreateBatchGetAllRequestAddTableInput } from "./defs-override/batchGet";
 import { AWSError } from "aws-sdk";
 import { CancellationReasons, TwiResponse } from "./defs-override/transactWrite/output";
@@ -134,7 +132,6 @@ export type TableItemKey<Tables, TN extends string, Item extends TableItem<Table
 
 /** Correctly type the return value of put/delete depending whether the ReturnValues key is supplied */
 export type PutAndDeleteReturnValues = 'NONE' | 'ALL_OLD';
-export type PutAndDeleteOutputHelper<T extends Record<any, any>, RN extends PutAndDeleteReturnValues | undefined> = RN extends undefined ? undefined : RN extends 'NONE' ? undefined : RN extends 'ALL_OLD' ? TSDdbSet<T> | undefined : never;
 /** Correctly type the return value of update depending whether the ReturnValues key is supplied */
 export type UpdateReturnValues = 'NONE' | 'ALL_OLD' | 'ALL_NEW' | 'UPDATED_OLD' | 'UPDATED_NEW';
 export type ReturnValuesOnConditionCheckFailureValues = 'NONE' | 'ALL_OLD';
@@ -206,23 +203,16 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     CE extends string,
-    EAs extends ExtractEAsFromString<CE>,
-    GAK extends GetAllKeys<TypeOfItem>,
-    const EAN extends Record<EAs['ean'], GAK>,
-    const DummyEAN extends undefined,
-    const EAV extends Record<EAs['eav'], any>,
-    const DummyEAV extends undefined,
-    RN extends PutAndDeleteReturnValues = 'NONE'
+    const EAN extends Record<string, string>,
+    const EAV extends Record<string, any>,
+    RV extends PutAndDeleteReturnValues = 'NONE'
   >(
-    params: DeleteInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>,
+    params: DeleteInput<TN, Key, TypeOfItem, CE, EAN, EAV, RV>,
     callback?: TypesafeCallback<
-      DeleteOutput<
-        TypeOfItem, RN
-      >>
-  ): TypesafeRequest<
-    DeleteOutput<
-      TypeOfItem, RN
+      DeleteOutput<TypeOfItem, RV>
     >
+  ): TypesafeRequest<
+    DeleteOutput<TypeOfItem, RV>
   >;
 
   query<
@@ -460,16 +450,12 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     CE extends string,
-    EAs extends ExtractEAsFromString<CE>,
-    GAK extends GetAllKeys<TypeOfItem>,
-    const EAN extends Record<EAs['ean'], GAK>,
-    const DummyEAN extends undefined,
-    const EAV extends Record<EAs['eav'], any>,
-    const DummyEAV extends undefined,
-    RN extends PutAndDeleteReturnValues = 'NONE'
-  >(params: DeleteInput<TN, Key, CE, EAs['ean'], EAs['eav'], GAK, EAN, DummyEAN, EAV, DummyEAV, RN>) {
+    const EAN extends Record<string, string>,
+    const EAV extends Record<string, any>,
+    RV extends PutAndDeleteReturnValues = 'NONE'
+  >(params: DeleteInput<TN, Key, TypeOfItem, CE, EAN, EAV, RV>) {
     const res = await this.client.delete(params).promise();
-    return res as unknown as TypesafePromiseResult<DeleteOutput<TypeOfItem, RN>>;
+    return res as unknown as TypesafePromiseResult<DeleteOutput<TypeOfItem, RV>>;
   }
 
   async query<
