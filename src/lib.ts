@@ -93,18 +93,22 @@ export type TableKey<Tables, TN extends string> = Tables extends AnyGenericTable
 export type TableItem<Tables, TN extends string> = Tables extends AnyGenericTable ? TN extends Tables['name'] ? Tables['types'] : never : never;
 /** Extract the type of item that contains the type of Key */
 export type ExtractTableItemForKey<T extends Record<string, any>, Key extends Record<string, any>> =
-  T extends Record<string, any>
-  ? (
-    keyof Key extends keyof T
-    ? Key extends Pick<T, keyof Key>
-    ? T
-    : never
-    : never
-  )
+  T extends T
+  ? keyof Key extends keyof T
+  ? Key extends Pick<T, keyof Key>
+  ? T
+  : never
+  : never
   : never;
 export type ExtractTableItemForKeys<T extends Record<string, any>, Keys extends readonly Record<string, any>[]> = {
   [Key in keyof Keys]: ExtractTableItemForKey<T, Keys[Key]>;
 }[number];
+export type ExtractTableItemForItem<T extends Record<string, any>, Item extends Record<string, any>> =
+  T extends T
+  ? Item extends T
+  ? T
+  : never
+  : never;
 
 /** Extract a union of all indices[string] IndexFromValue objects */
 export type TableInidicesUnion<Tables, TN extends string> =
@@ -177,7 +181,7 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
   put<
     TN extends TableName<TS>,
     const Item extends TableItem<TS, TN>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Item>,
+    TypeOfItem extends ExtractTableItemForItem<TableItem<TS, TN>, Item>,
     CE extends string,
     const EAN extends Record<string, string>,
     const EAV extends Record<string, any>,
@@ -396,7 +400,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
   async put<
     TN extends TableName<TS>,
     const Item extends TableItem<TS, TN>,
-    TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Item>,
+    TypeOfItem extends ExtractTableItemForItem<TableItem<TS, TN>, Item>,
     CE extends string,
     const EAN extends Record<string, string>,
     const EAV extends Record<string, any>,

@@ -5,6 +5,7 @@ import { DeepValidateShapev2WithBinaryResult } from "../type-helpers/deep-valida
 import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
 import { GetAllKeys } from "../type-helpers/get-all-keys";
 
+declare const ERROR: unique symbol;
 export type PutInput<
   TN extends string,
   Item extends Record<string, any>,
@@ -13,7 +14,9 @@ export type PutInput<
   EAN extends Record<string, string>,
   EAV extends Record<string, any>,
   RV extends PutAndDeleteReturnValues,
-  CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<CE>
+  CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<CE>,
+  EANs extends Record<string, string> = Record<CEEAs['ean'], GetAllKeys<TypeOfItem>>,
+  EAVs extends Record<string, any> = Record<CEEAs['eav'], unknown> // NOTE: this MUST be unknown for `const` inference to work (not `any`).
 > = {
   TableName: TN;
   Item: Item;
@@ -22,19 +25,19 @@ export type PutInput<
   ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
   ReturnItemCollectionMetrics?: "SIZE" | "NONE";
   ReturnValuesOnConditionCheckFailure?: "ALL_OLD" | "NONE";
-  ExpressionAttributeNames?: EAN;
-  ExpressionAttributeValues?: EAV;
+  ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
+  ExpressionAttributeValues?: EAVs extends EAV ? EAV : EAVs;
 } & (
     CE extends EANString
     ? {
-      ExpressionAttributeNames: Record<CEEAs['ean'], GetAllKeys<TypeOfItem>>;
+      ExpressionAttributeNames: EANs;
     } : {
       ExpressionAttributeNames?: never;
     }
   ) & (
     CE extends EAVString
     ? {
-      ExpressionAttributeValues: Record<CEEAs['eav'], unknown>; // NOTE: this MUST be unknown for `const` inference to work (not `any`).
+      ExpressionAttributeValues: EAVs;
     } : {
       ExpressionAttributeValues?: never;
     }
@@ -43,7 +46,7 @@ export type PutInput<
     ? unknown
     : {
       Item: {
-        Error: `Error: the type of the Item provided to \`put\` does not match a known table item type. Please verify you are not providing any extra keys or incorrect types of values.`;
+        [ERROR]: `Error: the type of the Item provided to \`put\` does not match a known table item type. Please verify you are not providing any extra keys or incorrect types of values.`;
       };
     }
   );

@@ -1,4 +1,4 @@
-import { AnyGenericTable, ExtractTableItemForKey, ReturnValuesOnConditionCheckFailureValues, TableItem } from "../../lib";
+import { AnyGenericTable, ExtractTableItemForItem, ExtractTableItemForKey, ReturnValuesOnConditionCheckFailureValues, TableItem } from "../../lib";
 import { ConditionCheckVariadicTwiBase, ValidateConditionCheckVariadicTwiInput } from "./condition-check";
 import { DeleteVariadicTwiBase, ValidateDeleteVariadicTwiInput } from "./delete";
 import { PutVariadicTwiBase, ValidatePutVariadicTwiInput } from "./put";
@@ -43,7 +43,7 @@ export type GetNewVariadicTwiReturnValues<TS extends AnyGenericTable, Inputs ext
   ? (
     Input extends { Put: PutVariadicTwiBase<TS> }
     ? GetReturnValuesValue<
-      ExtractTableItemForKey<TableItem<TS, Input['Put']['TableName']>, Input['Put']['Item']>,
+      ExtractTableItemForItem<TableItem<TS, Input['Put']['TableName']>, Input['Put']['Item']>,
       Input['Put']['ConditionExpression'],
       Input['Put']['ReturnValuesOnConditionCheckFailure']
     >

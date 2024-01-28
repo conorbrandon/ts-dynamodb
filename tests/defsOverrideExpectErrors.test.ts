@@ -3,7 +3,8 @@ import { CiCdTable, MyTable } from "./lib/tables";
 
 test('expect errors', () => {
 
-  if (false) {
+  const shouldRun = false as boolean;
+  if (shouldRun) {
     tsDdbRaw.get({
       TableName: CiCdTable.name,
       Key: {
@@ -40,6 +41,7 @@ test('expect errors', () => {
         s0: 'b'
       },
       ExpressionAttributeNames: {
+        '#p0': 'p0',
         // @ts-expect-error EAN key not in PE
         '#p1': 'obj'
       },

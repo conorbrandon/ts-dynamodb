@@ -13,18 +13,19 @@ export type GetInput<
   TN extends string,
   Key extends Record<string, any>,
   PE extends string,
-  EAN extends Record<string, string>
+  EAN extends Record<string, string>,
+  EANs extends Record<string, string> = Record<ExtractEAsFromString<PE>['ean'], GetAllKeys<ExtractTableItemForKey<TableItem<TS, TN>, Key>>>
 > = {
   TableName: TN;
   Key: Key;
   ProjectionExpression?: PE;
-  ExpressionAttributeNames?: EAN;
+  ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
   ConsistentRead?: boolean;
   ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
 } & (
     PE extends EANString
     ? {
-      ExpressionAttributeNames: Record<ExtractEAsFromString<PE>['ean'], GetAllKeys<ExtractTableItemForKey<TableItem<TS, TN>, Key>>>;
+      ExpressionAttributeNames: EANs;
     }
     : {
       ExpressionAttributeNames?: never;
