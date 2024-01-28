@@ -168,11 +168,9 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     const Item extends TableItem<TS, TN>,
     TypeOfItem extends ExtractTableItemForItem<TableItem<TS, TN>, Item>,
     CE extends string,
-    const EAN extends Record<string, string>,
-    const EAV extends Record<string, any>,
     RV extends PutAndDeleteReturnValues = 'NONE'
   >(
-    params: PutInput<TN, Item, TypeOfItem, CE, EAN, EAV, RV>,
+    params: PutInput<TN, Item, TypeOfItem, CE, RV>,
     callback?: TypesafeCallback<
       PutOutput<TypeOfItem, RV>
     >
@@ -203,11 +201,9 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     CE extends string,
-    const EAN extends Record<string, string>,
-    const EAV extends Record<string, any>,
     RV extends PutAndDeleteReturnValues = 'NONE'
   >(
-    params: DeleteInput<TN, Key, TypeOfItem, CE, EAN, EAV, RV>,
+    params: DeleteInput<TN, Key, TypeOfItem, CE, RV>,
     callback?: TypesafeCallback<
       DeleteOutput<TypeOfItem, RV>
     >
@@ -372,10 +368,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const Item extends TableItem<TS, TN>,
     TypeOfItem extends ExtractTableItemForItem<TableItem<TS, TN>, Item>,
     CE extends string,
-    const EAN extends Record<string, string>,
-    const EAV extends Record<string, any>,
     RV extends PutAndDeleteReturnValues = 'NONE'
-  >(params: PutInput<TN, Item, TypeOfItem, CE, EAN, EAV, RV>) {
+  >(params: PutInput<TN, Item, TypeOfItem, CE, RV>) {
     const res = await this.client.put(params).promise();
     return res as unknown as TypesafePromiseResult<PutOutput<TypeOfItem, RV>>;
   }
@@ -426,10 +420,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const Item extends Record<string, any>,
     UpdateKeys extends Exclude<keyof TypeOfItem, keyof Key>,
     AS extends string,
-    EAN extends Record<string, string>,
-    EAV extends Record<string, any>,
     RV extends UpdateReturnValues = 'NONE'
-  >(params: UpdateSimpleSETInput<TN, Key, TypeOfItem, Item, UpdateKeys, AS, EAN, EAV, RV>) {
+  >(params: UpdateSimpleSETInput<TN, Key, TypeOfItem, Item, UpdateKeys, AS, RV>) {
     const { TableName, Key, Item, ReturnValues, extraConditions, _logParams } = params;
     const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
     const finalParams = {
@@ -450,10 +442,8 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
     CE extends string,
-    const EAN extends Record<string, string>,
-    const EAV extends Record<string, any>,
     RV extends PutAndDeleteReturnValues = 'NONE'
-  >(params: DeleteInput<TN, Key, TypeOfItem, CE, EAN, EAV, RV>) {
+  >(params: DeleteInput<TN, Key, TypeOfItem, CE, RV>) {
     const res = await this.client.delete(params).promise();
     return res as unknown as TypesafePromiseResult<DeleteOutput<TypeOfItem, RV>>;
   }

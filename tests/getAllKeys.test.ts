@@ -13,7 +13,7 @@ test('GetAllKeys', () => {
   >();
 
   expectTypeOf<GetAllKeys<{ a: Record<string, unknown> }>>().toEqualTypeOf<
-    string
+    "a" | (string & {})
   >();
 
   // this is for the pesky branded types that extend object

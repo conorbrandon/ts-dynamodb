@@ -10,12 +10,8 @@ export type DeleteInput<
   Key extends Record<string, any>,
   TypeOfItem extends Record<string, any>,
   CE extends string,
-  EAN extends Record<string, string>,
-  EAV extends Record<string, any>,
   RV extends PutAndDeleteReturnValues,
-  CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<CE>,
-  EANs extends Record<string, string> = Record<CEEAs['ean'], GetAllKeys<TypeOfItem>>,
-  EAVs extends Record<string, any> = Record<CEEAs['eav'], unknown> // NOTE: this MUST be unknown for `const` inference to work (not `any`).
+  CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<CE>
 > = {
   TableName: TN;
   Key: Key;
@@ -24,19 +20,17 @@ export type DeleteInput<
   ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
   ReturnItemCollectionMetrics?: "SIZE" | "NONE";
   ReturnValuesOnConditionCheckFailure?: "ALL_OLD" | "NONE";
-  ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
-  ExpressionAttributeValues?: EAVs extends EAV ? EAV : EAVs;
 } & (
     CE extends EANString
     ? {
-      ExpressionAttributeNames: EANs;
+      ExpressionAttributeNames: Record<CEEAs['ean'], GetAllKeys<TypeOfItem>>;
     } : {
       ExpressionAttributeNames?: never;
     }
   ) & (
     CE extends EAVString
     ? {
-      ExpressionAttributeValues: EAVs;
+      ExpressionAttributeValues: Record<CEEAs['eav'], any>;
     } : {
       ExpressionAttributeValues?: never;
     }
