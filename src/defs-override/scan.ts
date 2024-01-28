@@ -6,16 +6,18 @@ import { ProjectNonIndexScan, ProjectScan } from "../type-helpers/scan/common";
 import { IsNever } from "../type-helpers/utils";
 import { _LogParams } from "./defs-helpers";
 import { ExtractEAsFromString } from "../type-helpers/extract-EAs";
+import { GetAllKeys } from "../type-helpers/get-all-keys";
 
 export type ScanInput<
   TN extends string,
+  TypeOfItem extends Record<string, any>,
   IndexName extends string,
   FE extends string,
   PE extends string,
   EAN extends Record<string, string>,
   FEEAs extends { ean: string; eav: string } = ExtractEAsFromString<FE>,
   PEEAs extends { ean: string; eav: string } = ExtractEAsFromString<PE>,
-  EANs extends Record<string, string> = Record<FEEAs['ean'] | PEEAs['ean'], string> // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+  EANs extends Record<string, string> = Record<FEEAs['ean'] | PEEAs['ean'], GetAllKeys<TypeOfItem>>
 > = Omit<DocumentClient.ScanInput, 'TableName' | 'IndexName' | 'ProjectionExpression' | 'FilterExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'AttributesToGet' | 'ConditionalOperator' | 'ScanFilter' | 'Select'> & {
   TableName: TN;
   IndexName?: IndexName;
@@ -40,11 +42,12 @@ export type ScanInput<
 
 export type ScanPEInput<
   TN extends string,
+  TypeOfItem extends Record<string, any>,
   IndexName extends string,
   FE extends string,
   EAN extends Record<string, string>,
   FEEAs extends { ean: string; eav: string } = ExtractEAsFromString<FE>,
-  EANs extends Record<string, string> = Record<FEEAs['ean'], string> // we can't do GAK here because that requires the type of the item, which is the whole point of what we're trying to find with query
+  EANs extends Record<string, string> = Record<FEEAs['ean'], GetAllKeys<TypeOfItem>>
 > = Omit<DocumentClient.ScanInput, 'TableName' | 'IndexName' | 'ProjectionExpression' | 'FilterExpression' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'AttributesToGet' | 'ConditionalOperator' | 'ScanFilter' | 'Select'> & {
   TableName: TN;
   IndexName?: IndexName;

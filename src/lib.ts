@@ -252,15 +252,16 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
 
   scan<
     TN extends TableName<TS>,
+    TypeOfItem extends TableItem<TS, TN>,
     FE extends string,
     PE extends string,
     const EAN extends Record<string, string>,
     IndexName extends TableIndexName<TS, TN> = never
   >(
-    params: ScanInput<TN, IndexName, FE, PE, EAN>,
+    params: ScanInput<TN, TypeOfItem, IndexName, FE, PE, EAN>,
     callback?: TypesafeCallback<
       ScanOutput<
-        TableItem<TS, TN>,
+        TypeOfItem,
         TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
         // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
         NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
@@ -271,7 +272,7 @@ export interface TypesafeDocumentClientRawv2<TS extends AnyGenericTable> extends
     >
   ): TypesafeRequest<
     ScanOutput<
-      TableItem<TS, TN>,
+      TypeOfItem,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
       NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
@@ -910,14 +911,15 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
   async scan<
     TN extends TableName<TS>,
+    TypeOfItem extends TableItem<TS, TN>,
     FE extends string,
     PE extends string,
     const EAN extends Record<string, string>,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: ScanInput<TN, IndexName, FE, PE, EAN>) {
+  >(params: ScanInput<TN, TypeOfItem, IndexName, FE, PE, EAN>) {
     const res = await this.client.scan(params).promise();
     return res as unknown as TypesafePromiseResult<ScanOutput<
-      TableItem<TS, TN>,
+      TypeOfItem,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
       NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
@@ -932,15 +934,16 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    */
   async scanPE<
     TN extends TableName<TS>,
+    TypeOfItem extends TableItem<TS, TN>,
     FE extends string,
     const EAN extends Record<string, string>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: ScanPEInput<TN, IndexName, FE, EAN>, ProjectionExpression?: PE) {
+  >(params: ScanPEInput<TN, TypeOfItem, IndexName, FE, EAN>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const res = await this.client.scan(p).promise();
     return res as unknown as TypesafePromiseResult<ScanPEOutput<
-      TableItem<TS, TN>,
+      TypeOfItem,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
       NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
@@ -956,14 +959,15 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    */
   async scanAll<
     TN extends TableName<TS>,
+    TypeOfItem extends TableItem<TS, TN>,
     FE extends string,
     PE extends string,
     const EAN extends Record<string, string>,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: ScanInput<TN, IndexName, FE, PE, EAN>) {
+  >(params: ScanInput<TN, TypeOfItem, IndexName, FE, PE, EAN>) {
     const items: unknown[] = await this.whileLastEvaluatedKey({ method: 'scan', params });
     return items as unknown as NoUndefined<ScanOutput<
-      TableItem<TS, TN>,
+      TypeOfItem,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
       NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
@@ -981,15 +985,16 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
    */
   async scanAllPE<
     TN extends TableName<TS>,
+    TypeOfItem extends TableItem<TS, TN>,
     FE extends string,
     const EAN extends Record<string, string>,
     PE extends string | undefined = undefined,
     IndexName extends TableIndexName<TS, TN> = never
-  >(params: ScanPEInput<TN, IndexName, FE, EAN>, ProjectionExpression?: PE) {
+  >(params: ScanPEInput<TN, TypeOfItem, IndexName, FE, EAN>, ProjectionExpression?: PE) {
     const p = this.parsePEConstructedParamsAndLog(params, ProjectionExpression);
     const items: unknown[] = await this.whileLastEvaluatedKey({ method: 'scan', params: p });
     return items as unknown as NoUndefined<ScanPEOutput<
-      TableItem<TS, TN>,
+      TypeOfItem,
       TableKeyPartitionSortRaw<TS, TN>['partitionKey'],
       // This is a little dodgy, sortKey must be defined on the table IF an LSI is used, and if I can't find a way to enforce that above, this'll have to do. 
       NoUndefined<TableKeyPartitionSortRaw<TS, TN>['sortKey']>,
