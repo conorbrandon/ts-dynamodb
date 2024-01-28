@@ -14,14 +14,11 @@ export type PutInput<
   CE extends string,
   RV extends PutAndDeleteReturnValues,
   CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<CE>
-> = {
+> = Omit<DocumentClient.PutItemInput, 'TableName' | 'Item' | 'ConditionExpression' | 'ReturnValues' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ConditionalOperator' | 'Expected'> & {
   TableName: TN;
   Item: Item;
   ConditionExpression?: CE;
   ReturnValues?: RV;
-  ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
-  ReturnItemCollectionMetrics?: "SIZE" | "NONE";
-  ReturnValuesOnConditionCheckFailure?: "ALL_OLD" | "NONE";
 } & (
     CE extends EANString
     ? {

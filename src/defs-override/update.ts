@@ -24,7 +24,7 @@ export type UpdateInput<
   CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<CE>,
   EANs extends Record<string, string> = Record<UEEAs['ean'] | CEEAs['ean'], GetAllKeys<TypeOfItem>>,
   EAVs extends Record<string, any> = Record<UEEAs['eav'] | CEEAs['eav'], unknown> // NOTE: this MUST be unknown for `const` inference to work (not `any`).
-> = {
+> = Omit<DocumentClient.UpdateItemInput, 'TableName' | 'Key' | 'UpdateExpression' | 'ConditionExpression' | 'ReturnValues' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'AttributeUpdates' | 'ConditionalOperator' | 'Expected'> & {
   TableName: TN;
   Key: Key;
   UpdateExpression: IsUEValid<UE, TypeOfItem, EAN, EAV> extends infer ueValid
@@ -34,9 +34,6 @@ export type UpdateInput<
   : never;
   ConditionExpression?: CE;
   ReturnValues?: RV;
-  ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
-  ReturnItemCollectionMetrics?: "SIZE" | "NONE";
-  ReturnValuesOnConditionCheckFailure?: "ALL_OLD" | "NONE";
   ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
   ExpressionAttributeValues?: EAVs extends EAV ? EAV : EAVs;
 } & (

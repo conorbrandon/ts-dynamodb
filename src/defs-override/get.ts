@@ -15,13 +15,11 @@ export type GetInput<
   PE extends string,
   EAN extends Record<string, string>,
   EANs extends Record<string, string> = Record<ExtractEAsFromString<PE>['ean'], GetAllKeys<ExtractTableItemForKey<TableItem<TS, TN>, Key>>>
-> = {
+> = Omit<DocumentClient.GetItemInput, 'TableName' | 'Key' | 'ProjectionExpression' | 'ExpressionAttributeNames' | 'AttributesToGet'> & {
   TableName: TN;
   Key: Key;
   ProjectionExpression?: PE;
   ExpressionAttributeNames?: EANs extends EAN ? EAN : EANs;
-  ConsistentRead?: boolean;
-  ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
 } & (
     PE extends EANString
     ? {
@@ -35,11 +33,9 @@ export type GetInput<
 export type GetPEInput<
   TN extends string,
   Key extends Record<string, any>
-> = {
+> = Omit<DocumentClient.GetItemInput, 'TableName' | 'Key' | 'ExpressionAttributeNames' | 'ProjectionExpression' | 'AttributesToGet'> & {
   TableName: TN;
   Key: Key;
-  ConsistentRead?: boolean;
-  ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
   /**
    * Advanced feature: with all other methods, you can create the parameters however you wish ahead of time and log them. However, since `getPE` creates the parameters for you, you may wish to log exactly what was going into your DB.
    * Make sure to set `log` to `true`!

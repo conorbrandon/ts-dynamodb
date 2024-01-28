@@ -12,14 +12,11 @@ export type DeleteInput<
   CE extends string,
   RV extends PutAndDeleteReturnValues,
   CEEAs extends { ean: string; eav: string } = ExtractEAsFromString<CE>
-> = {
+> = Omit<DocumentClient.DeleteItemInput, 'TableName' | 'Key' | 'ConditionExpression' | 'ReturnValues' | 'ExpressionAttributeNames' | 'ExpressionAttributeValues' | 'ConditionalOperator' | 'Expected'> & {
   TableName: TN;
   Key: Key;
   ConditionExpression?: CE;
   ReturnValues?: RV;
-  ReturnConsumedCapacity?: "INDEXES" | "TOTAL" | "NONE";
-  ReturnItemCollectionMetrics?: "SIZE" | "NONE";
-  ReturnValuesOnConditionCheckFailure?: "ALL_OLD" | "NONE";
 } & (
     CE extends EANString
     ? {

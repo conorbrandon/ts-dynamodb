@@ -128,9 +128,7 @@ export type TableIndex<Tables, TN extends string, IndexName extends string> = _T
 /** Pick the Key object from a TableItem object */
 type TableItemKey<Tables, TN extends string, Item extends TableItem<Tables, TN>> = TableKey<Tables, TN> extends infer tKey ? [keyof tKey] extends [keyof Item] ? Pick<Item, keyof tKey> : never : never;
 
-/** Correctly type the return value of put/delete depending whether the ReturnValues key is supplied */
 export type PutAndDeleteReturnValues = 'NONE' | 'ALL_OLD';
-/** Correctly type the return value of update depending whether the ReturnValues key is supplied */
 export type UpdateReturnValues = 'NONE' | 'ALL_OLD' | 'ALL_NEW' | 'UPDATED_OLD' | 'UPDATED_NEW';
 export type ReturnValuesOnConditionCheckFailureValues = 'NONE' | 'ALL_OLD';
 
