@@ -43,7 +43,7 @@ test('conflict in eas for updateSimpleSET', async () => {
     },
     ReturnValues: 'UPDATED_NEW'
   });
-  expectTypeOf<typeof Attributes>().toEqualTypeOf<Required<Pick<B, 'obj'>> | undefined>();
+  expectTypeOf<typeof Attributes>().toEqualTypeOf<Pick<B, 'obj'> | undefined>();
 
   const { Attributes: deleted } = await tsDdb.delete({ TableName, Key, ReturnValues: 'ALL_OLD' });
   expect(deleted).toStrictEqual({ ...Item, ...updateItem });

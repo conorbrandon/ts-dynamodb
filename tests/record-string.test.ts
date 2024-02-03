@@ -216,23 +216,23 @@ test('updateSimpleSET with a record', async () => {
     ReturnValues: 'UPDATED_NEW'
   });
   expectTypeOf<typeof updatedNew>().toEqualTypeOf<{
-    prop1: string[];
-    recordWithTuple: {
-      blah: [string, number, string];
-    };
-    record: {
-      prop: {
-        1: any;
-      };
-    };
-    record1: {
-      thing: {
-        foo: [string, number, string];
-        bar: {
-          baz: "";
-        };
-      };
-    };
+    readonly prop1: ["huh"],
+    readonly recordWithTuple: {
+      readonly blah: ["", 0, ""]
+    },
+    readonly record: {
+      readonly prop: {
+        readonly 1: {}
+      }
+    },
+    readonly record1: {
+      readonly thing: {
+        readonly foo: ["hi", 99, "bye"],
+        readonly bar: {
+          readonly baz: ''
+        }
+      }
+    }
   } | undefined>();
 
   const record1 = {

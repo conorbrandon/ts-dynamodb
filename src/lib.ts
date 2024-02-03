@@ -4,7 +4,7 @@ import { GetInput, GetOutput, GetPEInput, GetPEOutput } from "./defs-override/ge
 import { PutInput, PutOutput } from "./defs-override/put";
 import { UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput } from "./defs-override/update";
 import { ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
-import { DeepReadonly, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
+import { ConstInferrablePartialOmit, DeepReadonly, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
 import DynamoDB, { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryKeyInput, QueryKeyKey, QueryKeyOutput, QueryKeyPEInput, QueryKeyPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
 import { NoUndefined } from "./type-helpers/utils";
@@ -409,11 +409,11 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
     TN extends TableName<TS>,
     const Key extends TableKey<TS, TN>,
     TypeOfItem extends ExtractTableItemForKey<TableItem<TS, TN>, Key>,
-    const Item extends Record<string, any>,
-    UpdateKeys extends Exclude<keyof TypeOfItem, keyof Key>,
+    NoKeysTypeOfItem extends ConstInferrablePartialOmit<TypeOfItem, keyof Key>,
+    const Item extends NoKeysTypeOfItem,
     AS extends string,
     RV extends UpdateReturnValues = 'NONE'
-  >(params: UpdateSimpleSETInput<TN, Key, TypeOfItem, Item, UpdateKeys, AS, RV>) {
+  >(params: UpdateSimpleSETInput<TN, Key, TypeOfItem, NoKeysTypeOfItem, Item, AS, RV>) {
     const { TableName, Key, Item, ReturnValues, extraConditions, _logParams } = params;
     const updateParams = this.getUpdateSimpleSETParams(Key, Item, extraConditions);
     const finalParams = {

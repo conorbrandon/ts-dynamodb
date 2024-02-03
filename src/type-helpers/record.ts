@@ -58,3 +58,6 @@ type RemoveIndexKeys<T> = {
 export type GetAllNonIndexKeys<T> = keyof RemoveIndexKeys<T>;
 
 export type KeyIntoObject<T extends object> = T[keyof T];
+
+// `T extends T` workaround based on https://stackoverflow.com/q/77910071/20071103
+export type ConstInferrablePartialOmit<T, K extends PropertyKey> = T extends T ? Partial<Omit<T, K>> : never;

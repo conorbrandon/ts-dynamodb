@@ -43,7 +43,9 @@ export type ValidateCreateBatchGetAllRequestAddTableInput<
   TS extends AnyGenericTable,
   TN extends string,
   Params extends CreateBatchGetAllRequestAddTableInputBase<TS, TN>
-> = [Params] extends [unknown]
+> =
+  // `[Params] extends [unknown]` hack: https://github.com/microsoft/TypeScript/issues/54537
+  [Params] extends [unknown]
   ? CreateBatchGetAllRequestAddTableInput<TS, TN, Params['Keys'], Params['ProjectionExpression']>
   : Params;
 
