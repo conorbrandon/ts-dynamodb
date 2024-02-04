@@ -31,11 +31,11 @@
     "package.json"
   ],
   "engines": {
-    "node": ">=14"
+    "node": ">=16.20.2"
   },
   "peerDependencies": {
     "aws-sdk": "^2",
-    "typescript": "^5.0.2"
+    "typescript": "^5.3.2"
   },
   "dependencies": {},
   "devDependencies": {
