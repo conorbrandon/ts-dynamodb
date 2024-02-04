@@ -1,2 +1,11 @@
-import { TableFromValue, Table, TypesafeDocumentClientRawv2, TypesafeDocumentClientv2 } from "./lib";
-export { type TableFromValue, type Table, type TypesafeDocumentClientRawv2, TypesafeDocumentClientv2 };
+export {
+  // core
+  type TableFromValue,
+  type Table,
+  type TypesafeDocumentClientRawv2,
+  TypesafeDocumentClientv2,
+  // errors
+  BatchGetAllMaxFailedAttemptsExceededError,
+  TransactWriteItemsParsedError,
+  TransactWriteItems$PushRejectionsError
+} from "./lib";

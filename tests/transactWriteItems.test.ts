@@ -4,6 +4,7 @@ import { CiCdTable, Table3 } from "./lib/tables";
 import { Type3b } from "./lib/types";
 import { expectTypeOf } from "expect-type";
 import { AWSError } from "aws-sdk";
+import { TransactWriteItems$PushRejectionsError } from "../src/lib";
 
 jest.setTimeout(100_000);
 
@@ -414,6 +415,31 @@ test('createTransactWriteItemsRequest $push', async () => {
     expect(error.CancellationReasons[1]?.Item).toBeUndefined();
     expect(error.CancellationReasons[2]?.Item).toBeUndefined();
     expect(error.CancellationReasons[3]?.Item).toBeUndefined();
+  }
+
+});
+
+test('createTransactWriteItemsRequest $push throws', async () => {
+
+  const id1 = Symbol();
+  const id2 = Symbol();
+  try {
+    const rejecter1 = new Promise<boolean>((_, reject) => setTimeout(() => reject(id1), 1_000));
+    const rejecter2 = new Promise<boolean>((_, reject) => setTimeout(() => reject(id2), 1_000));
+    const request = tsDdb
+      .createTransactWriteItemsRequest()
+      .$push(rejecter1)
+      .$push(rejecter2);
+    await new Promise(resolve => setTimeout(resolve, 2_000));
+    await request.execute();
+    fail();
+  } catch (error) {
+    if (!(error instanceof TransactWriteItems$PushRejectionsError)) {
+      fail();
+    }
+    const { errors } = error;
+    expect(errors[0]).toStrictEqual(id1);
+    expect(errors[1]).toStrictEqual(id2);
   }
 
 });

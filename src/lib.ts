@@ -1262,7 +1262,7 @@ export class TypesafeDocumentClientv2<TS extends AnyGenericTable> {
 
 }
 
-class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> extends Error {
+export class BatchGetAllMaxFailedAttemptsExceededError<TS extends AnyGenericTable, Requests extends BatchGetAllRequestRequests, RCC extends "INDEXES" | "TOTAL" | "NONE"> extends Error {
   override name = "BatchGetAllMaxFailedAttemptsExceededError" as const;
   constructor(public readonly id: symbol, public readonly partialResponse: BatchGetAllRequestOutput<TS, Requests, RCC>) {
     super();
@@ -1568,16 +1568,19 @@ const isConditionalCheckFailedReason = (reason: Record<string, unknown> & { Code
 const conditionalCheckFailedReasonHasItem = (reason: Record<string, unknown> & { Code: "ConditionalCheckFailed" }): reason is Record<string, unknown> & { Code: "ConditionalCheckFailed"; Item: Record<string, any> } => {
   return "Item" in reason && typeof reason['Item'] === 'object' && !!reason['Item'];
 };
-class TransactWriteItemsParsedError<ReturnValues extends Record<string, unknown>> extends Error {
+const isArrayNonEmpty = <T>(arr: T[]): arr is [T, ...T[]] => !!arr.length;
+export class TransactWriteItemsParsedError<ReturnValues extends Record<string, unknown>> extends Error {
   override name = "TransactWriteItemsParsedError" as const;
   constructor(public readonly id: symbol, public readonly transactWriteError: unknown, public readonly CancellationReasons: CancellationReasons<ReturnValues>) {
     super();
   }
 }
-type ShouldPush = {
-  shouldPush: boolean;
-  inputs: readonly DocumentClient.TransactWriteItem[];
-};
+export class TransactWriteItems$PushRejectionsError extends Error {
+  override name = "TransactWriteItems$PushRejectionsError" as const;
+  constructor(public errors: [unknown, ...unknown[]]) {
+    super();
+  }
+}
 class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES" | "TOTAL" | "NONE", RICM extends "SIZE" | "NONE", ReturnValues extends Record<string, unknown>> {
 
   readonly #client: DocumentClient;
@@ -1585,7 +1588,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
   #ReturnConsumedCapacity: RCC;
   #ReturnItemCollectionMetrics: RICM;
   readonly #id: symbol;
-  readonly #shouldPushPromises: (ShouldPush | Promise<ShouldPush>)[] = [];
+  readonly #shouldPushPromises: (readonly DocumentClient.TransactWriteItem[] | Promise<readonly DocumentClient.TransactWriteItem[] | { error: unknown }>)[] = [];
   #minLength: number = 0;
   #maxPossibleLength: number = 0;
   constructor({
@@ -1611,10 +1614,7 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
   push<const Inputs extends readonly VariadicTwiBase<TS>[]>(...inputs: ValidateVariadicTwiInputs<TS, Inputs>) {
     this.#minLength += inputs.length;
     this.#maxPossibleLength += inputs.length;
-    this.#shouldPushPromises.push({
-      shouldPush: true,
-      inputs
-    });
+    this.#shouldPushPromises.push(inputs);
     type newReturnValues = GetNewVariadicTwiReturnValues<TS, Inputs>;
     return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>;
   }
@@ -1639,29 +1639,36 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
         .then(shouldActuallyPush => {
           if (shouldActuallyPush) {
             this.#minLength += inputs.length;
+            return inputs;
           }
-          return {
-            shouldPush: shouldActuallyPush,
-            inputs
-          };
+          return [];
+        })
+        .catch(error => {
+          return { error };
         });
       this.#shouldPushPromises.push(awaitableShouldPush);
     } else if (shouldPush) {
       this.#minLength += inputs.length;
       this.#maxPossibleLength += inputs.length;
-      this.#shouldPushPromises.push({
-        shouldPush,
-        inputs
-      });
+      this.#shouldPushPromises.push(inputs);
     }
     type newReturnValues = GetNewVariadicTwiReturnValues<TS, Inputs>;
     return this as TransactWriteItemsRequest<TS, RCC, RICM, ReturnValues | newReturnValues>;
   }
 
   async execute(): Promise<TwiResponse<RCC, RICM>> {
-    const TransactItems: DynamoDB.DocumentClient.TransactWriteItem[] = [];
     const shouldPushes = await Promise.all(this.#shouldPushPromises);
-    shouldPushes.forEach(item => item.shouldPush && TransactItems.push(...item.inputs));
+    const errors: unknown[] = [];
+    const TransactItems: DynamoDB.DocumentClient.TransactWriteItem[] = shouldPushes.flatMap(item => {
+      if ("error" in item) {
+        errors.push(item.error);
+        return [];
+      }
+      return item;
+    });
+    if (isArrayNonEmpty(errors)) {
+      throw new TransactWriteItems$PushRejectionsError(errors);
+    }
     const transactionRequest = this.#client.transactWrite({
       TransactItems,
       ClientRequestToken: this.#ClientRequestToken,
