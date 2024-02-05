@@ -36,11 +36,6 @@ export type UnionToIntersection<U> =
  * See https://stackoverflow.com/a/75213240/20071103
 */
 export type DeepWriteable<T> = T extends Primitive | NativeJSBinaryTypes | Set<any> | ReadonlySet<any> | DocumentClient.DynamoDbSet ? T : IsAnyOrUnknown<T> extends true ? T : { -readonly [P in keyof T]: DeepWriteable<T[P]> };
-/** 
- * Adds the readonly modifier from a type (required for updateSimpleSET Item to extend Partial with keys omitted of TableItem) 
- * (with the appropriate branded types check)
- */
-export type DeepReadonly<T> = T extends Primitive | NativeJSBinaryTypes | Set<any> | ReadonlySet<any> | DocumentClient.DynamoDbSet ? T : IsAnyOrUnknown<T> extends true ? T : { readonly [P in keyof T]: DeepReadonly<T[P]> };
 
 /** Makes all properties in object optional, stopping short of mapping over branded types, binary types, and DDB and normal JS Sets */
 export type DeepPartial<T> =

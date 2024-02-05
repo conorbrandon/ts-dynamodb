@@ -1,7 +1,6 @@
 import { expectTypeOf } from "expect-type";
 import { DeepValidateShapev2, DeepValidateShapev2WithBinaryResult } from "../src/type-helpers/deep-validate";
 import { C, CICD, CICDSmaller, Type3 } from "./lib/types";
-import { DeepReadonly, DeepWriteable } from "../src/type-helpers/record";
 
 test('DeepValidateShapev2', () => {
 
@@ -243,30 +242,30 @@ test('DeepValidateShapev2', () => {
     extra: unknown;
     fizz?: [true, false, true];
   } | string | number;
-  const takesDeepVal = <const T extends Shape>(t: DeepReadonly<DeepValidateShapev2<DeepWriteable<T>, DeepWriteable<Shape>>>) => {
+  const takesDeepVal = <const T extends Shape>(t: DeepValidateShapev2<T, Shape>) => {
     return t;
   };
   const t = {
     ok: "",
     extra: "",
-    fizz: [true, false, true] as const,
-  };
+    fizz: [true, false, true]
+  } satisfies Shape;
   const r = takesDeepVal(t);
-  expectTypeOf<typeof r>().toEqualTypeOf<DeepReadonly<typeof t>>();
+  expectTypeOf<typeof r>().toEqualTypeOf<typeof t>();
 
   const t1 = {
     ok: "",
     extra: "",
-    fizz: [true, false, true] as const,
+    fizz: [true, false, true],
     hoopla: null
-  };
+  } satisfies Shape & { hoopla: null };
   // @ts-expect-error has extra property hoopla
   const r1 = takesDeepVal(t1);
   expectTypeOf<typeof r1>().toEqualTypeOf<{
-    readonly ok: string;
-    readonly extra: string;
-    readonly fizz: readonly [true, false, true];
-    readonly hoopla: never;
+    ok: string;
+    extra: string;
+    fizz: [true, false, true];
+    hoopla: never;
   }>();
 
   const r2 = takesDeepVal("");
@@ -275,7 +274,7 @@ test('DeepValidateShapev2', () => {
   expectTypeOf<typeof r3>().toEqualTypeOf<number>();
   // @ts-expect-error because not even the generic is satisfied, it's a no-go
   const r4 = takesDeepVal(true);
-  expectTypeOf<typeof r4>().toEqualTypeOf<DeepReadonly<Shape>>();
+  expectTypeOf<typeof r4>().toEqualTypeOf<Shape>();
 
 
   expectTypeOf<DeepValidateShapev2<{

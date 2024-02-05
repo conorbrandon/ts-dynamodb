@@ -4,7 +4,7 @@ import { GetInput, GetOutput, GetPEInput, GetPEOutput } from "./defs-override/ge
 import { PutInput, PutOutput } from "./defs-override/put";
 import { UpdateInput, UpdateOutput, UpdateSimpleSETInput, UpdateSimpleSETOutput } from "./defs-override/update";
 import { ValidateInputTypesForTable } from "./type-helpers/lib/validate-input-types";
-import { ConstInferrablePartialOmit, DeepReadonly, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
+import { ConstInferrablePartialOmit, PickAcrossUnionOfRecords, Values } from "./type-helpers/record";
 import DynamoDB, { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { QueryInput, QueryItemOutput, QueryItemPEOutput, QueryKeyInput, QueryKeyKey, QueryKeyOutput, QueryKeyPEInput, QueryKeyPEOutput, QueryOutput, QueryPEInput, QueryPEOutput } from "./defs-override/query";
 import { NoUndefined } from "./type-helpers/utils";
@@ -1793,7 +1793,7 @@ export declare namespace TypesafeDocumentClientv2 {
   export type GetUpdateSimpleSETItem<Table extends AnyGenericTable, TypeOfItem extends TableItem<Table, Table['name']>> =
     TableItemKey<Table, Table['name'], TypeOfItem> extends infer Key
     ? Omit<TypeOfItem, keyof Key> extends infer I
-    ? Partial<I> | DeepReadonly<Partial<I>>
+    ? Partial<I>
     : never
     : never;
 

@@ -3,7 +3,6 @@ import { TypesafeDocumentClientv2 } from "../src/lib";
 import { tsDdb } from "./lib/lib";
 import { MyTable, MyTableType, Table3Type } from "./lib/tables";
 import { A, B, Type3Zod } from "./lib/types";
-import { DeepReadonly } from "../src/type-helpers/record";
 
 test('all', () => {
 
@@ -21,6 +20,6 @@ test('all', () => {
   };
   _;
 
-  expectTypeOf<TypesafeDocumentClientv2.GetUpdateSimpleSETItem<MyTableType, A>>().toEqualTypeOf<Partial<Omit<A, 'p0' | 's0'>> | DeepReadonly<Partial<Omit<A, 'p0' | 's0'>>>>();
+  expectTypeOf<TypesafeDocumentClientv2.GetUpdateSimpleSETItem<MyTableType, A>>().toEqualTypeOf<Partial<Omit<A, 'p0' | 's0'>>>();
 
 });
