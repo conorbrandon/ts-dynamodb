@@ -34,7 +34,7 @@
     "node": ">=16.20.2"
   },
   "peerDependencies": {
-    "aws-sdk": "^2",
+    "aws-sdk": "^2.1408.0",
     "typescript": "^5.3.2"
   },
   "dependencies": {},

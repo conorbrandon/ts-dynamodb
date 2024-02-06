@@ -81,7 +81,7 @@ export type UpdateSimpleSETInput<
   Item extends Record<string, any>,
   AS extends string,
   RV extends UpdateReturnValues
-> = {
+> = Pick<DocumentClient.UpdateItemInput, 'ReturnConsumedCapacity' | 'ReturnItemCollectionMetrics' | 'ReturnValuesOnConditionCheckFailure'> & {
   TableName: TN;
   Key: Key;
   Item: Item;
