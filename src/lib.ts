@@ -1659,12 +1659,13 @@ class TransactWriteItemsRequest<TS extends AnyGenericTable, RCC extends "INDEXES
   async execute(): Promise<TwiResponse<RCC, RICM>> {
     const shouldPushes = await Promise.all(this.#shouldPushPromises);
     const errors: unknown[] = [];
-    const TransactItems: DynamoDB.DocumentClient.TransactWriteItem[] = shouldPushes.flatMap(item => {
+    const TransactItems: DynamoDB.DocumentClient.TransactWriteItem[] = [];
+    shouldPushes.forEach(item => {
       if ("error" in item) {
         errors.push(item.error);
-        return [];
+      } else {
+        TransactItems.push(...item);
       }
-      return item;
     });
     if (isArrayNonEmpty(errors)) {
       throw new TransactWriteItems$PushRejectionsError(errors);
